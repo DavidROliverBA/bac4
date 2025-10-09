@@ -1,0 +1,30 @@
+# Build outputs
+main.js
+main.js.map
+*.js.map
+dist/
+
+# Dependencies
+node_modules/
+
+# Test coverage
+coverage/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Environment
+.env
+.env.local

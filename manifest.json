@@ -1,0 +1,10 @@
+{
+  "id": "bac4-plugin",
+  "name": "BAC4 - Cloud Architecture Management",
+  "version": "0.1.0",
+  "minAppVersion": "1.0.0",
+  "description": "AI-native cloud architecture management platform extending C4 model with cloud-specific components for AWS, Azure, and GCP. Track planned vs. actual architecture states.",
+  "author": "David Oliver",
+  "authorUrl": "https://github.com/DavidROliverBA",
+  "isDesktopOnly": true
+}
