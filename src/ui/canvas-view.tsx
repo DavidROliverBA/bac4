@@ -20,6 +20,10 @@ import 'reactflow/dist/style.css';
 import BAC4Plugin from '../main';
 import { VIEW_TYPE_CANVAS } from '../core/constants';
 import { C4Node, C4NodeData } from './nodes/C4Node';
+import { CloudComponentNode, CloudComponentNodeData } from './nodes/CloudComponentNode';
+import { ComponentPalette } from './components/ComponentPalette';
+import { ComponentLibraryService } from '../services/component-library-service';
+import { ComponentDefinition } from '../../component-library/types';
 
 /**
  * Canvas Editor Component - React Flow wrapper
@@ -32,13 +36,21 @@ interface CanvasEditorProps {
 // Custom node types mapping
 const nodeTypes: NodeTypes = {
   c4: C4Node,
+  cloudComponent: CloudComponentNode,
 };
 
+type CanvasNodeData = C4NodeData | CloudComponentNodeData;
+
 const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath }) => {
-  const [nodes, setNodes, onNodesChange] = useNodesState<C4NodeData>([]);
+  const [nodes, setNodes, onNodesChange] = useNodesState<CanvasNodeData>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const reactFlowWrapper = React.useRef<HTMLDivElement>(null);
   const [reactFlowInstance, setReactFlowInstance] = React.useState<any>(null);
+  const [componentService] = React.useState(() => {
+    const service = new ComponentLibraryService();
+    service.initialize();
+    return service;
+  });
 
   // Load canvas data on mount
   React.useEffect(() => {
@@ -141,8 +153,7 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath }) => {
     (event: React.DragEvent) => {
       event.preventDefault();
 
-      const nodeType = event.dataTransfer.getData('application/reactflow') as 'context' | 'container' | 'component';
-      if (!nodeType || !reactFlowWrapper.current || !reactFlowInstance) return;
+      if (!reactFlowWrapper.current || !reactFlowInstance) return;
 
       const bounds = reactFlowWrapper.current.getBoundingClientRect();
       const position = reactFlowInstance.project({
@@ -150,19 +161,44 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath }) => {
         y: event.clientY - bounds.top,
       });
 
-      const newNode: Node<C4NodeData> = {
-        id: `node-${Date.now()}`,
-        type: 'c4',
-        position,
-        data: {
-          label: `New ${nodeType}`,
-          type: nodeType,
-          technology: '',
-          description: '',
-        },
-      };
+      // Check if it's a C4 node type
+      const nodeType = event.dataTransfer.getData('application/reactflow') as
+        | 'context'
+        | 'container'
+        | 'component';
 
-      setNodes((nds) => [...nds, newNode]);
+      if (nodeType) {
+        const newNode: Node<C4NodeData> = {
+          id: `node-${Date.now()}`,
+          type: 'c4',
+          position,
+          data: {
+            label: `New ${nodeType}`,
+            type: nodeType,
+            technology: '',
+            description: '',
+          },
+        };
+        setNodes((nds) => [...nds, newNode]);
+        return;
+      }
+
+      // Check if it's a cloud component
+      const componentDataStr = event.dataTransfer.getData('application/cloudcomponent');
+      if (componentDataStr) {
+        const component: ComponentDefinition = JSON.parse(componentDataStr);
+        const newNode: Node<CloudComponentNodeData> = {
+          id: `node-${Date.now()}`,
+          type: 'cloudComponent',
+          position,
+          data: {
+            label: component.name,
+            component,
+            properties: { ...component.defaultProps },
+          },
+        };
+        setNodes((nds) => [...nds, newNode]);
+      }
     },
     [reactFlowInstance, setNodes]
   );
@@ -186,10 +222,31 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath }) => {
     [setNodes]
   );
 
-  // Drag start handler
+  // Drag start handler for C4 nodes
   const onDragStart = (event: React.DragEvent, nodeType: string) => {
     event.dataTransfer.setData('application/reactflow', nodeType);
     event.dataTransfer.effectAllowed = 'move';
+  };
+
+  // Drag start handler for cloud components
+  const onComponentDragStart = (event: React.DragEvent, component: ComponentDefinition) => {
+    event.dataTransfer.setData('application/cloudcomponent', JSON.stringify(component));
+    event.dataTransfer.effectAllowed = 'move';
+  };
+
+  // Add cloud component
+  const addCloudComponent = (component: ComponentDefinition) => {
+    const newNode: Node<CloudComponentNodeData> = {
+      id: `node-${Date.now()}`,
+      type: 'cloudComponent',
+      position: { x: Math.random() * 500 + 100, y: Math.random() * 300 + 100 },
+      data: {
+        label: component.name,
+        component,
+        properties: { ...component.defaultProps },
+      },
+    };
+    setNodes((nds) => [...nds, newNode]);
   };
 
   return (
@@ -211,14 +268,16 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath }) => {
         <Controls />
         <MiniMap />
         <Panel position="top-left">
-          <div style={{
-            display: 'flex',
-            gap: '8px',
-            padding: '8px',
-            background: 'var(--background-primary)',
-            border: '1px solid var(--background-modifier-border)',
-            borderRadius: '4px',
-          }}>
+          <div
+            style={{
+              display: 'flex',
+              gap: '8px',
+              padding: '8px',
+              background: 'var(--background-primary)',
+              border: '1px solid var(--background-modifier-border)',
+              borderRadius: '4px',
+            }}
+          >
             <button
               draggable
               onDragStart={(e) => onDragStart(e, 'context')}
@@ -270,6 +329,13 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath }) => {
           </div>
         </Panel>
       </ReactFlow>
+
+      {/* Component Palette */}
+      <ComponentPalette
+        service={componentService}
+        onDragStart={onComponentDragStart}
+        onAddComponent={addCloudComponent}
+      />
     </div>
   );
 };
