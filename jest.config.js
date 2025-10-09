@@ -17,5 +17,10 @@ module.exports = {
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
     '^obsidian$': '<rootDir>/tests/__mocks__/obsidian.ts',
+    '\\.(css|less|scss|sass)$': '<rootDir>/tests/__mocks__/styleMock.js',
   },
+  testPathIgnorePatterns: [
+    '/node_modules/',
+    '\\.tsx$',
+  ],
 };

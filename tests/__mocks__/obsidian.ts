@@ -134,8 +134,64 @@ export class TFile {
 
 export class App {
   vault: Vault;
+  workspace: any;
 
   constructor() {
     this.vault = new Vault();
+    this.workspace = {
+      getLeavesOfType: jest.fn().mockReturnValue([]),
+      getLeaf: jest.fn().mockReturnValue({
+        setViewState: jest.fn().mockResolvedValue(undefined),
+      }),
+      revealLeaf: jest.fn(),
+    };
+  }
+}
+
+export class ItemView {
+  app: any;
+  leaf: any;
+  containerEl: any;
+
+  constructor(leaf: any) {
+    this.leaf = leaf;
+    this.app = leaf.app || {};
+    this.containerEl = {
+      children: [null, document.createElement('div')],
+      empty: jest.fn(),
+      addClass: jest.fn(),
+    };
+  }
+
+  getViewType(): string {
+    return 'default';
+  }
+
+  getDisplayText(): string {
+    return 'Default View';
+  }
+
+  getIcon(): string {
+    return 'document';
+  }
+
+  async onOpen(): Promise<void> {
+    // Mock implementation
+  }
+
+  async onClose(): Promise<void> {
+    // Mock implementation
+  }
+}
+
+export class WorkspaceLeaf {
+  app: any;
+
+  constructor(app: any) {
+    this.app = app;
+  }
+
+  async setViewState(_state: any): Promise<void> {
+    // Mock implementation
   }
 }

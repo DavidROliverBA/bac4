@@ -67,6 +67,7 @@ export default class BAC4Plugin extends Plugin {
       await leaf.setViewState({
         type: VIEW_TYPE_CANVAS,
         active: true,
+        state: { filePath },
       });
     }
 
