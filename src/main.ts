@@ -1,7 +1,9 @@
-import { Plugin } from 'obsidian';
+import { Plugin, WorkspaceLeaf } from 'obsidian';
 import { BAC4Settings } from './core/settings';
-import { DEFAULT_SETTINGS, COMMAND_OPEN_DASHBOARD, COMMAND_CREATE_PROJECT, COMMAND_OPEN_SETTINGS } from './core/constants';
+import { DEFAULT_SETTINGS, COMMAND_OPEN_DASHBOARD, COMMAND_CREATE_PROJECT, COMMAND_OPEN_SETTINGS, VIEW_TYPE_CANVAS } from './core/constants';
 import { BAC4SettingsTab } from './ui/settings-tab';
+import { BAC4CanvasView } from './ui/canvas-view';
+import './styles.css';
 
 /**
  * BAC4 Plugin - Main entry point
@@ -16,6 +18,12 @@ export default class BAC4Plugin extends Plugin {
     // Load settings
     await this.loadSettings();
 
+    // Register canvas view
+    this.registerView(
+      VIEW_TYPE_CANVAS,
+      (leaf: WorkspaceLeaf) => new BAC4CanvasView(leaf, this)
+    );
+
     // Register commands
     this.registerCommands();
 
@@ -23,9 +31,8 @@ export default class BAC4Plugin extends Plugin {
     this.addSettingTab(new BAC4SettingsTab(this.app, this));
 
     // Register ribbon icon
-    this.addRibbonIcon('layout-dashboard', 'BAC4 Dashboard', () => {
-      console.log('BAC4 Dashboard clicked');
-      // TODO: Open dashboard view
+    this.addRibbonIcon('layout-dashboard', 'BAC4 Dashboard', async () => {
+      await this.openCanvasView();
     });
 
     console.log('BAC4 Plugin loaded successfully');
@@ -48,14 +55,32 @@ export default class BAC4Plugin extends Plugin {
     await this.saveData(this.settings);
   }
 
+  async openCanvasView(filePath?: string): Promise<void> {
+    const { workspace } = this.app;
+
+    // Check if canvas view is already open
+    let leaf = workspace.getLeavesOfType(VIEW_TYPE_CANVAS)[0];
+
+    if (!leaf) {
+      // Create new leaf in main area
+      leaf = workspace.getLeaf(false);
+      await leaf.setViewState({
+        type: VIEW_TYPE_CANVAS,
+        active: true,
+      });
+    }
+
+    // Reveal the leaf
+    workspace.revealLeaf(leaf);
+  }
+
   private registerCommands() {
     // Open Dashboard
     this.addCommand({
       id: COMMAND_OPEN_DASHBOARD,
       name: 'Open Dashboard',
-      callback: () => {
-        console.log('Open Dashboard command executed');
-        // TODO: Implement dashboard opening
+      callback: async () => {
+        await this.openCanvasView();
       },
     });
 
