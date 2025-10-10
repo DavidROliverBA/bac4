@@ -49,6 +49,7 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath }) => {
   const reactFlowWrapper = React.useRef<HTMLDivElement>(null);
   const [reactFlowInstance, setReactFlowInstance] = React.useState<any>(null);
   const [selectedNode, setSelectedNode] = React.useState<Node<CanvasNodeData> | null>(null);
+  const [selectedEdge, setSelectedEdge] = React.useState<Edge | null>(null);
   const [diagramType, setDiagramType] = React.useState<'context' | 'container' | 'component'>('container');
   const [componentService] = React.useState(() => {
     const service = new ComponentLibraryService();
@@ -142,6 +143,16 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath }) => {
   const onNodeClick = React.useCallback(
     (_event: React.MouseEvent, node: Node<CanvasNodeData>) => {
       setSelectedNode(node);
+      setSelectedEdge(null);
+    },
+    []
+  );
+
+  // Handle edge selection
+  const onEdgeClick = React.useCallback(
+    (_event: React.MouseEvent, edge: Edge) => {
+      setSelectedEdge(edge);
+      setSelectedNode(null);
     },
     []
   );
@@ -149,6 +160,7 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath }) => {
   // Handle pane click (deselect)
   const onPaneClick = React.useCallback(() => {
     setSelectedNode(null);
+    setSelectedEdge(null);
   }, []);
 
   // React Flow initialization
@@ -190,6 +202,28 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath }) => {
       );
     },
     [setNodes]
+  );
+
+  // Update edge label
+  const updateEdgeLabel = React.useCallback(
+    (edgeId: string, newLabel: string) => {
+      setEdges((eds) =>
+        eds.map((edge) => {
+          if (edge.id === edgeId) {
+            return {
+              ...edge,
+              label: newLabel,
+            };
+          }
+          return edge;
+        })
+      );
+      // Update selected edge if it's the one being edited
+      setSelectedEdge((prev) =>
+        prev?.id === edgeId ? { ...prev, label: newLabel } : prev
+      );
+    },
+    [setEdges]
   );
 
   // Auto-save canvas data
@@ -335,6 +369,7 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath }) => {
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         onNodeClick={onNodeClick}
+        onEdgeClick={onEdgeClick}
         onPaneClick={onPaneClick}
         onInit={onReactFlowInit}
         onDrop={onDrop}
@@ -488,9 +523,14 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath }) => {
       {/* Property Panel */}
       <PropertyPanel
         node={selectedNode}
+        edge={selectedEdge}
         onUpdateLabel={updateNodeLabel}
         onUpdateProperties={updateNodeProperties}
-        onClose={() => setSelectedNode(null)}
+        onUpdateEdgeLabel={updateEdgeLabel}
+        onClose={() => {
+          setSelectedNode(null);
+          setSelectedEdge(null);
+        }}
       />
     </div>
   );

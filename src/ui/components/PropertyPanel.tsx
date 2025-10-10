@@ -1,37 +1,41 @@
 /**
  * Property Panel
- * Shows and edits properties of the selected node
+ * Shows and edits properties of the selected node or edge
  */
 
 import * as React from 'react';
-import { Node } from 'reactflow';
+import { Node, Edge } from 'reactflow';
 import { C4NodeData } from '../nodes/C4Node';
 import { CloudComponentNodeData } from '../nodes/CloudComponentNode';
 
 interface PropertyPanelProps {
   node: Node<C4NodeData | CloudComponentNodeData> | null;
+  edge: Edge | null;
   onUpdateLabel: (nodeId: string, label: string) => void;
   onUpdateProperties: (nodeId: string, updates: any) => void;
+  onUpdateEdgeLabel: (edgeId: string, label: string) => void;
   onClose: () => void;
 }
 
 export const PropertyPanel: React.FC<PropertyPanelProps> = ({
   node,
+  edge,
   onUpdateLabel,
   onUpdateProperties,
+  onUpdateEdgeLabel,
   onClose,
 }) => {
-  if (!node) return null;
+  if (!node && !edge) return null;
 
-  const isC4Node = node.type === 'c4';
-  const isCloudNode = node.type === 'cloudComponent';
+  const isC4Node = node?.type === 'c4';
+  const isCloudNode = node?.type === 'cloudComponent';
 
   const handleLabelChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onUpdateLabel(node.id, e.target.value);
+    if (node) onUpdateLabel(node.id, e.target.value);
   };
 
   const handlePropertyChange = (key: string, value: any) => {
-    onUpdateProperties(node.id, { [key]: value });
+    if (node) onUpdateProperties(node.id, { [key]: value });
   };
 
   return (
@@ -62,7 +66,7 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
         }}
       >
         <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 600 }}>
-          Node Properties
+          {edge ? 'Edge Properties' : 'Node Properties'}
         </h3>
         <button
           onClick={onClose}
@@ -81,35 +85,117 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
 
       {/* Properties */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '12px' }}>
-        {/* Label */}
-        <div style={{ marginBottom: '16px' }}>
-          <label
-            style={{
-              display: 'block',
-              fontSize: '11px',
-              fontWeight: 600,
-              color: 'var(--text-muted)',
-              marginBottom: '4px',
-              textTransform: 'uppercase',
-            }}
-          >
-            Label
-          </label>
-          <input
-            type="text"
-            value={node.data.label}
-            onChange={handleLabelChange}
-            style={{
-              width: '100%',
-              padding: '6px 8px',
-              background: 'var(--background-secondary)',
-              border: '1px solid var(--background-modifier-border)',
-              borderRadius: '4px',
-              color: 'var(--text-normal)',
-              fontSize: '13px',
-            }}
-          />
-        </div>
+        {/* Edge Properties */}
+        {edge && (
+          <>
+            <div style={{ marginBottom: '16px' }}>
+              <label
+                style={{
+                  display: 'block',
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  color: 'var(--text-muted)',
+                  marginBottom: '4px',
+                  textTransform: 'uppercase',
+                }}
+              >
+                Relationship Label
+              </label>
+              <input
+                type="text"
+                value={String(edge.label || '')}
+                onChange={(e) => onUpdateEdgeLabel(edge.id, e.target.value)}
+                placeholder="e.g., uses, depends on, calls"
+                style={{
+                  width: '100%',
+                  padding: '6px 8px',
+                  background: 'var(--background-secondary)',
+                  border: '1px solid var(--background-modifier-border)',
+                  borderRadius: '4px',
+                  color: 'var(--text-normal)',
+                  fontSize: '13px',
+                }}
+              />
+            </div>
+
+            {/* Common relationship templates */}
+            <div style={{ marginBottom: '16px' }}>
+              <label
+                style={{
+                  display: 'block',
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  color: 'var(--text-muted)',
+                  marginBottom: '4px',
+                  textTransform: 'uppercase',
+                }}
+              >
+                Common Relationships
+              </label>
+              <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                {['uses', 'depends on', 'calls', 'reads', 'writes', 'sends to', 'contains'].map((label) => (
+                  <button
+                    key={label}
+                    onClick={() => onUpdateEdgeLabel(edge.id, label)}
+                    style={{
+                      padding: '4px 8px',
+                      background: 'var(--background-secondary)',
+                      border: '1px solid var(--background-modifier-border)',
+                      borderRadius: '3px',
+                      color: 'var(--text-normal)',
+                      cursor: 'pointer',
+                      fontSize: '11px',
+                    }}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Edge ID (read-only) */}
+            <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--background-modifier-border)' }}>
+              <div style={{ fontSize: '10px', color: 'var(--text-faint)' }}>
+                Edge ID: {edge.id}
+              </div>
+              <div style={{ fontSize: '10px', color: 'var(--text-faint)', marginTop: '4px' }}>
+                From: {edge.source} → To: {edge.target}
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Node Label */}
+        {node && (
+          <div style={{ marginBottom: '16px' }}>
+            <label
+              style={{
+                display: 'block',
+                fontSize: '11px',
+                fontWeight: 600,
+                color: 'var(--text-muted)',
+                marginBottom: '4px',
+                textTransform: 'uppercase',
+              }}
+            >
+              Label
+            </label>
+            <input
+              type="text"
+              value={node.data.label}
+              onChange={handleLabelChange}
+              style={{
+                width: '100%',
+                padding: '6px 8px',
+                background: 'var(--background-secondary)',
+                border: '1px solid var(--background-modifier-border)',
+                borderRadius: '4px',
+                color: 'var(--text-normal)',
+                fontSize: '13px',
+              }}
+            />
+          </div>
+        )}
 
         {/* C4 Node specific properties */}
         {isC4Node && 'type' in node.data && (
@@ -327,11 +413,13 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
         )}
 
         {/* Node ID (read-only) */}
-        <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--background-modifier-border)' }}>
-          <div style={{ fontSize: '10px', color: 'var(--text-faint)' }}>
-            ID: {node.id}
+        {node && (
+          <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--background-modifier-border)' }}>
+            <div style={{ fontSize: '10px', color: 'var(--text-faint)' }}>
+              ID: {node.id}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
