@@ -56,21 +56,14 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath }) => {
     return service;
   });
 
-  // Load canvas data on mount
+  // Component mount
   React.useEffect(() => {
-    const loadCanvas = async () => {
-      if (filePath) {
-        try {
-          const content = await plugin.app.vault.adapter.read(filePath);
-          const data = JSON.parse(content);
-          if (data.nodes) setNodes(data.nodes);
-          if (data.edges) setEdges(data.edges);
-          return;
-        } catch (e) {
-          // File doesn't exist yet, use demo data
-        }
-      }
+    // Canvas editor initialized
+  }, []);
 
+  // Load canvas data immediately on mount (synchronous initialization)
+  React.useEffect(() => {
+    const initCanvas = () => {
       // Initial demo nodes with C4 types
       const initialNodes: Node<C4NodeData>[] = [
         {
@@ -117,8 +110,19 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath }) => {
       setEdges(initialEdges);
     };
 
-    loadCanvas();
-  }, [filePath, plugin.app.vault.adapter, setNodes, setEdges]);
+    initCanvas();
+
+    // Load from file if available (async)
+    if (filePath) {
+      plugin.app.vault.adapter.read(filePath).then((content) => {
+        const data = JSON.parse(content);
+        if (data.nodes) setNodes(data.nodes);
+        if (data.edges) setEdges(data.edges);
+      }).catch(() => {
+        // File doesn't exist, using demo data
+      });
+    }
+  }, []);
 
   // Handle new connections
   const onConnect = React.useCallback(
@@ -145,6 +149,11 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath }) => {
   // Handle pane click (deselect)
   const onPaneClick = React.useCallback(() => {
     setSelectedNode(null);
+  }, []);
+
+  // React Flow initialization
+  const onReactFlowInit = React.useCallback((instance: any) => {
+    setReactFlowInstance(instance);
   }, []);
 
   // Update node label
@@ -216,10 +225,9 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath }) => {
 
       if (!reactFlowWrapper.current || !reactFlowInstance) return;
 
-      const bounds = reactFlowWrapper.current.getBoundingClientRect();
-      const position = reactFlowInstance.project({
-        x: event.clientX - bounds.left,
-        y: event.clientY - bounds.top,
+      const position = reactFlowInstance.screenToFlowPosition({
+        x: event.clientX,
+        y: event.clientY,
       });
 
       // Check if it's a C4 node type
@@ -311,7 +319,14 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath }) => {
   };
 
   return (
-    <div ref={reactFlowWrapper} style={{ width: '100%', height: '100%' }}>
+    <div
+      ref={reactFlowWrapper}
+      style={{
+        width: '100%',
+        height: '100%',
+        position: 'relative',
+      }}
+    >
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -321,15 +336,20 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath }) => {
         onConnect={onConnect}
         onNodeClick={onNodeClick}
         onPaneClick={onPaneClick}
-        onInit={setReactFlowInstance}
+        onInit={onReactFlowInit}
         onDrop={onDrop}
         onDragOver={onDragOver}
         nodesDraggable={true}
         nodesConnectable={true}
         elementsSelectable={true}
         fitView
+        fitViewOptions={{ padding: 0.2, maxZoom: 1.5 }}
         deleteKeyCode="Delete"
         connectionMode={ConnectionMode.Loose}
+        minZoom={0.1}
+        maxZoom={4}
+        defaultViewport={{ x: 0, y: 0, zoom: 1 }}
+        proOptions={{ hideAttribution: true }}
       >
         <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
         <Controls />
@@ -503,9 +523,15 @@ export class BAC4CanvasView extends ItemView {
   }
 
   async onOpen(): Promise<void> {
-    const container = this.containerEl.children[1];
+    const container = this.containerEl.children[1] as HTMLElement;
     container.empty();
     container.addClass('bac4-canvas-view');
+
+    // CRITICAL: Set explicit dimensions and styles for React Flow to work
+    container.style.width = '100%';
+    container.style.height = '100%';
+    container.style.position = 'relative';
+    container.style.overflow = 'hidden';
 
     // Create React root and render
     this.root = ReactDOM.createRoot(container);

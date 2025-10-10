@@ -60,3 +60,37 @@
 .bac4-canvas-view .react-flow__background {
   background: var(--background-primary);
 }
+
+/* Make handles bigger and easier to grab */
+.bac4-canvas-view .react-flow__handle {
+  width: 12px !important;
+  height: 12px !important;
+  border-radius: 6px !important;
+  border: 2px solid var(--background-primary) !important;
+  background: var(--interactive-accent) !important;
+  cursor: crosshair !important;
+}
+
+.bac4-canvas-view .react-flow__handle:hover {
+  width: 16px !important;
+  height: 16px !important;
+  border-radius: 8px !important;
+  background: var(--interactive-accent-hover) !important;
+}
+
+/* Make connection line more visible */
+.bac4-canvas-view .react-flow__connectionline {
+  stroke: var(--interactive-accent) !important;
+  stroke-width: 2 !important;
+}
+
+/* Style edge labels */
+.bac4-canvas-view .react-flow__edge-textbg {
+  fill: var(--background-primary) !important;
+}
+
+.bac4-canvas-view .react-flow__edge-text {
+  fill: var(--text-normal) !important;
+  font-size: 12px !important;
+  font-family: var(--font-interface) !important;
+}
