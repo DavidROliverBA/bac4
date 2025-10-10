@@ -1,3 +1,4 @@
+
 # BAC4 - AI-Native Cloud Architecture Management for Obsidian
 
 An Obsidian plugin that transforms your vault into a comprehensive enterprise architecture management platform. Extends the C4 model with cloud-specific component mappings, tracks planned vs. actual architecture states, and provides AI-assisted architecture creation via Model Context Protocol.

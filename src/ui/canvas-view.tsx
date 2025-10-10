@@ -15,6 +15,7 @@ import ReactFlow, {
   useNodesState,
   useEdgesState,
   Panel,
+  ConnectionMode,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import BAC4Plugin from '../main';
@@ -22,6 +23,7 @@ import { VIEW_TYPE_CANVAS } from '../core/constants';
 import { C4Node, C4NodeData } from './nodes/C4Node';
 import { CloudComponentNode, CloudComponentNodeData } from './nodes/CloudComponentNode';
 import { ComponentPalette } from './components/ComponentPalette';
+import { PropertyPanel } from './components/PropertyPanel';
 import { ComponentLibraryService } from '../services/component-library-service';
 import { ComponentDefinition } from '../../component-library/types';
 
@@ -46,6 +48,8 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath }) => {
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const reactFlowWrapper = React.useRef<HTMLDivElement>(null);
   const [reactFlowInstance, setReactFlowInstance] = React.useState<any>(null);
+  const [selectedNode, setSelectedNode] = React.useState<Node<CanvasNodeData> | null>(null);
+  const [diagramType, setDiagramType] = React.useState<'context' | 'container' | 'component'>('container');
   const [componentService] = React.useState(() => {
     const service = new ComponentLibraryService();
     service.initialize();
@@ -118,8 +122,65 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath }) => {
 
   // Handle new connections
   const onConnect = React.useCallback(
-    (params: Connection) => setEdges((eds) => addEdge(params, eds)),
+    (params: Connection) => {
+      const edge = {
+        ...params,
+        type: 'default',
+        animated: false,
+        label: 'uses',
+      };
+      setEdges((eds) => addEdge(edge, eds));
+    },
     [setEdges]
+  );
+
+  // Handle node selection
+  const onNodeClick = React.useCallback(
+    (_event: React.MouseEvent, node: Node<CanvasNodeData>) => {
+      setSelectedNode(node);
+    },
+    []
+  );
+
+  // Handle pane click (deselect)
+  const onPaneClick = React.useCallback(() => {
+    setSelectedNode(null);
+  }, []);
+
+  // Update node label
+  const updateNodeLabel = React.useCallback(
+    (nodeId: string, newLabel: string) => {
+      setNodes((nds) =>
+        nds.map((node) => {
+          if (node.id === nodeId) {
+            return {
+              ...node,
+              data: { ...node.data, label: newLabel },
+            };
+          }
+          return node;
+        })
+      );
+    },
+    [setNodes]
+  );
+
+  // Update node properties
+  const updateNodeProperties = React.useCallback(
+    (nodeId: string, updates: Partial<CanvasNodeData>) => {
+      setNodes((nds) =>
+        nds.map((node) => {
+          if (node.id === nodeId) {
+            return {
+              ...node,
+              data: { ...node.data, ...updates },
+            };
+          }
+          return node;
+        })
+      );
+    },
+    [setNodes]
   );
 
   // Auto-save canvas data
@@ -258,15 +319,82 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath }) => {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
+        onNodeClick={onNodeClick}
+        onPaneClick={onPaneClick}
         onInit={setReactFlowInstance}
         onDrop={onDrop}
         onDragOver={onDragOver}
+        nodesDraggable={true}
+        nodesConnectable={true}
+        elementsSelectable={true}
         fitView
         deleteKeyCode="Delete"
+        connectionMode={ConnectionMode.Loose}
       >
         <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
         <Controls />
         <MiniMap />
+
+        {/* Diagram Type Selector */}
+        <Panel position="top-center">
+          <div
+            style={{
+              display: 'flex',
+              gap: '4px',
+              padding: '6px',
+              background: 'var(--background-primary)',
+              border: '1px solid var(--background-modifier-border)',
+              borderRadius: '4px',
+            }}
+          >
+            <span style={{ fontSize: '11px', color: 'var(--text-muted)', padding: '4px 8px' }}>
+              Diagram Type:
+            </span>
+            <button
+              onClick={() => setDiagramType('context')}
+              style={{
+                padding: '4px 12px',
+                background: diagramType === 'context' ? 'rgba(74, 144, 226, 0.3)' : 'transparent',
+                border: diagramType === 'context' ? '1px solid #4A90E2' : '1px solid var(--background-modifier-border)',
+                borderRadius: '3px',
+                color: 'var(--text-normal)',
+                cursor: 'pointer',
+                fontSize: '11px',
+              }}
+            >
+              Context
+            </button>
+            <button
+              onClick={() => setDiagramType('container')}
+              style={{
+                padding: '4px 12px',
+                background: diagramType === 'container' ? 'rgba(126, 211, 33, 0.3)' : 'transparent',
+                border: diagramType === 'container' ? '1px solid #7ED321' : '1px solid var(--background-modifier-border)',
+                borderRadius: '3px',
+                color: 'var(--text-normal)',
+                cursor: 'pointer',
+                fontSize: '11px',
+              }}
+            >
+              Container
+            </button>
+            <button
+              onClick={() => setDiagramType('component')}
+              style={{
+                padding: '4px 12px',
+                background: diagramType === 'component' ? 'rgba(245, 166, 35, 0.3)' : 'transparent',
+                border: diagramType === 'component' ? '1px solid #F5A623' : '1px solid var(--background-modifier-border)',
+                borderRadius: '3px',
+                color: 'var(--text-normal)',
+                cursor: 'pointer',
+                fontSize: '11px',
+              }}
+            >
+              Component
+            </button>
+          </div>
+        </Panel>
+
         <Panel position="top-left">
           <div
             style={{
@@ -335,6 +463,14 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath }) => {
         service={componentService}
         onDragStart={onComponentDragStart}
         onAddComponent={addCloudComponent}
+      />
+
+      {/* Property Panel */}
+      <PropertyPanel
+        node={selectedNode}
+        onUpdateLabel={updateNodeLabel}
+        onUpdateProperties={updateNodeProperties}
+        onClose={() => setSelectedNode(null)}
       />
     </div>
   );
