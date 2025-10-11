@@ -9,6 +9,7 @@ export interface C4NodeData {
   type: 'context' | 'container' | 'component';
   technology?: string;
   description?: string;
+  color?: string;
 }
 
 /**
@@ -16,42 +17,42 @@ export interface C4NodeData {
  * Custom node for C4 architecture diagrams
  */
 export const C4Node: React.FC<NodeProps<C4NodeData>> = ({ data, selected }) => {
+  // Default colors by type
+  const typeColors = {
+    context: '#4A90E2',
+    container: '#7ED321',
+    component: '#F5A623',
+  };
+
+  const color = data.color || typeColors[data.type];
+
+  // Convert hex to rgba with alpha
+  const hexToRgba = (hex: string, alpha: number) => {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  };
+
   const getNodeStyles = () => {
-    const baseStyles = {
+    return {
       padding: '12px 16px',
       borderRadius: '8px',
-      border: '2px solid',
+      border: `2px solid ${color}`,
       minWidth: '150px',
       maxWidth: '250px',
       textAlign: 'center' as const,
-      backgroundColor: 'var(--background-primary)',
+      backgroundColor: hexToRgba(color, 0.1),
       color: 'var(--text-normal)',
       fontFamily: 'var(--font-interface)',
       fontSize: '14px',
       boxShadow: selected ? '0 0 0 2px var(--interactive-accent)' : '0 2px 4px rgba(0,0,0,0.1)',
     };
-
-    const typeStyles = {
-      context: {
-        borderColor: '#4A90E2',
-        backgroundColor: 'rgba(74, 144, 226, 0.1)',
-      },
-      container: {
-        borderColor: '#7ED321',
-        backgroundColor: 'rgba(126, 211, 33, 0.1)',
-      },
-      component: {
-        borderColor: '#F5A623',
-        backgroundColor: 'rgba(245, 166, 35, 0.1)',
-      },
-    };
-
-    return { ...baseStyles, ...typeStyles[data.type] };
   };
 
   return (
     <div style={getNodeStyles()}>
-      <Handle type="target" position={Position.Top} style={{ background: '#555' }} />
+      <Handle type="target" position={Position.Top} style={{ background: color }} />
 
       <div style={{ fontWeight: 600, marginBottom: '4px' }}>
         {data.label}
@@ -69,7 +70,7 @@ export const C4Node: React.FC<NodeProps<C4NodeData>> = ({ data, selected }) => {
         </div>
       )}
 
-      <Handle type="source" position={Position.Bottom} style={{ background: '#555' }} />
+      <Handle type="source" position={Position.Bottom} style={{ background: color }} />
     </div>
   );
 };

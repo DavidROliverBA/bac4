@@ -19,4 +19,5 @@ export const DEFAULT_SETTINGS = {
   defaultProjectLocation: 'projects',
   enableAIFeatures: true,
   autoSaveInterval: 30000, // 30 seconds
+  dashboardPath: 'BAC4/Context.bac4', // Default dashboard path
 };

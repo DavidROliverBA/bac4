@@ -94,3 +94,26 @@
   font-size: 12px !important;
   font-family: var(--font-interface) !important;
 }
+
+/* Panel positioning fixes */
+.bac4-canvas-view .react-flow__panel {
+  margin: 10px;
+  z-index: 5;
+}
+
+.bac4-canvas-view .react-flow__panel.top {
+  top: 0;
+}
+
+.bac4-canvas-view .react-flow__panel.left {
+  left: 0;
+}
+
+.bac4-canvas-view .react-flow__panel.right {
+  right: 0;
+}
+
+.bac4-canvas-view .react-flow__panel.center {
+  left: 50%;
+  transform: translateX(-50%);
+}

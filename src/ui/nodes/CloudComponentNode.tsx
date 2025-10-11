@@ -15,6 +15,7 @@ export interface CloudComponentNodeData {
   component: ComponentDefinition;
   properties?: Record<string, any>;
   notes?: string;
+  color?: string;
 }
 
 /**
@@ -24,6 +25,8 @@ export const CloudComponentNode: React.FC<NodeProps<CloudComponentNodeData>> = (
   data,
   selected,
 }) => {
+  const color = data.color || data.component.color;
+
   const getNodeStyles = () => {
     const baseStyles = {
       padding: '12px 16px',
@@ -39,7 +42,7 @@ export const CloudComponentNode: React.FC<NodeProps<CloudComponentNodeData>> = (
       boxShadow: selected
         ? '0 0 0 2px var(--interactive-accent)'
         : '0 2px 4px rgba(0,0,0,0.1)',
-      borderColor: data.component.color,
+      borderColor: color,
       position: 'relative' as const,
     };
 
@@ -53,7 +56,7 @@ export const CloudComponentNode: React.FC<NodeProps<CloudComponentNodeData>> = (
     fontSize: '9px',
     padding: '2px 6px',
     borderRadius: '3px',
-    backgroundColor: data.component.color,
+    backgroundColor: color,
     color: '#fff',
     fontWeight: 600,
     textTransform: 'uppercase' as const,
@@ -64,7 +67,7 @@ export const CloudComponentNode: React.FC<NodeProps<CloudComponentNodeData>> = (
       <Handle
         type="target"
         position={Position.Top}
-        style={{ background: data.component.color }}
+        style={{ background: color }}
       />
 
       {/* Provider badge */}
@@ -126,7 +129,7 @@ export const CloudComponentNode: React.FC<NodeProps<CloudComponentNodeData>> = (
       <Handle
         type="source"
         position={Position.Bottom}
-        style={{ background: data.component.color }}
+        style={{ background: color }}
       />
     </div>
   );
