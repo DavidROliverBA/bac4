@@ -31,7 +31,6 @@ export interface UseFileOperationsProps {
   diagramType: 'context' | 'container' | 'component';
   nodes: Node<CanvasNodeData>[];
   edges: Edge[];
-  selectedNode: Node<CanvasNodeData> | null;
   setNodes: React.Dispatch<React.SetStateAction<Node<CanvasNodeData>[]>>;
   setEdges: React.Dispatch<React.SetStateAction<Edge[]>>;
   setDiagramType: (type: 'context' | 'container' | 'component') => void;
@@ -55,7 +54,6 @@ export function useFileOperations(props: UseFileOperationsProps): void {
     diagramType,
     nodes,
     edges,
-    selectedNode,
     setNodes,
     setEdges,
     setDiagramType,
@@ -144,61 +142,32 @@ export function useFileOperations(props: UseFileOperationsProps): void {
   }, [nodes, edges, filePath, plugin, diagramType]);
 
   /**
-   * Load breadcrumbs when a node with child is selected
+   * Load breadcrumbs for current diagram's hierarchy
+   *
+   * Simplified: Always shows current diagram's parent chain, not child diagrams.
+   * Triggered on filePath change and breadcrumbRefreshTrigger.
    */
   React.useEffect(() => {
-    if (!selectedNode || !filePath) {
+    if (!filePath) {
       setBreadcrumbs([]);
       return;
     }
 
     let cancelled = false;
 
-    console.log('BAC4: Checking if selected node has child...', selectedNode.id);
+    console.log('BAC4: Loading breadcrumbs for current diagram:', filePath);
 
-    // Check if selected node has a child diagram
     navigationService
-      .findChildDiagram(filePath, selectedNode.id)
-      .then((childPath) => {
+      .buildBreadcrumbs(filePath)
+      .then((breadcrumbs) => {
         if (cancelled) return;
 
-        if (childPath) {
-          // Node has a child - show breadcrumb link
-          console.log('BAC4: Node has child, loading child diagram info...');
-
-          navigationService
-            .getDiagramByPath(childPath)
-            .then((childDiagram) => {
-              if (cancelled) return;
-
-              if (childDiagram) {
-                const currentName = getDiagramName(filePath);
-                console.log(
-                  'BAC4: Setting breadcrumbs:',
-                  currentName,
-                  '→',
-                  childDiagram.displayName
-                );
-
-                setBreadcrumbs([
-                  { label: currentName, path: filePath, type: 'current' },
-                  { label: childDiagram.displayName, path: childPath, type: 'child' },
-                ]);
-              }
-            })
-            .catch(() => {
-              if (!cancelled) {
-                setBreadcrumbs([]);
-              }
-            });
-        } else {
-          // Node has no child - clear breadcrumbs
-          console.log('BAC4: Node has no child, clearing breadcrumbs');
-          setBreadcrumbs([]);
-        }
+        console.log('BAC4: Loaded breadcrumbs:', breadcrumbs.length, 'items');
+        setBreadcrumbs(breadcrumbs);
       })
-      .catch(() => {
+      .catch((error) => {
         if (!cancelled) {
+          console.error('BAC4: Error loading breadcrumbs:', error);
           setBreadcrumbs([]);
         }
       });
@@ -206,7 +175,7 @@ export function useFileOperations(props: UseFileOperationsProps): void {
     return () => {
       cancelled = true;
     };
-  }, [selectedNode, filePath, navigationService, breadcrumbRefreshTrigger, setBreadcrumbs]);
+  }, [filePath, navigationService, breadcrumbRefreshTrigger, setBreadcrumbs]);
 
   /**
    * Load canvas data when filePath changes

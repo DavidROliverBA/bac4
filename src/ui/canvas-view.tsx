@@ -234,7 +234,6 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath }) => {
     diagramType,
     nodes,
     edges,
-    selectedNode,
     setNodes,
     setEdges,
     setDiagramType,
