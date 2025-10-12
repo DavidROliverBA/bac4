@@ -13,17 +13,16 @@
 
 /* Override React Flow default styles for better Obsidian integration */
 .bac4-canvas-view .react-flow__node {
-  background: var(--background-primary);
-  border: 2px solid var(--background-modifier-border);
-  border-radius: 8px;
-  padding: 10px;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
   font-family: var(--font-interface);
   color: var(--text-normal);
 }
 
 .bac4-canvas-view .react-flow__node.selected {
-  border-color: var(--interactive-accent);
-  box-shadow: 0 0 0 2px var(--interactive-accent);
+  /* Selection styling handled by individual node components */
 }
 
 .bac4-canvas-view .react-flow__edge-path {

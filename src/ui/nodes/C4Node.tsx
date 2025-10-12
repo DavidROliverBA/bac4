@@ -1,5 +1,14 @@
 import * as React from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
+import {
+  FONT_SIZES,
+  SPACING,
+  UI_COLORS,
+  BORDER_RADIUS,
+  SHADOWS,
+  NODE_DIMENSIONS,
+  C4_TYPE_COLORS,
+} from '../../constants';
 
 /**
  * C4 Node Data Interface
@@ -17,14 +26,7 @@ export interface C4NodeData {
  * Custom node for C4 architecture diagrams
  */
 export const C4Node: React.FC<NodeProps<C4NodeData>> = ({ data, selected }) => {
-  // Default colors by type
-  const typeColors = {
-    context: '#4A90E2',
-    container: '#7ED321',
-    component: '#F5A623',
-  };
-
-  const color = data.color || typeColors[data.type];
+  const color = data.color || C4_TYPE_COLORS[data.type];
 
   // Convert hex to rgba with alpha
   const hexToRgba = (hex: string, alpha: number) => {
@@ -36,17 +38,17 @@ export const C4Node: React.FC<NodeProps<C4NodeData>> = ({ data, selected }) => {
 
   const getNodeStyles = () => {
     return {
-      padding: '12px 16px',
-      borderRadius: '8px',
-      border: `2px solid ${color}`,
-      minWidth: '150px',
-      maxWidth: '250px',
+      padding: SPACING.padding.node,
+      borderRadius: BORDER_RADIUS.large,
+      border: 'none',
+      minWidth: NODE_DIMENSIONS.minWidth,
+      maxWidth: NODE_DIMENSIONS.maxWidth,
       textAlign: 'center' as const,
-      backgroundColor: hexToRgba(color, 0.1),
-      color: 'var(--text-normal)',
+      backgroundColor: hexToRgba(color, 0.2),
+      color: UI_COLORS.textNormal,
       fontFamily: 'var(--font-interface)',
-      fontSize: '14px',
-      boxShadow: selected ? '0 0 0 2px var(--interactive-accent)' : '0 2px 4px rgba(0,0,0,0.1)',
+      fontSize: FONT_SIZES.large,
+      boxShadow: selected ? `0 0 0 3px ${UI_COLORS.interactiveAccent}` : SHADOWS.normal,
     };
   };
 
@@ -54,18 +56,18 @@ export const C4Node: React.FC<NodeProps<C4NodeData>> = ({ data, selected }) => {
     <div style={getNodeStyles()}>
       <Handle type="target" position={Position.Top} style={{ background: color }} />
 
-      <div style={{ fontWeight: 600, marginBottom: '4px' }}>
+      <div style={{ fontWeight: 600, marginBottom: SPACING.gap.tiny }}>
         {data.label}
       </div>
 
       {data.technology && (
-        <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px' }}>
+        <div style={{ fontSize: FONT_SIZES.normal, color: UI_COLORS.textMuted, marginBottom: SPACING.gap.tiny }}>
           [{data.technology}]
         </div>
       )}
 
       {data.description && (
-        <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '8px' }}>
+        <div style={{ fontSize: FONT_SIZES.small, color: UI_COLORS.textMuted, marginTop: SPACING.gap.normal }}>
           {data.description}
         </div>
       )}

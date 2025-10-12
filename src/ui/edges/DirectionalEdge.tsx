@@ -9,8 +9,13 @@ import {
   getBezierPath,
   EdgeLabelRenderer,
   BaseEdge,
-  MarkerType,
 } from 'reactflow';
+import {
+  FONT_SIZES,
+  SPACING,
+  UI_COLORS,
+  BORDER_RADIUS,
+} from '../../constants';
 
 export interface DirectionalEdgeData {
   label?: string;
@@ -26,8 +31,6 @@ export const DirectionalEdge: React.FC<EdgeProps<DirectionalEdgeData>> = ({
   sourcePosition,
   targetPosition,
   data,
-  markerEnd,
-  markerStart,
   style = {},
 }) => {
   const direction = data?.direction || 'right';
@@ -78,31 +81,33 @@ export const DirectionalEdge: React.FC<EdgeProps<DirectionalEdgeData>> = ({
           <marker
             id="arrow-end"
             viewBox="0 0 10 10"
-            refX="9"
+            refX="5"
             refY="5"
-            markerWidth="6"
-            markerHeight="6"
-            orient="auto-start-reverse"
+            markerWidth="8"
+            markerHeight="8"
+            orient="auto"
           >
             <path
               d="M 0 0 L 10 5 L 0 10 z"
-              fill="var(--text-muted)"
-              stroke="none"
+              fill={UI_COLORS.textMuted}
+              stroke={UI_COLORS.textMuted}
+              strokeWidth="1"
             />
           </marker>
           <marker
             id="arrow-start"
             viewBox="0 0 10 10"
-            refX="1"
+            refX="5"
             refY="5"
-            markerWidth="6"
-            markerHeight="6"
-            orient="auto-start-reverse"
+            markerWidth="8"
+            markerHeight="8"
+            orient="auto"
           >
             <path
               d="M 10 0 L 0 5 L 10 10 z"
-              fill="var(--text-muted)"
-              stroke="none"
+              fill={UI_COLORS.textMuted}
+              stroke={UI_COLORS.textMuted}
+              strokeWidth="1"
             />
           </marker>
         </defs>
@@ -115,7 +120,7 @@ export const DirectionalEdge: React.FC<EdgeProps<DirectionalEdgeData>> = ({
         markerEnd={markers.markerEnd}
         markerStart={markers.markerStart}
         style={{
-          stroke: 'var(--text-muted)',
+          stroke: UI_COLORS.textMuted,
           strokeWidth: 2,
           ...style,
         }}
@@ -128,13 +133,13 @@ export const DirectionalEdge: React.FC<EdgeProps<DirectionalEdgeData>> = ({
             style={{
               position: 'absolute',
               transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
-              background: 'var(--background-primary)',
-              padding: '4px 8px',
-              borderRadius: '4px',
-              fontSize: '12px',
+              background: UI_COLORS.backgroundPrimary,
+              padding: SPACING.padding.button,
+              borderRadius: BORDER_RADIUS.normal,
+              fontSize: FONT_SIZES.medium,
               fontWeight: 500,
-              color: 'var(--text-normal)',
-              border: '1px solid var(--background-modifier-border)',
+              color: UI_COLORS.textNormal,
+              border: `1px solid ${UI_COLORS.backgroundModifierBorder}`,
               pointerEvents: 'all',
             }}
             className="nodrag nopan"

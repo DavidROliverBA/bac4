@@ -1,26 +1,88 @@
-/**
- * Diagram Navigation Service
- * Manages C4 Model diagram hierarchy and navigation using central relationships file
- */
-
 import { TFile } from 'obsidian';
-import BAC4Plugin from '../main';
-import {
+import type BAC4Plugin from '../main';
+import type {
   DiagramRelationshipsData,
   DiagramNode,
   DiagramRelationship,
   BreadcrumbItem,
-} from '../types/diagram-relationships';
+} from '../types';
 
+/** Path to the central relationships file */
 const RELATIONSHIPS_FILE = 'diagram-relationships.json';
 
+/**
+ * Diagram Navigation Service
+ *
+ * Manages C4 Model diagram hierarchy and navigation using a centralized relationships file.
+ * This service handles the parent-child relationships between diagrams, enabling drill-down
+ * navigation and breadcrumb trails across Context → Container → Component diagrams.
+ *
+ * **Architecture:**
+ * - Single source of truth: `diagram-relationships.json` at vault root
+ * - Diagrams are registered with unique IDs, file paths, and types
+ * - Relationships link parent nodes to child diagrams
+ * - Supports auto-registration and orphan detection
+ *
+ * **Responsibilities:**
+ * - Register/unregister diagrams in the central file
+ * - Create and manage parent-child relationships
+ * - Navigate up/down the diagram hierarchy
+ * - Build breadcrumb trails
+ * - Link/unlink nodes to child diagrams
+ *
+ * @example
+ * ```ts
+ * // Initialize service
+ * const navService = new DiagramNavigationService(plugin);
+ * await navService.ensureRelationshipsFile();
+ *
+ * // Register a diagram
+ * const diagramId = await navService.registerDiagram(
+ *   'MySystem.bac4',
+ *   'My System',
+ *   'context'
+ * );
+ *
+ * // Create child diagram (drill-down)
+ * const childPath = await navService.createChildDiagram(
+ *   'MySystem.bac4',
+ *   'node-123',
+ *   'API Gateway',
+ *   'context',
+ *   'container'
+ * );
+ *
+ * // Build breadcrumbs for current diagram
+ * const breadcrumbs = await navService.buildBreadcrumbs('API_Gateway.bac4');
+ * // Returns: [{ label: 'My System', path: 'MySystem.bac4', ... }, { label: 'API Gateway', ... }]
+ * ```
+ *
+ * @see {@link DiagramRelationshipsData} for data structure
+ * @see {@link DiagramNode} for diagram metadata
+ * @see {@link DiagramRelationship} for parent-child relationships
+ */
 export class DiagramNavigationService {
+  /** Path to the central relationships file */
   public readonly relationshipsPath = RELATIONSHIPS_FILE;
 
+  /**
+   * Creates a new DiagramNavigationService
+   * @param plugin - The BAC4 plugin instance for accessing Obsidian vault APIs
+   */
   constructor(private plugin: BAC4Plugin) {}
 
   /**
    * Ensure relationships file exists (public method for initialization)
+   *
+   * Creates `diagram-relationships.json` at vault root if it doesn't exist.
+   * Should be called during plugin initialization.
+   *
+   * @returns Promise that resolves when file is confirmed to exist
+   * @example
+   * ```ts
+   * await navService.ensureRelationshipsFile();
+   * // Now diagram-relationships.json exists with default structure
+   * ```
    */
   async ensureRelationshipsFile(): Promise<void> {
     await this.getRelationshipsData(); // This will create file if it doesn't exist
@@ -59,6 +121,24 @@ export class DiagramNavigationService {
 
   /**
    * Register a new diagram in the relationships file
+   *
+   * Adds a diagram to the central registry with a unique ID. If the diagram
+   * is already registered, returns the existing ID.
+   *
+   * @param filePath - Path to the .bac4 file (relative to vault root)
+   * @param displayName - Human-readable name for the diagram
+   * @param type - C4 diagram type: 'context', 'container', or 'component'
+   * @returns The diagram's unique ID (existing or newly created)
+   *
+   * @example
+   * ```ts
+   * const id = await navService.registerDiagram(
+   *   'architecture/MySystem.bac4',
+   *   'My System',
+   *   'context'
+   * );
+   * // Returns: 'diagram-1699564823-abc123xyz'
+   * ```
    */
   async registerDiagram(
     filePath: string,
@@ -109,6 +189,26 @@ export class DiagramNavigationService {
   }
 
   /**
+   * Update diagram type
+   */
+  async updateDiagramType(
+    filePath: string,
+    newType: 'context' | 'container' | 'component'
+  ): Promise<void> {
+    const data = await this.getRelationshipsData();
+    const diagram = data.diagrams.find((d) => d.filePath === filePath);
+
+    if (diagram) {
+      diagram.type = newType;
+      diagram.updatedAt = new Date().toISOString();
+      await this.saveRelationshipsData(data);
+      console.log('BAC4: Updated diagram type:', filePath, '->', newType);
+    } else {
+      console.warn('BAC4: Diagram not found in relationships:', filePath);
+    }
+  }
+
+  /**
    * Get diagram by file path
    */
   async getDiagramByPath(filePath: string): Promise<DiagramNode | null> {
@@ -117,8 +217,39 @@ export class DiagramNavigationService {
   }
 
   /**
-   * Create a child diagram for a node
-   * User can name the file anything they want
+   * Create a child diagram for a node (drill-down functionality)
+   *
+   * Creates a new .bac4 file, registers it, and establishes a parent-child
+   * relationship. This enables drill-down navigation from Context → Container
+   * or Container → Component diagrams.
+   *
+   * **Behavior:**
+   * - Auto-registers parent if not already registered
+   * - Sanitizes parent node label for filename (spaces → underscores)
+   * - Creates file in same directory as parent
+   * - If file exists, creates/updates relationship only
+   *
+   * @param parentPath - Path to the parent .bac4 file
+   * @param parentNodeId - ID of the node in parent diagram
+   * @param parentNodeLabel - Label of the node (used for naming child file)
+   * @param parentDiagramType - Type of parent diagram ('context' or 'container')
+   * @param childDiagramType - Type of child diagram ('container' or 'component')
+   * @param suggestedFileName - Optional custom filename (without .bac4 extension)
+   * @returns Path to the created or existing child diagram file
+   *
+   * @example
+   * ```ts
+   * // Double-click "API Gateway" node in Context diagram
+   * const childPath = await navService.createChildDiagram(
+   *   'MySystem.bac4',
+   *   'node-api-123',
+   *   'API Gateway',
+   *   'context',
+   *   'container'
+   * );
+   * // Creates: API_Gateway.bac4
+   * // Relationship: MySystem.bac4 (node-api-123) → API_Gateway.bac4
+   * ```
    */
   async createChildDiagram(
     parentPath: string,
@@ -284,6 +415,27 @@ export class DiagramNavigationService {
 
   /**
    * Build breadcrumb trail for a diagram
+   *
+   * Walks up the parent chain to construct a breadcrumb path from root to
+   * current diagram. Used for navigation UI to show diagram hierarchy.
+   *
+   * **Algorithm:**
+   * - Starts at current diagram
+   * - Follows parent relationships upward
+   * - Auto-registers unregistered diagrams
+   * - Detects cycles (prevents infinite loops)
+   *
+   * @param currentPath - Path to the current .bac4 file
+   * @returns Array of breadcrumb items from root to current
+   *
+   * @example
+   * ```ts
+   * const breadcrumbs = await navService.buildBreadcrumbs('API_Gateway.bac4');
+   * // Returns: [
+   * //   { label: 'My System', path: 'MySystem.bac4', type: 'context', ... },
+   * //   { label: 'API Gateway', path: 'API_Gateway.bac4', type: 'container', ... }
+   * // ]
+   * ```
    */
   async buildBreadcrumbs(currentPath: string): Promise<BreadcrumbItem[]> {
     const breadcrumbs: BreadcrumbItem[] = [];
@@ -493,5 +645,125 @@ export class DiagramNavigationService {
     } else {
       console.warn('BAC4: Relationship not found for node:', parentNodeId);
     }
+  }
+
+  /**
+   * Get all diagrams of a specific type
+   */
+  async getDiagramsByType(type: 'context' | 'container' | 'component'): Promise<DiagramNode[]> {
+    const data = await this.getRelationshipsData();
+    return data.diagrams.filter((d) => d.type === type);
+  }
+
+  /**
+   * Link a parent node to an existing child diagram
+   *
+   * Creates or updates a parent-child relationship to point to an existing
+   * diagram file. Useful for connecting nodes to diagrams created separately.
+   * Replaces any existing link for this node.
+   *
+   * @param parentPath - Path to the parent .bac4 file
+   * @param parentNodeId - ID of the node in parent diagram
+   * @param parentNodeLabel - Label of the node (for relationship metadata)
+   * @param childDiagramPath - Path to the existing child .bac4 file
+   * @throws Error if parent or child diagram not found in registry
+   *
+   * @example
+   * ```ts
+   * // Link "API Gateway" node to pre-existing "API_Services.bac4"
+   * await navService.linkToExistingDiagram(
+   *   'MySystem.bac4',
+   *   'node-api-123',
+   *   'API Gateway',
+   *   'diagrams/API_Services.bac4'
+   * );
+   * // Now double-clicking node opens API_Services.bac4
+   * ```
+   */
+  async linkToExistingDiagram(
+    parentPath: string,
+    parentNodeId: string,
+    parentNodeLabel: string,
+    childDiagramPath: string
+  ): Promise<void> {
+    console.log('BAC4: Linking node to existing diagram', {
+      parentPath,
+      parentNodeId,
+      childDiagramPath,
+    });
+
+    const data = await this.getRelationshipsData();
+
+    // Get parent diagram
+    const parentDiagram = data.diagrams.find((d) => d.filePath === parentPath);
+    if (!parentDiagram) {
+      throw new Error('Parent diagram not found');
+    }
+
+    // Get child diagram
+    const childDiagram = data.diagrams.find((d) => d.filePath === childDiagramPath);
+    if (!childDiagram) {
+      throw new Error('Child diagram not found');
+    }
+
+    // Check if a relationship already exists for this node
+    const existingRel = data.relationships.find(
+      (r) => r.parentDiagramId === parentDiagram.id && r.parentNodeId === parentNodeId
+    );
+
+    if (existingRel) {
+      // Update existing relationship
+      console.log('BAC4: Updating existing relationship');
+      existingRel.childDiagramId = childDiagram.id;
+      existingRel.parentNodeLabel = parentNodeLabel;
+    } else {
+      // Create new relationship
+      console.log('BAC4: Creating new relationship');
+      const relationship: DiagramRelationship = {
+        parentDiagramId: parentDiagram.id,
+        childDiagramId: childDiagram.id,
+        parentNodeId,
+        parentNodeLabel,
+        createdAt: new Date().toISOString(),
+      };
+      data.relationships.push(relationship);
+    }
+
+    await this.saveRelationshipsData(data);
+    console.log('BAC4: ✅ Linked node to diagram');
+  }
+
+  /**
+   * Check if a node has an existing link
+   */
+  async getExistingLink(parentPath: string, parentNodeId: string): Promise<DiagramNode | null> {
+    const childPath = await this.findChildDiagram(parentPath, parentNodeId);
+    if (!childPath) {
+      return null;
+    }
+    return await this.getDiagramByPath(childPath);
+  }
+
+  /**
+   * Unlink a node from its child diagram
+   */
+  async unlinkNode(parentPath: string, parentNodeId: string): Promise<void> {
+    console.log('BAC4: Unlinking node', { parentPath, parentNodeId });
+
+    const data = await this.getRelationshipsData();
+    const parentDiagram = data.diagrams.find((d) => d.filePath === parentPath);
+
+    if (!parentDiagram) {
+      console.warn('BAC4: Parent diagram not found');
+      return;
+    }
+
+    // Remove the relationship
+    data.relationships = data.relationships.filter(
+      (r) => !(r.parentDiagramId === parentDiagram.id && r.parentNodeId === parentNodeId)
+    );
+
+    await this.saveRelationshipsData(data);
+    console.log('BAC4: ✅ Unlinked node');
   }
 }

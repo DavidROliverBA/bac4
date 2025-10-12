@@ -6,6 +6,13 @@
 import * as React from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
 import { ComponentDefinition } from '../../../component-library/types';
+import {
+  FONT_SIZES,
+  SPACING,
+  UI_COLORS,
+  BORDER_RADIUS,
+  NODE_DIMENSIONS,
+} from '../../constants';
 
 /**
  * Cloud Component Node Data Interface
@@ -28,21 +35,28 @@ export const CloudComponentNode: React.FC<NodeProps<CloudComponentNodeData>> = (
   const color = data.color || data.component.color;
 
   const getNodeStyles = () => {
+    // Convert hex to rgba with alpha
+    const hexToRgba = (hex: string, alpha: number) => {
+      const r = parseInt(hex.slice(1, 3), 16);
+      const g = parseInt(hex.slice(3, 5), 16);
+      const b = parseInt(hex.slice(5, 7), 16);
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    };
+
     const baseStyles = {
-      padding: '12px 16px',
-      borderRadius: '8px',
-      border: '2px solid',
-      minWidth: '150px',
-      maxWidth: '250px',
+      padding: SPACING.padding.node,
+      borderRadius: BORDER_RADIUS.large,
+      border: 'none',
+      minWidth: NODE_DIMENSIONS.minWidth,
+      maxWidth: NODE_DIMENSIONS.maxWidth,
       textAlign: 'center' as const,
-      backgroundColor: 'var(--background-primary)',
-      color: 'var(--text-normal)',
-      fontFamily: 'var(--font-interface)',
-      fontSize: '14px',
+      backgroundColor: hexToRgba(color, 0.15),
+      color: UI_COLORS.textNormal,
+      fontFamily: UI_COLORS.fontInterface,
+      fontSize: FONT_SIZES.large,
       boxShadow: selected
-        ? '0 0 0 2px var(--interactive-accent)'
+        ? `0 0 0 3px ${UI_COLORS.interactiveAccent}`
         : '0 2px 4px rgba(0,0,0,0.1)',
-      borderColor: color,
       position: 'relative' as const,
     };
 
@@ -51,11 +65,11 @@ export const CloudComponentNode: React.FC<NodeProps<CloudComponentNodeData>> = (
 
   const providerBadgeStyles = {
     position: 'absolute' as const,
-    top: '4px',
-    right: '4px',
-    fontSize: '9px',
-    padding: '2px 6px',
-    borderRadius: '3px',
+    top: SPACING.small,
+    right: SPACING.small,
+    fontSize: FONT_SIZES.tiny,
+    padding: SPACING.padding.compact,
+    borderRadius: BORDER_RADIUS.small,
     backgroundColor: color,
     color: '#fff',
     fontWeight: 600,
@@ -74,16 +88,16 @@ export const CloudComponentNode: React.FC<NodeProps<CloudComponentNodeData>> = (
       <div style={providerBadgeStyles}>{data.component.provider}</div>
 
       {/* Component name */}
-      <div style={{ fontWeight: 600, marginBottom: '4px', marginTop: '8px' }}>
+      <div style={{ fontWeight: 600, marginBottom: SPACING.small, marginTop: SPACING.large }}>
         {data.label}
       </div>
 
       {/* Component type */}
       <div
         style={{
-          fontSize: '11px',
-          color: 'var(--text-muted)',
-          marginBottom: '4px',
+          fontSize: FONT_SIZES.small,
+          color: UI_COLORS.textMuted,
+          marginBottom: SPACING.small,
           fontStyle: 'italic',
         }}
       >
@@ -94,11 +108,11 @@ export const CloudComponentNode: React.FC<NodeProps<CloudComponentNodeData>> = (
       {data.properties && Object.keys(data.properties).length > 0 && (
         <div
           style={{
-            fontSize: '10px',
-            color: 'var(--text-faint)',
-            marginTop: '8px',
-            borderTop: '1px solid var(--background-modifier-border)',
-            paddingTop: '6px',
+            fontSize: FONT_SIZES.extraSmall,
+            color: UI_COLORS.textFaint,
+            marginTop: SPACING.large,
+            borderTop: `1px solid ${UI_COLORS.backgroundModifierBorder}`,
+            paddingTop: SPACING.medium,
           }}
         >
           {Object.entries(data.properties)
@@ -116,10 +130,10 @@ export const CloudComponentNode: React.FC<NodeProps<CloudComponentNodeData>> = (
         <div
           style={{
             position: 'absolute',
-            bottom: '4px',
-            left: '4px',
-            fontSize: '10px',
-            color: 'var(--text-faint)',
+            bottom: SPACING.small,
+            left: SPACING.small,
+            fontSize: FONT_SIZES.extraSmall,
+            color: UI_COLORS.textFaint,
           }}
         >
           📝

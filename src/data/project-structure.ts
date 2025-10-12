@@ -1,7 +1,46 @@
+/**
+ * Project Structure Management
+ *
+ * Provides utilities for creating, validating, and discovering BAC4 project
+ * folder structures in an Obsidian vault. Defines the standard folder layout
+ * and enforces consistency across projects.
+ *
+ * **Standard Project Layout:**
+ * ```
+ * project-name/
+ * ├── diagrams/       # .bac4 diagram files
+ * ├── components/     # Custom component definitions
+ * ├── prompts/        # AI prompts and templates
+ * ├── reports/        # Generated reports
+ * ├── project.json    # Project metadata
+ * └── README.md       # Project documentation
+ * ```
+ *
+ * @module project-structure
+ * @example
+ * ```ts
+ * // Create a new project
+ * const structure = await createProjectStructure(vault, 'my-app', 'projects');
+ * // Creates: projects/my-app/ with all subfolders
+ *
+ * // Validate existing folder
+ * if (await isValidProject(vault, 'projects/my-app')) {
+ *   console.log('Valid BAC4 project');
+ * }
+ *
+ * // Find all projects
+ * const projects = await findAllProjects(vault, 'projects');
+ * ```
+ */
+
 import { TFolder, Vault } from 'obsidian';
 
 /**
- * BAC4 Project Folder Structure
+ * BAC4 Project folder structure definition
+ *
+ * Defines paths to all standard folders in a BAC4 project.
+ *
+ * @interface ProjectStructure
  */
 export interface ProjectStructure {
   root: string;
@@ -13,6 +52,10 @@ export interface ProjectStructure {
 
 /**
  * Required files in a BAC4 project
+ *
+ * Defines paths to required files that must exist for a valid BAC4 project.
+ *
+ * @interface ProjectFiles
  */
 export interface ProjectFiles {
   metadata: string; // project.json
@@ -20,7 +63,27 @@ export interface ProjectFiles {
 }
 
 /**
- * Get the folder structure for a BAC4 project
+ * Get the folder structure paths for a BAC4 project
+ *
+ * Constructs the full paths for all folders in a BAC4 project based on
+ * the project name and base location. Does not create any folders.
+ *
+ * @param projectName - Name of the project (will be used as folder name)
+ * @param baseLocation - Base location in vault (e.g., 'projects', 'architecture')
+ * @returns ProjectStructure object with all folder paths
+ *
+ * @example
+ * ```ts
+ * const structure = getProjectStructure('ecommerce-app', 'projects');
+ * // Returns:
+ * // {
+ * //   root: 'projects/ecommerce-app',
+ * //   diagrams: 'projects/ecommerce-app/diagrams',
+ * //   components: 'projects/ecommerce-app/components',
+ * //   prompts: 'projects/ecommerce-app/prompts',
+ * //   reports: 'projects/ecommerce-app/reports'
+ * // }
+ * ```
  */
 export function getProjectStructure(projectName: string, baseLocation: string): ProjectStructure {
   const root = `${baseLocation}/${projectName}`;
@@ -34,7 +97,24 @@ export function getProjectStructure(projectName: string, baseLocation: string): 
 }
 
 /**
- * Get the required files for a BAC4 project
+ * Get the required file paths for a BAC4 project
+ *
+ * Constructs the paths for required files (metadata and README) in a BAC4 project.
+ * Does not create any files.
+ *
+ * @param projectName - Name of the project
+ * @param baseLocation - Base location in vault
+ * @returns ProjectFiles object with paths to required files
+ *
+ * @example
+ * ```ts
+ * const files = getProjectFiles('ecommerce-app', 'projects');
+ * // Returns:
+ * // {
+ * //   metadata: 'projects/ecommerce-app/project.json',
+ * //   readme: 'projects/ecommerce-app/README.md'
+ * // }
+ * ```
  */
 export function getProjectFiles(projectName: string, baseLocation: string): ProjectFiles {
   const root = `${baseLocation}/${projectName}`;
@@ -45,7 +125,32 @@ export function getProjectFiles(projectName: string, baseLocation: string): Proj
 }
 
 /**
- * Create the folder structure for a new BAC4 project
+ * Create the complete folder structure for a new BAC4 project
+ *
+ * Creates all required folders for a new BAC4 project: root, diagrams,
+ * components, prompts, and reports. If folders already exist, this will
+ * throw an error from Obsidian's vault API.
+ *
+ * @param vault - Obsidian vault instance
+ * @param projectName - Name of the new project
+ * @param baseLocation - Base location in vault where project will be created
+ * @returns Promise resolving to ProjectStructure with paths to created folders
+ * @throws Error if folders already exist or creation fails
+ *
+ * @example
+ * ```ts
+ * try {
+ *   const structure = await createProjectStructure(
+ *     vault,
+ *     'ecommerce-app',
+ *     'projects'
+ *   );
+ *   console.log('Project created at:', structure.root);
+ *   // Now create diagrams in structure.diagrams folder
+ * } catch (error) {
+ *   console.error('Failed to create project:', error);
+ * }
+ * ```
  */
 export async function createProjectStructure(
   vault: Vault,
@@ -66,6 +171,28 @@ export async function createProjectStructure(
 
 /**
  * Validate if a folder is a valid BAC4 project
+ *
+ * Checks if a folder contains the required structure and files to be considered
+ * a valid BAC4 project. Validates:
+ * - Root folder exists and is a folder
+ * - Required subfolders exist (diagrams, components, prompts, reports)
+ * - Required files exist (project.json)
+ *
+ * @param vault - Obsidian vault instance
+ * @param projectPath - Path to the potential project folder
+ * @returns Promise resolving to true if valid, false otherwise
+ *
+ * @example
+ * ```ts
+ * const isValid = await isValidProject(vault, 'projects/ecommerce-app');
+ * if (isValid) {
+ *   console.log('This is a valid BAC4 project');
+ *   // Safe to use project operations
+ * } else {
+ *   console.log('Not a valid BAC4 project');
+ *   // Prompt user to initialize or fix structure
+ * }
+ * ```
  */
 export async function isValidProject(vault: Vault, projectPath: string): Promise<boolean> {
   try {
@@ -100,7 +227,28 @@ export async function isValidProject(vault: Vault, projectPath: string): Promise
 }
 
 /**
- * Get all BAC4 projects in the vault
+ * Discover all BAC4 projects in a base location
+ *
+ * Scans a base folder for valid BAC4 projects by checking each subfolder
+ * against the validation criteria. Returns an array of project paths.
+ *
+ * @param vault - Obsidian vault instance
+ * @param baseLocation - Base folder to scan (e.g., 'projects', 'architecture')
+ * @returns Promise resolving to array of project paths
+ *
+ * @example
+ * ```ts
+ * const projects = await findAllProjects(vault, 'projects');
+ * console.log(`Found ${projects.length} BAC4 projects:`);
+ * for (const projectPath of projects) {
+ *   console.log(' -', projectPath);
+ * }
+ * // Output:
+ * // Found 3 BAC4 projects:
+ * //  - projects/ecommerce-app
+ * //  - projects/mobile-api
+ * //  - projects/data-pipeline
+ * ```
  */
 export async function findAllProjects(vault: Vault, baseLocation: string): Promise<string[]> {
   const projects: string[] = [];

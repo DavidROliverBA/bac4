@@ -4,6 +4,14 @@
  */
 
 import * as React from 'react';
+import {
+  FONT_SIZES,
+  SPACING,
+  UI_COLORS,
+  BORDER_RADIUS,
+  TRANSITIONS,
+  SHADOWS,
+} from '../../constants';
 
 interface Breadcrumb {
   label: string;
@@ -48,13 +56,13 @@ export const Breadcrumbs: React.FC<BreadcrumbsProps> = ({
       style={{
         display: 'flex',
         alignItems: 'center',
-        gap: '8px',
-        padding: '6px 12px',
-        background: 'var(--background-primary)',
-        border: '1px solid var(--background-modifier-border)',
-        borderRadius: '6px',
-        fontSize: '12px',
-        fontFamily: 'var(--font-interface)',
+        gap: SPACING.large,
+        padding: SPACING.padding.input,
+        background: UI_COLORS.backgroundPrimary,
+        border: `1px solid ${UI_COLORS.backgroundModifierBorder}`,
+        borderRadius: BORDER_RADIUS.normal,
+        fontSize: FONT_SIZES.medium,
+        fontFamily: UI_COLORS.fontInterface,
       }}
     >
       {breadcrumbs.map((crumb, index) => {
@@ -70,43 +78,43 @@ export const Breadcrumbs: React.FC<BreadcrumbsProps> = ({
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '4px',
-                padding: '6px 12px',
+                gap: SPACING.small,
+                padding: SPACING.padding.input,
                 background: isCurrent
-                  ? 'var(--background-secondary)'
+                  ? UI_COLORS.backgroundSecondary
                   : isChild
-                  ? 'var(--interactive-accent)'
+                  ? UI_COLORS.interactiveAccent
                   : 'transparent',
                 color: isCurrent
-                  ? 'var(--text-normal)'
+                  ? UI_COLORS.textNormal
                   : isChild
-                  ? 'var(--text-on-accent)'
-                  : 'var(--text-muted)',
+                  ? UI_COLORS.textOnAccent
+                  : UI_COLORS.textMuted,
                 border: isCurrent
-                  ? '1px solid var(--background-modifier-border)'
+                  ? `1px solid ${UI_COLORS.backgroundModifierBorder}`
                   : isChild
-                  ? '2px solid var(--interactive-accent)'
+                  ? `2px solid ${UI_COLORS.interactiveAccent}`
                   : 'none',
-                borderRadius: '6px',
+                borderRadius: BORDER_RADIUS.normal,
                 cursor: isCurrent ? 'default' : 'pointer',
-                fontSize: '13px',
+                fontSize: FONT_SIZES.normal,
                 fontWeight: isChild ? 600 : isCurrent ? 500 : 400,
                 opacity: 1,
-                transition: 'all 0.2s ease',
-                boxShadow: isChild ? '0 2px 4px rgba(0,0,0,0.1)' : 'none',
+                transition: `all ${TRANSITIONS.normal} ${TRANSITIONS.easing}`,
+                boxShadow: isChild ? SHADOWS.subtle : 'none',
               }}
               onMouseEnter={(e) => {
                 if (!isCurrent && isChild) {
                   e.currentTarget.style.transform = 'translateY(-1px)';
-                  e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
+                  e.currentTarget.style.boxShadow = SHADOWS.normal;
                 } else if (!isCurrent) {
-                  e.currentTarget.style.background = 'var(--background-modifier-hover)';
+                  e.currentTarget.style.background = UI_COLORS.backgroundModifierHover;
                 }
               }}
               onMouseLeave={(e) => {
                 if (!isCurrent && isChild) {
                   e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+                  e.currentTarget.style.boxShadow = SHADOWS.subtle;
                 } else if (!isCurrent) {
                   e.currentTarget.style.background = 'transparent';
                 }
@@ -126,8 +134,8 @@ export const Breadcrumbs: React.FC<BreadcrumbsProps> = ({
             {!isLast && (
               <span
                 style={{
-                  color: 'var(--text-accent)',
-                  fontSize: '16px',
+                  color: UI_COLORS.textAccent,
+                  fontSize: FONT_SIZES.extraLarge,
                   fontWeight: 600,
                 }}
               >

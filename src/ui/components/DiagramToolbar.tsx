@@ -4,6 +4,14 @@
  */
 
 import * as React from 'react';
+import {
+  FONT_SIZES,
+  SPACING,
+  UI_COLORS,
+  BORDER_RADIUS,
+  TRANSITIONS,
+  SHADOWS,
+} from '../../constants';
 
 interface DiagramToolbarProps {
   diagramType: 'context' | 'container' | 'component';
@@ -114,14 +122,14 @@ export const DiagramToolbar: React.FC<DiagramToolbarProps> = ({
       style={{
         display: 'flex',
         flexDirection: 'column',
-        gap: '8px',
-        padding: '12px',
-        background: 'var(--background-primary)',
-        border: '1px solid var(--background-modifier-border)',
-        borderRadius: '6px',
+        gap: SPACING.medium,
+        padding: SPACING.padding.card,
+        background: UI_COLORS.backgroundPrimary,
+        border: `1px solid ${UI_COLORS.backgroundModifierBorder}`,
+        borderRadius: BORDER_RADIUS.large,
         minWidth: '200px',
         maxWidth: '250px',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+        boxShadow: SHADOWS.normal,
       }}
     >
       {/* Diagram Type Indicator */}
@@ -129,11 +137,11 @@ export const DiagramToolbar: React.FC<DiagramToolbarProps> = ({
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '12px',
-          padding: '8px 12px',
+          gap: SPACING.large,
+          padding: SPACING.padding.input,
           background: `linear-gradient(135deg, ${typeColor.bg}15, ${typeColor.bg}05)`,
           border: `2px solid ${typeColor.bg}`,
-          borderRadius: '6px',
+          borderRadius: BORDER_RADIUS.large,
         }}
       >
         <div
@@ -147,9 +155,9 @@ export const DiagramToolbar: React.FC<DiagramToolbarProps> = ({
         />
         <span
           style={{
-            fontSize: '13px',
+            fontSize: FONT_SIZES.medium,
             fontWeight: 600,
-            color: 'var(--text-normal)',
+            color: UI_COLORS.textNormal,
             letterSpacing: '0.5px',
           }}
         >
@@ -162,7 +170,7 @@ export const DiagramToolbar: React.FC<DiagramToolbarProps> = ({
         style={{
           display: 'flex',
           flexDirection: 'column',
-          gap: '8px',
+          gap: SPACING.medium,
         }}
       >
         {tools.map((tool) => (
@@ -172,16 +180,16 @@ export const DiagramToolbar: React.FC<DiagramToolbarProps> = ({
             onDragStart={(e) => onDragStart(e, tool)}
             onClick={() => onAddNode(tool.type, tool.data)}
             style={{
-              padding: '8px 16px',
+              padding: SPACING.padding.input,
               background: `linear-gradient(135deg, ${tool.color}25, ${tool.color}10)`,
               border: `2px solid ${tool.color}`,
-              borderRadius: '6px',
-              color: 'var(--text-normal)',
+              borderRadius: BORDER_RADIUS.large,
+              color: UI_COLORS.textNormal,
               cursor: 'grab',
-              fontSize: '13px',
+              fontSize: FONT_SIZES.medium,
               fontWeight: 600,
               whiteSpace: 'nowrap',
-              transition: 'all 0.2s ease',
+              transition: `all ${TRANSITIONS.normal} ${TRANSITIONS.easing}`,
               boxShadow: `0 2px 4px ${tool.color}20`,
             }}
             onMouseEnter={(e) => {

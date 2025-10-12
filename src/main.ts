@@ -1,13 +1,39 @@
-import { Plugin, WorkspaceLeaf } from 'obsidian';
+import { Plugin, WorkspaceLeaf, TFile } from 'obsidian';
 import { BAC4Settings } from './core/settings';
 import { DEFAULT_SETTINGS, COMMAND_OPEN_DASHBOARD, COMMAND_CREATE_PROJECT, COMMAND_OPEN_SETTINGS, VIEW_TYPE_CANVAS } from './core/constants';
 import { BAC4SettingsTab } from './ui/settings-tab';
 import { BAC4CanvasView } from './ui/canvas-view';
+import { hasBac4Diagram } from './utils/frontmatter-parser';
 import './styles.css';
 
 /**
  * BAC4 Plugin - Main entry point
- * AI-Native Cloud Architecture Management for Obsidian
+ *
+ * AI-Native Cloud Architecture Management for Obsidian.
+ * Provides visual C4 model diagram editing with cloud component libraries,
+ * hierarchical navigation, and MCP integration for AI-assisted architecture.
+ *
+ * **Core Features:**
+ * - Visual C4 diagram editing (Context, Container, Component)
+ * - Hierarchical drill-down navigation
+ * - AWS/Azure/GCP component libraries
+ * - Automatic diagram relationships
+ * - Dashboard for system landscape view
+ * - .bac4 file format for diagrams
+ *
+ * **Plugin Lifecycle:**
+ * 1. onload() - Initialize views, commands, event handlers
+ * 2. User interacts with diagrams
+ * 3. onunload() - Clean up and save settings
+ *
+ * @class BAC4Plugin
+ * @extends Plugin
+ *
+ * @example
+ * ```ts
+ * // Plugin is automatically instantiated by Obsidian
+ * // Access via: this.app.plugins.plugins['bac4-plugin']
+ * ```
  */
 export default class BAC4Plugin extends Plugin {
   settings!: BAC4Settings;
@@ -54,10 +80,13 @@ export default class BAC4Plugin extends Plugin {
       await this.openDashboard();
     });
 
-    // Intercept file opens to prevent duplicate tabs for .bac4 files
+    // Intercept file opens to handle both .bac4 and .md diagram files
     this.registerEvent(
-      this.app.workspace.on('file-open', (file) => {
-        if (file && file.extension === 'bac4') {
+      this.app.workspace.on('file-open', async (file) => {
+        if (!file) return;
+
+        // Handle .bac4 files - prevent duplicate tabs
+        if (file.extension === 'bac4') {
           console.log('BAC4: file-open event for', file.path);
 
           // Use setTimeout to ensure all leaves are fully loaded
@@ -86,6 +115,35 @@ export default class BAC4Plugin extends Plugin {
             }
           }, 50); // Wait 50ms for view to fully initialize
         }
+
+        // Handle .md files - check for BAC4 diagram frontmatter
+        if (file.extension === 'md') {
+          console.log('BAC4: Checking markdown file for diagram data:', file.path);
+
+          try {
+            // Read file content
+            const content = await this.app.vault.read(file as TFile);
+
+            // Check if it has BAC4 diagram frontmatter
+            if (hasBac4Diagram(content)) {
+              console.log('BAC4: Found BAC4 diagram in markdown, switching to canvas view');
+
+              // Get active leaf
+              const activeLeaf = this.app.workspace.activeLeaf;
+
+              // Check if already in canvas view
+              if (activeLeaf && activeLeaf.view.getViewType() !== VIEW_TYPE_CANVAS) {
+                // Switch to canvas view
+                await activeLeaf.setViewState({
+                  type: VIEW_TYPE_CANVAS,
+                  state: { file: file.path }
+                });
+              }
+            }
+          } catch (error) {
+            console.error('BAC4: Error checking markdown file:', error);
+          }
+        }
       })
     );
 
@@ -101,17 +159,50 @@ export default class BAC4Plugin extends Plugin {
     console.log('BAC4 Plugin unloaded');
   }
 
+  /**
+   * Load plugin settings from disk
+   *
+   * Loads saved settings from Obsidian's data.json, merging with defaults.
+   *
+   * @returns Promise that resolves when settings are loaded
+   */
   async loadSettings() {
     this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
   }
 
+  /**
+   * Save plugin settings to disk
+   *
+   * Persists current settings to Obsidian's data.json.
+   *
+   * @returns Promise that resolves when settings are saved
+   */
   async saveSettings() {
     await this.saveData(this.settings);
   }
 
   /**
    * Open BAC4 Dashboard (main Context diagram)
-   * Creates Context diagram and relationships file if they don't exist
+   *
+   * Opens or creates the main Context diagram (system landscape view).
+   * This is the entry point for the diagram hierarchy. If the Context
+   * diagram doesn't exist, it will be created along with the relationships
+   * file for tracking diagram hierarchy.
+   *
+   * **Auto-creation:**
+   * - Creates dashboard directory if needed
+   * - Creates empty Context.bac4 if it doesn't exist
+   * - Initializes diagram-relationships.json
+   * - Registers Context diagram in relationships
+   *
+   * @returns Promise that resolves when dashboard is opened
+   *
+   * @example
+   * ```ts
+   * // Open dashboard from command palette
+   * await plugin.openDashboard();
+   * // Context.bac4 opens in canvas view
+   * ```
    */
   async openDashboard(): Promise<void> {
     console.log('BAC4: Opening dashboard...');
@@ -161,6 +252,20 @@ export default class BAC4Plugin extends Plugin {
 
   /**
    * Open canvas view in a NEW tab (for child diagram navigation)
+   *
+   * Used for drill-down navigation to keep parent diagram visible.
+   * When double-clicking a node with a child diagram, this opens the
+   * child in a new tab instead of replacing the current view.
+   *
+   * @param filePath - Path to the .bac4 diagram file to open
+   * @returns Promise that resolves when new tab is opened
+   *
+   * @example
+   * ```ts
+   * // User double-clicks "API Gateway" node in Context diagram
+   * await plugin.openCanvasViewInNewTab('API_Gateway.bac4');
+   * // Opens API_Gateway container diagram in new tab
+   * ```
    */
   async openCanvasViewInNewTab(filePath: string): Promise<void> {
     console.log('BAC4: Opening canvas in new tab:', filePath);
@@ -180,6 +285,32 @@ export default class BAC4Plugin extends Plugin {
     console.log('BAC4: Opened in new tab');
   }
 
+  /**
+   * Open canvas view for a diagram file
+   *
+   * Primary method for opening .bac4 diagrams in the canvas view.
+   * Handles multiple scenarios:
+   * - No path: Create new "Untitled" diagram
+   * - Path provided + already open: Activate existing tab
+   * - Path provided + not open: Open in current/new leaf
+   *
+   * **Duplicate Prevention:**
+   * Checks if file is already open before creating new leaf.
+   *
+   * @param filePath - Optional path to .bac4 file. If omitted, creates new diagram.
+   * @returns Promise that resolves when diagram is opened
+   *
+   * @example
+   * ```ts
+   * // Create new diagram
+   * await plugin.openCanvasView();
+   * // Creates Untitled.bac4
+   *
+   * // Open existing diagram
+   * await plugin.openCanvasView('MySystem.bac4');
+   * // Opens MySystem.bac4 in canvas view
+   * ```
+   */
   async openCanvasView(filePath?: string): Promise<void> {
     const { workspace } = this.app;
 
@@ -239,6 +370,16 @@ export default class BAC4Plugin extends Plugin {
     }
   }
 
+  /**
+   * Register all plugin commands
+   *
+   * Registers commands that appear in the command palette:
+   * - Open Dashboard: Opens main Context diagram
+   * - Create New Project: Project structure creation (TODO)
+   * - Open Settings: Opens plugin settings tab
+   *
+   * @private
+   */
   private registerCommands() {
     // Open Dashboard
     this.addCommand({

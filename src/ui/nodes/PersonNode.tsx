@@ -5,6 +5,12 @@
 
 import * as React from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
+import {
+  FONT_SIZES,
+  SPACING,
+  UI_COLORS,
+  DEFAULT_NODE_COLOR,
+} from '../../constants';
 
 export interface PersonNodeData {
   label: string;
@@ -13,7 +19,7 @@ export interface PersonNodeData {
 }
 
 export const PersonNode: React.FC<NodeProps<PersonNodeData>> = ({ data, selected }) => {
-  const color = data.color || '#7ED321';
+  const color = data.color || DEFAULT_NODE_COLOR;
 
   // Convert hex to rgba with alpha
   const hexToRgba = (hex: string, alpha: number) => {
@@ -30,7 +36,7 @@ export const PersonNode: React.FC<NodeProps<PersonNodeData>> = ({ data, selected
         flexDirection: 'column',
         alignItems: 'center',
         minWidth: '140px',
-        padding: '16px',
+        padding: SPACING.container,
       }}
     >
       <Handle type="target" position={Position.Top} style={{ background: color, width: '12px', height: '12px' }} />
@@ -41,14 +47,14 @@ export const PersonNode: React.FC<NodeProps<PersonNodeData>> = ({ data, selected
           width: '60px',
           height: '60px',
           borderRadius: '50%',
-          border: selected ? '3px solid var(--interactive-accent)' : `2px solid ${color}`,
-          backgroundColor: hexToRgba(color, 0.15),
+          border: 'none',
+          backgroundColor: hexToRgba(color, 0.3),
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           fontSize: '32px',
-          marginBottom: '12px',
-          boxShadow: selected ? '0 0 0 2px var(--interactive-accent)' : '0 2px 4px rgba(0,0,0,0.1)',
+          marginBottom: SPACING.extraLarge,
+          boxShadow: selected ? `0 0 0 3px ${UI_COLORS.interactiveAccent}` : '0 2px 4px rgba(0,0,0,0.15)',
         }}
       >
         👤
@@ -57,12 +63,12 @@ export const PersonNode: React.FC<NodeProps<PersonNodeData>> = ({ data, selected
       {/* Label */}
       <div
         style={{
-          fontFamily: 'var(--font-interface)',
-          fontSize: '14px',
+          fontFamily: UI_COLORS.fontInterface,
+          fontSize: FONT_SIZES.large,
           fontWeight: 600,
-          color: 'var(--text-normal)',
+          color: UI_COLORS.textNormal,
           textAlign: 'center',
-          marginBottom: data.role ? '4px' : '0',
+          marginBottom: data.role ? SPACING.small : '0',
         }}
       >
         {data.label}
@@ -72,8 +78,8 @@ export const PersonNode: React.FC<NodeProps<PersonNodeData>> = ({ data, selected
       {data.role && (
         <div
           style={{
-            fontSize: '12px',
-            color: 'var(--text-muted)',
+            fontSize: FONT_SIZES.medium,
+            color: UI_COLORS.textMuted,
             textAlign: 'center',
           }}
         >

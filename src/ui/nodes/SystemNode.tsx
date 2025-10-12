@@ -5,6 +5,12 @@
 
 import * as React from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
+import {
+  FONT_SIZES,
+  SPACING,
+  UI_COLORS,
+  DEFAULT_NODE_COLOR,
+} from '../../constants';
 
 export interface SystemNodeData {
   label: string;
@@ -15,7 +21,7 @@ export interface SystemNodeData {
 }
 
 export const SystemNode: React.FC<NodeProps<SystemNodeData>> = ({ data, selected }) => {
-  const color = data.color || '#4A90E2';
+  const color = data.color || DEFAULT_NODE_COLOR;
 
   // Convert hex to rgba with alpha
   const hexToRgba = (hex: string, alpha: number) => {
@@ -26,27 +32,20 @@ export const SystemNode: React.FC<NodeProps<SystemNodeData>> = ({ data, selected
   };
 
   const getNodeStyles = () => {
-    // Enhanced border for nodes with children
-    const borderStyle = data.external
-      ? '2px dashed #666'
-      : data.hasChildDiagram
-      ? `4px solid ${color}`
-      : `3px solid ${color}`;
-
     return {
       padding: '20px 24px',
       borderRadius: '12px',
-      border: borderStyle,
+      border: 'none',
       minWidth: '200px',
       maxWidth: '300px',
       textAlign: 'center' as const,
-      backgroundColor: data.external ? 'rgba(128, 128, 128, 0.1)' : hexToRgba(color, 0.15),
-      color: 'var(--text-normal)',
-      fontFamily: 'var(--font-interface)',
-      fontSize: '16px',
+      backgroundColor: data.external ? 'rgba(128, 128, 128, 0.3)' : hexToRgba(color, 0.25),
+      color: UI_COLORS.textNormal,
+      fontFamily: UI_COLORS.fontInterface,
+      fontSize: FONT_SIZES.extraLarge,
       fontWeight: 600,
       boxShadow: selected
-        ? '0 0 0 3px var(--interactive-accent)'
+        ? `0 0 0 3px ${UI_COLORS.interactiveAccent}`
         : data.hasChildDiagram
         ? '0 6px 12px rgba(0,0,0,0.2)'
         : '0 4px 8px rgba(0,0,0,0.15)',
@@ -65,16 +64,16 @@ export const SystemNode: React.FC<NodeProps<SystemNodeData>> = ({ data, selected
             position: 'absolute',
             top: '-10px',
             right: '-10px',
-            background: 'var(--interactive-accent)',
+            background: UI_COLORS.interactiveAccent,
             borderRadius: '50%',
             width: '28px',
             height: '28px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: '14px',
+            fontSize: FONT_SIZES.large,
             boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
-            border: '2px solid var(--background-primary)',
+            border: `2px solid ${UI_COLORS.backgroundPrimary}`,
             cursor: 'pointer',
           }}
           title="This node has a child diagram (double-click or right-click to open)"
@@ -84,7 +83,7 @@ export const SystemNode: React.FC<NodeProps<SystemNodeData>> = ({ data, selected
       )}
 
       {/* Label */}
-      <div style={{ marginBottom: data.description ? '8px' : '0' }}>
+      <div style={{ marginBottom: data.description ? SPACING.large : '0' }}>
         {data.label}
       </div>
 
@@ -92,10 +91,10 @@ export const SystemNode: React.FC<NodeProps<SystemNodeData>> = ({ data, selected
       {data.description && (
         <div
           style={{
-            fontSize: '13px',
-            color: 'var(--text-muted)',
+            fontSize: FONT_SIZES.normal,
+            color: UI_COLORS.textMuted,
             fontWeight: 400,
-            marginTop: '8px',
+            marginTop: SPACING.large,
           }}
         >
           {data.description}
@@ -106,9 +105,9 @@ export const SystemNode: React.FC<NodeProps<SystemNodeData>> = ({ data, selected
       {data.external && (
         <div
           style={{
-            fontSize: '10px',
-            color: 'var(--text-faint)',
-            marginTop: '8px',
+            fontSize: FONT_SIZES.extraSmall,
+            color: UI_COLORS.textFaint,
+            marginTop: SPACING.large,
             fontStyle: 'italic',
           }}
         >

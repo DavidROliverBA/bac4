@@ -5,6 +5,12 @@
  */
 
 import { App, Modal } from 'obsidian';
+import {
+  FONT_SIZES,
+  SPACING,
+  UI_COLORS,
+  BORDER_RADIUS,
+} from '../../constants';
 
 interface RenameModalOptions {
   currentName: string;
@@ -42,8 +48,8 @@ export class RenameModal extends Modal {
     formEl.style.cssText = `
       display: flex;
       flex-direction: column;
-      gap: 16px;
-      padding: 12px 0;
+      gap: ${SPACING.container};
+      padding: ${SPACING.padding.card} 0;
     `;
 
     // Add label
@@ -53,8 +59,8 @@ export class RenameModal extends Modal {
     });
     labelEl.style.cssText = `
       font-weight: 600;
-      color: var(--text-normal);
-      margin-bottom: 4px;
+      color: ${UI_COLORS.textNormal};
+      margin-bottom: ${SPACING.tiny};
     `;
 
     // Add input field
@@ -66,13 +72,13 @@ export class RenameModal extends Modal {
 
     this.inputEl.style.cssText = `
       width: 100%;
-      padding: 8px 12px;
-      border: 1px solid var(--background-modifier-border);
-      border-radius: 4px;
-      background: var(--background-primary);
-      color: var(--text-normal);
-      font-size: 14px;
-      font-family: var(--font-interface);
+      padding: ${SPACING.padding.input};
+      border: 1px solid ${UI_COLORS.backgroundModifierBorder};
+      border-radius: ${BORDER_RADIUS.normal};
+      background: ${UI_COLORS.backgroundPrimary};
+      color: ${UI_COLORS.textNormal};
+      font-size: ${FONT_SIZES.normal};
+      font-family: ${UI_COLORS.fontInterface};
     `;
 
     // Focus and select the input text
@@ -86,9 +92,9 @@ export class RenameModal extends Modal {
 
     buttonContainer.style.cssText = `
       display: flex;
-      gap: 8px;
+      gap: ${SPACING.medium};
       justify-content: flex-end;
-      margin-top: 8px;
+      margin-top: ${SPACING.medium};
     `;
 
     // Add Cancel button
@@ -99,13 +105,13 @@ export class RenameModal extends Modal {
     });
 
     cancelBtn.style.cssText = `
-      padding: 6px 16px;
-      background: var(--background-secondary);
-      border: 1px solid var(--background-modifier-border);
-      border-radius: 4px;
-      color: var(--text-normal);
+      padding: ${SPACING.padding.button};
+      background: ${UI_COLORS.backgroundSecondary};
+      border: 1px solid ${UI_COLORS.backgroundModifierBorder};
+      border-radius: ${BORDER_RADIUS.normal};
+      color: ${UI_COLORS.textNormal};
       cursor: pointer;
-      font-size: 14px;
+      font-size: ${FONT_SIZES.normal};
     `;
 
     cancelBtn.addEventListener('click', () => {
@@ -121,13 +127,13 @@ export class RenameModal extends Modal {
     });
 
     submitBtn.style.cssText = `
-      padding: 6px 16px;
-      background: var(--interactive-accent);
-      border: 1px solid var(--interactive-accent);
-      border-radius: 4px;
-      color: var(--text-on-accent);
+      padding: ${SPACING.padding.button};
+      background: ${UI_COLORS.interactiveAccent};
+      border: 1px solid ${UI_COLORS.interactiveAccent};
+      border-radius: ${BORDER_RADIUS.normal};
+      color: ${UI_COLORS.textOnAccent};
       cursor: pointer;
-      font-size: 14px;
+      font-size: ${FONT_SIZES.normal};
       font-weight: 600;
     `;
 

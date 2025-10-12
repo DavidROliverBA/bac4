@@ -6,6 +6,14 @@
 import * as React from 'react';
 import { ComponentDefinition, CloudProvider } from '../../../component-library/types';
 import { ComponentLibraryService } from '../../services/component-library-service';
+import {
+  FONT_SIZES,
+  SPACING,
+  UI_COLORS,
+  BORDER_RADIUS,
+  SHADOWS,
+  Z_INDEX,
+} from '../../constants';
 
 interface ComponentPaletteProps {
   service: ComponentLibraryService;
@@ -55,21 +63,21 @@ export const ComponentPalette: React.FC<ComponentPaletteProps> = ({
       <div
         style={{
           position: 'absolute',
-          right: '16px',
-          top: '16px',
-          zIndex: 10,
+          right: SPACING.container,
+          top: SPACING.container,
+          zIndex: Z_INDEX.panel,
         }}
       >
         <button
           onClick={() => setIsCollapsed(false)}
           style={{
-            padding: '8px 12px',
-            background: 'var(--background-primary)',
-            border: '1px solid var(--background-modifier-border)',
-            borderRadius: '4px',
-            color: 'var(--text-normal)',
+            padding: SPACING.padding.panel,
+            background: UI_COLORS.backgroundPrimary,
+            border: `1px solid ${UI_COLORS.backgroundModifierBorder}`,
+            borderRadius: BORDER_RADIUS.normal,
+            color: UI_COLORS.textNormal,
             cursor: 'pointer',
-            fontSize: '12px',
+            fontSize: FONT_SIZES.medium,
           }}
         >
           Show Components
@@ -82,38 +90,38 @@ export const ComponentPalette: React.FC<ComponentPaletteProps> = ({
     <div
       style={{
         position: 'absolute',
-        right: '16px',
-        top: '16px',
+        right: SPACING.container,
+        top: SPACING.container,
         width: '280px',
         maxHeight: 'calc(100vh - 100px)',
-        background: 'var(--background-primary)',
-        border: '1px solid var(--background-modifier-border)',
-        borderRadius: '8px',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+        background: UI_COLORS.backgroundPrimary,
+        border: `1px solid ${UI_COLORS.backgroundModifierBorder}`,
+        borderRadius: BORDER_RADIUS.large,
+        boxShadow: SHADOWS.strong,
         display: 'flex',
         flexDirection: 'column',
-        zIndex: 10,
+        zIndex: Z_INDEX.panel,
       }}
     >
       {/* Header */}
       <div
         style={{
-          padding: '12px',
-          borderBottom: '1px solid var(--background-modifier-border)',
+          padding: SPACING.padding.panel,
+          borderBottom: `1px solid ${UI_COLORS.backgroundModifierBorder}`,
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
         }}
       >
-        <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 600 }}>Components</h3>
+        <h3 style={{ margin: 0, fontSize: FONT_SIZES.large, fontWeight: 600 }}>Components</h3>
         <button
           onClick={() => setIsCollapsed(true)}
           style={{
             background: 'none',
             border: 'none',
-            color: 'var(--text-muted)',
+            color: UI_COLORS.textMuted,
             cursor: 'pointer',
-            fontSize: '16px',
+            fontSize: FONT_SIZES.extraLarge,
             padding: '0',
           }}
         >
@@ -122,7 +130,7 @@ export const ComponentPalette: React.FC<ComponentPaletteProps> = ({
       </div>
 
       {/* Search */}
-      <div style={{ padding: '8px 12px' }}>
+      <div style={{ padding: SPACING.padding.card }}>
         <input
           type="text"
           placeholder="Search components..."
@@ -130,12 +138,12 @@ export const ComponentPalette: React.FC<ComponentPaletteProps> = ({
           onChange={(e) => setSearchQuery(e.target.value)}
           style={{
             width: '100%',
-            padding: '6px 8px',
-            background: 'var(--background-secondary)',
-            border: '1px solid var(--background-modifier-border)',
-            borderRadius: '4px',
-            color: 'var(--text-normal)',
-            fontSize: '12px',
+            padding: SPACING.padding.input,
+            background: UI_COLORS.backgroundSecondary,
+            border: `1px solid ${UI_COLORS.backgroundModifierBorder}`,
+            borderRadius: BORDER_RADIUS.normal,
+            color: UI_COLORS.textNormal,
+            fontSize: FONT_SIZES.medium,
           }}
         />
       </div>
@@ -143,22 +151,22 @@ export const ComponentPalette: React.FC<ComponentPaletteProps> = ({
       {/* Provider filter */}
       <div
         style={{
-          padding: '0 12px 8px 12px',
+          padding: `0 ${SPACING.padding.panel} ${SPACING.large} ${SPACING.padding.panel}`,
           display: 'flex',
-          gap: '4px',
+          gap: SPACING.small,
           flexWrap: 'wrap',
         }}
       >
         <button
           onClick={() => setSelectedProvider('all')}
           style={{
-            padding: '4px 8px',
-            background: selectedProvider === 'all' ? 'var(--interactive-accent)' : 'var(--background-secondary)',
-            border: '1px solid var(--background-modifier-border)',
-            borderRadius: '3px',
-            color: selectedProvider === 'all' ? '#fff' : 'var(--text-normal)',
+            padding: SPACING.padding.button,
+            background: selectedProvider === 'all' ? UI_COLORS.interactiveAccent : UI_COLORS.backgroundSecondary,
+            border: `1px solid ${UI_COLORS.backgroundModifierBorder}`,
+            borderRadius: BORDER_RADIUS.small,
+            color: selectedProvider === 'all' ? '#fff' : UI_COLORS.textNormal,
             cursor: 'pointer',
-            fontSize: '11px',
+            fontSize: FONT_SIZES.small,
           }}
         >
           All
@@ -168,13 +176,13 @@ export const ComponentPalette: React.FC<ComponentPaletteProps> = ({
             key={provider}
             onClick={() => setSelectedProvider(provider)}
             style={{
-              padding: '4px 8px',
-              background: selectedProvider === provider ? 'var(--interactive-accent)' : 'var(--background-secondary)',
-              border: '1px solid var(--background-modifier-border)',
-              borderRadius: '3px',
-              color: selectedProvider === provider ? '#fff' : 'var(--text-normal)',
+              padding: SPACING.padding.button,
+              background: selectedProvider === provider ? UI_COLORS.interactiveAccent : UI_COLORS.backgroundSecondary,
+              border: `1px solid ${UI_COLORS.backgroundModifierBorder}`,
+              borderRadius: BORDER_RADIUS.small,
+              color: selectedProvider === provider ? '#fff' : UI_COLORS.textNormal,
               cursor: 'pointer',
-              fontSize: '11px',
+              fontSize: FONT_SIZES.small,
               textTransform: 'uppercase',
             }}
           >
@@ -184,21 +192,21 @@ export const ComponentPalette: React.FC<ComponentPaletteProps> = ({
       </div>
 
       {/* Components list */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '0 12px 12px 12px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: `0 ${SPACING.padding.panel} ${SPACING.padding.panel} ${SPACING.padding.panel}` }}>
         {Array.from(groupedComponents.entries()).map(([category, components]) => (
-          <div key={category} style={{ marginBottom: '16px' }}>
+          <div key={category} style={{ marginBottom: SPACING.container }}>
             <div
               style={{
-                fontSize: '11px',
+                fontSize: FONT_SIZES.small,
                 fontWeight: 600,
-                color: 'var(--text-muted)',
-                marginBottom: '6px',
+                color: UI_COLORS.textMuted,
+                marginBottom: SPACING.medium,
                 textTransform: 'uppercase',
               }}
             >
               {category}
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: SPACING.small }}>
               {components.map((component) => (
                 <div
                   key={component.id}
@@ -206,15 +214,15 @@ export const ComponentPalette: React.FC<ComponentPaletteProps> = ({
                   onDragStart={(e) => onDragStart(e, component)}
                   onClick={() => onAddComponent(component)}
                   style={{
-                    padding: '8px',
-                    background: 'var(--background-secondary)',
+                    padding: SPACING.padding.card,
+                    background: UI_COLORS.backgroundSecondary,
                     border: `1px solid ${component.color}`,
-                    borderRadius: '4px',
+                    borderRadius: BORDER_RADIUS.normal,
                     cursor: 'grab',
-                    fontSize: '12px',
+                    fontSize: FONT_SIZES.medium,
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '8px',
+                    gap: SPACING.large,
                   }}
                   title={component.description}
                 >
@@ -230,9 +238,9 @@ export const ComponentPalette: React.FC<ComponentPaletteProps> = ({
                     <div style={{ fontWeight: 500 }}>{component.name}</div>
                     <div
                       style={{
-                        fontSize: '10px',
-                        color: 'var(--text-faint)',
-                        marginTop: '2px',
+                        fontSize: FONT_SIZES.extraSmall,
+                        color: UI_COLORS.textFaint,
+                        marginTop: SPACING.tiny,
                       }}
                     >
                       {component.description.slice(0, 40)}...

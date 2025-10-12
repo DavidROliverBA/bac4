@@ -5,6 +5,12 @@
 
 import * as React from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
+import {
+  FONT_SIZES,
+  SPACING,
+  UI_COLORS,
+  BORDER_RADIUS,
+} from '../../constants';
 
 export interface ContainerNodeData {
   label: string;
@@ -50,17 +56,17 @@ export const ContainerNode: React.FC<NodeProps<ContainerNodeData>> = ({ data, se
     <div
       style={{
         padding: '16px 20px',
-        borderRadius: '8px',
-        border: data.hasChildDiagram ? `3px solid ${color}` : `2px solid ${color}`,
+        borderRadius: BORDER_RADIUS.large,
+        border: 'none',
         minWidth: '180px',
         maxWidth: '260px',
         textAlign: 'center',
-        backgroundColor: hexToRgba(color, 0.08),
-        color: 'var(--text-normal)',
-        fontFamily: 'var(--font-interface)',
-        fontSize: '14px',
+        backgroundColor: hexToRgba(color, 0.2),
+        color: UI_COLORS.textNormal,
+        fontFamily: UI_COLORS.fontInterface,
+        fontSize: FONT_SIZES.large,
         boxShadow: selected
-          ? '0 0 0 2px var(--interactive-accent)'
+          ? `0 0 0 3px ${UI_COLORS.interactiveAccent}`
           : data.hasChildDiagram
           ? '0 5px 10px rgba(0,0,0,0.18)'
           : '0 3px 6px rgba(0,0,0,0.12)',
@@ -76,16 +82,16 @@ export const ContainerNode: React.FC<NodeProps<ContainerNodeData>> = ({ data, se
             position: 'absolute',
             top: '-10px',
             right: '-10px',
-            background: 'var(--interactive-accent)',
+            background: UI_COLORS.interactiveAccent,
             borderRadius: '50%',
             width: '24px',
             height: '24px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: '12px',
+            fontSize: FONT_SIZES.medium,
             boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
-            border: '2px solid var(--background-primary)',
+            border: `2px solid ${UI_COLORS.backgroundPrimary}`,
             cursor: 'pointer',
           }}
           title="This container has a child diagram (double-click or right-click to open)"
@@ -95,8 +101,8 @@ export const ContainerNode: React.FC<NodeProps<ContainerNodeData>> = ({ data, se
       )}
 
       {/* Icon and Label */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '6px' }}>
-        <span style={{ fontSize: '20px' }}>{icon}</span>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: SPACING.large, marginBottom: SPACING.medium }}>
+        <span style={{ fontSize: FONT_SIZES.icon }}>{icon}</span>
         <span style={{ fontWeight: 600 }}>{data.label}</span>
       </div>
 
@@ -104,9 +110,9 @@ export const ContainerNode: React.FC<NodeProps<ContainerNodeData>> = ({ data, se
       {data.technology && (
         <div
           style={{
-            fontSize: '12px',
-            color: 'var(--text-muted)',
-            marginBottom: '6px',
+            fontSize: FONT_SIZES.medium,
+            color: UI_COLORS.textMuted,
+            marginBottom: SPACING.medium,
           }}
         >
           [{data.technology}]
@@ -117,9 +123,9 @@ export const ContainerNode: React.FC<NodeProps<ContainerNodeData>> = ({ data, se
       {data.description && (
         <div
           style={{
-            fontSize: '11px',
-            color: 'var(--text-muted)',
-            marginTop: '8px',
+            fontSize: FONT_SIZES.small,
+            color: UI_COLORS.textMuted,
+            marginTop: SPACING.large,
           }}
         >
           {data.description}

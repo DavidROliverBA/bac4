@@ -27,28 +27,43 @@ The C4 model is a hierarchical approach to software architecture diagrams:
 
 ### Canvas Editor
 - Visual diagram editor using React Flow
-- Drag & drop nodes from toolbars/palettes
+- Drag & drop nodes from unified horizontal toolbar
 - Create edges by dragging from node handles
 - Double-click nodes to drill down to child diagrams
-- Property panel for editing node/edge properties
-- Auto-save to `.bac4` JSON files
+- Property panel for editing node/edge properties (left side, bottom)
+- Auto-save to `.bac4` JSON files (1-second debounce)
+- Export diagrams as PNG, JPEG, or SVG
 
-### Hierarchical Navigation
+### Unified Toolbar (Top)
+All diagram controls consolidated in one horizontal bar:
+- **Diagram Type Selector** - Switch between Context/Container/Component
+- **Node Creation Buttons** - Add nodes appropriate for current diagram type
+- **Breadcrumb Navigation** - Show hierarchy and navigate parent/child diagrams
+- **Diagram Actions** - Rename, Export (PNG/JPEG/SVG), Delete node
+- Responsive layout with automatic wrapping
+
+### Hierarchical Navigation & Linking
 - **Drill-down:** Double-click System → Container diagram, Container → Component diagram
+- **Property Panel Linking:** Select existing diagrams or create new ones from dropdown
+  - System nodes → Link to Container diagrams
+  - Container nodes → Link to Component diagrams
+  - "[+ Create New...]" option auto-creates and links child diagrams
+- **Warning Dialogs:** Prevent accidental link changes
+- **Open Linked Diagram:** Direct navigation button in Property Panel
 - **Breadcrumbs:** Navigate back up the hierarchy
-- **Linking:** Parent-child relationships stored in metadata
+- **Relationships File:** `diagram-relationships.json` tracks all parent-child links
 
 ### Node Types
-- `SystemNode` - For Context diagrams (systems)
-- `PersonNode` - For Context diagrams (actors)
-- `ContainerNode` - For Container diagrams (apps, services, databases)
+- `SystemNode` - For Context diagrams (systems, can link to Container diagrams)
+- `PersonNode` - For Context diagrams (actors/users)
+- `ContainerNode` - For Container diagrams (apps, services, databases, can link to Component diagrams)
 - `CloudComponentNode` - For Component diagrams (AWS/cloud services)
 - `C4Node` - Generic fallback
 
 ### Cloud Component Library
 - AWS service library (Lambda, S3, DynamoDB, etc.)
 - Drag & drop cloud components onto Component diagrams
-- Component palette only shows for Component-level diagrams
+- Component palette only shows for Component-level diagrams (top-right when active)
 - Extensible to Azure and GCP
 
 ## Project Structure
@@ -70,14 +85,18 @@ bac4-plugin/
 │   │   │   ├── ContainerNode.tsx
 │   │   │   └── CloudComponentNode.tsx
 │   │   └── components/                  # UI components
-│   │       ├── ComponentPalette.tsx     # Cloud component palette
-│   │       ├── PropertyPanel.tsx        # Node/edge properties editor
-│   │       ├── DiagramToolbar.tsx       # Diagram-specific tools
-│   │       ├── DiagramActionsToolbar.tsx
-│   │       └── Breadcrumbs.tsx          # Hierarchy navigation
+│   │       ├── ComponentPalette.tsx     # Cloud component palette (top-right)
+│   │       ├── PropertyPanel.tsx        # Node/edge properties + diagram linking (bottom-left)
+│   │       ├── UnifiedToolbar.tsx       # Main toolbar with all controls (top)
+│   │       ├── RenameModal.tsx          # Diagram rename dialog
+│   │       └── DiagramTypeSwitchModal.tsx # Type change warning
 │   ├── services/
 │   │   ├── component-library-service.ts # Cloud component management
-│   │   └── diagram-navigation-service.ts # Drill-down/linking logic
+│   │   └── diagram-navigation-service.ts # Drill-down/linking/relationships logic
+│   ├── types/
+│   │   └── diagram-relationships.ts     # Types for diagram hierarchy
+│   ├── edges/
+│   │   └── DirectionalEdge.tsx          # Custom edge with arrows (→, ←, ↔)
 │   └── data/
 │       ├── file-io.ts                   # File reading/writing
 │       └── project-structure.ts         # Project organization
@@ -94,18 +113,39 @@ bac4-plugin/
 ## Key Technical Details
 
 ### File Format
-Diagrams are stored as `.bac4` JSON files:
+
+**Diagram Files** - Stored as `.bac4` JSON files (pure data, no metadata):
 ```json
 {
-  "metadata": {
-    "diagramType": "context" | "container" | "component",
-    "createdAt": "ISO timestamp",
-    "updatedAt": "ISO timestamp",
-    "parentDiagramId": "optional parent reference",
-    "parentNodeId": "optional node that links here"
-  },
   "nodes": [...],
   "edges": [...]
+}
+```
+
+**Relationships File** - `diagram-relationships.json` in vault root (central registry):
+```json
+{
+  "version": "1.0.0",
+  "diagrams": [
+    {
+      "id": "diagram-123",
+      "filePath": "Context.bac4",
+      "displayName": "Context",
+      "type": "context",
+      "createdAt": "...",
+      "updatedAt": "..."
+    }
+  ],
+  "relationships": [
+    {
+      "parentDiagramId": "diagram-123",
+      "childDiagramId": "diagram-456",
+      "parentNodeId": "node-1",
+      "parentNodeLabel": "Payment System",
+      "createdAt": "..."
+    }
+  ],
+  "updatedAt": "..."
 }
 ```
 
@@ -152,17 +192,51 @@ npm run typecheck    # TypeScript type checking
 
 ## Current Status
 
-### ✅ Completed Features
-- React Flow canvas integration
-- Full interactivity (drag, click, connect)
-- Edge label editing
-- Property panel for nodes and edges
-- Component library integration (AWS)
-- Drill-down navigation
-- Breadcrumb navigation
-- Auto-save
-- Duplicate tab prevention
-- Basic node types (System, Person, Container, CloudComponent)
+### ✅ Completed Features (Sprint 1.2 - Latest)
+- **Canvas Editor**
+  - React Flow canvas integration
+  - Full interactivity (drag, click, connect, pan, zoom)
+  - Auto-save with 1-second debounce
+  - Duplicate tab prevention
+
+- **Unified Toolbar**
+  - Consolidated all controls in one horizontal bar
+  - Diagram type selector (Context/Container/Component)
+  - Node creation buttons (context-aware for each diagram type)
+  - Breadcrumb navigation
+  - Rename diagram button
+  - Export menu (PNG, JPEG, SVG)
+  - Delete node button (context-aware, only enabled when node selected)
+
+- **Hierarchical Navigation & Linking**
+  - Double-click nodes to drill down (System→Container, Container→Component)
+  - Property Panel dropdown to link to existing diagrams
+  - "[+ Create New...]" option to auto-create and link child diagrams
+  - Warning dialogs before overwriting links
+  - "Open Linked Diagram" button in Property Panel
+  - Breadcrumb navigation showing full hierarchy
+  - `diagram-relationships.json` central registry
+
+- **Property Panel**
+  - Node/edge property editing
+  - Edge label quick-select (uses, depends on, calls, etc.)
+  - Directional edges (→, ←, ↔)
+  - Color customization with presets
+  - Diagram linking dropdowns (for System and Container nodes)
+
+- **Node Types**
+  - SystemNode (Context diagrams, can drill down)
+  - PersonNode (Context diagrams)
+  - ContainerNode (Container diagrams, can drill down)
+  - CloudComponentNode (Component diagrams, AWS services)
+  - C4Node (generic fallback)
+
+- **Export & File Management**
+  - Export to PNG (high quality, lossless)
+  - Export to JPEG (smaller size, compressed)
+  - Export to SVG (vector, scalable)
+  - Exports only diagram content (excludes UI controls)
+  - Auto-naming based on diagram file name
 
 ### 📋 Planned Enhancements (from c4-model-enhancement-plan.md)
 
@@ -186,7 +260,7 @@ npm run typecheck    # TypeScript type checking
 1. Create `src/ui/nodes/NewNode.tsx` with component
 2. Export type and data interface
 3. Register in `nodeTypes` object in `canvas-view.tsx`
-4. Add to appropriate toolbar in `DiagramToolbar.tsx`
+4. Add to appropriate diagram type in `UnifiedToolbar.tsx` (in `getTools()` function)
 
 ### Adding a Cloud Provider
 1. Create `component-library/azure/` or `component-library/gcp/`
@@ -203,7 +277,8 @@ npm run typecheck    # TypeScript type checking
 
 - `obsidian` - Obsidian plugin API
 - `react` / `react-dom` - UI framework
-- `reactflow` (now XyFlow) - Canvas/diagram library
+- `reactflow` (XyFlow) - Canvas/diagram library
+- `html-to-image` - Export diagrams to PNG/JPEG/SVG
 - `typescript` - Type safety
 - `esbuild` - Bundler
 - `jest` / `ts-jest` - Testing
@@ -240,6 +315,463 @@ npm run typecheck    # TypeScript type checking
 - All changes should be committed with descriptive messages
 - File changes stored as markdown/JSON for easy diffing
 
+---
+
+## 🎯 Coding Standards & Best Practices
+
+### Component Size Policy 🚨 CRITICAL
+
+**Hard Limits (MUST be enforced):**
+- Files MUST NOT exceed 500 lines → Refactor immediately
+- Files SHOULD NOT exceed 300 lines → Plan refactoring
+- Functions SHOULD NOT exceed 50 lines → Extract helpers
+- React components SHOULD NOT exceed 200 lines → Extract child components
+
+**When a file exceeds 300 lines:**
+1. 🛑 **Stop** adding features to that file
+2. 🔍 **Identify** repeated patterns (forms, buttons, sections)
+3. 🔨 **Extract** to reusable components
+4. ✅ **Apply** constants during extraction
+5. 📝 **Document** with JSDoc
+
+**Current Tech Debt:**
+- `PropertyPanel.tsx` (774 lines) - 🚨 NEEDS DECOMPOSITION
+  - Target components: `<FormField>`, `<FormSection>`, `<ColorPicker>`, `<DiagramLinking>`
+  - Has 15+ repeated form input patterns
+  - Mixing 8+ responsibilities (node editing, edge editing, color picking, linking, etc.)
+
+### React Component Principles
+
+**Separation of Concerns:**
+```typescript
+// ✅ GOOD: Clear separation
+// Presentational component
+export const NodeEditor: React.FC<Props> = ({ node, onUpdate }) => {
+  return <FormField label="Name" value={node.name} onChange={onUpdate} />;
+};
+
+// Business logic in service
+class DiagramService {
+  async updateNode(id: string, data: NodeData): Promise<void> {
+    // File operations, validation, relationship updates
+  }
+}
+
+// ❌ BAD: Mixed concerns
+export const NodeEditor: React.FC<Props> = ({ node }) => {
+  const handleSave = async () => {
+    // Business logic in component - WRONG
+    const content = JSON.stringify(node);
+    await plugin.app.vault.adapter.write(path, content);
+    // More complex operations...
+  };
+  return <div>...</div>;
+};
+```
+
+**Rule of Three - Extract Repeated Patterns:**
+```typescript
+// ❌ BAD: Repeated 15+ times in PropertyPanel.tsx
+<div style={{ marginBottom: '16px' }}>
+  <label style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px' }}>
+    Label
+  </label>
+  <input
+    type="text"
+    value={value}
+    onChange={onChange}
+    style={{ padding: '6px 8px', fontSize: '11px' }}
+  />
+</div>
+
+// ✅ GOOD: Extract to reusable component
+<FormField label="Label" value={value} onChange={onChange} />
+
+// FormField.tsx (~40 lines, reusable across PropertyPanel)
+import { SPACING, FONT_SIZES, UI_COLORS } from '../../constants';
+
+interface FormFieldProps {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+}
+
+export const FormField: React.FC<FormFieldProps> = ({
+  label, value, onChange, placeholder
+}) => (
+  <div style={{ marginBottom: SPACING.gap.wide }}>
+    <label style={{
+      display: 'block',
+      fontSize: FONT_SIZES.small,
+      fontWeight: 600,
+      color: UI_COLORS.textMuted,
+      marginBottom: SPACING.gap.tiny,
+      textTransform: 'uppercase',
+    }}>
+      {label}
+    </label>
+    <input
+      type="text"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      style={{
+        width: '100%',
+        padding: SPACING.padding.input,
+        borderRadius: BORDER_RADIUS.normal,
+        border: `1px solid ${UI_COLORS.border}`,
+        background: UI_COLORS.backgroundSecondary,
+        color: UI_COLORS.textNormal,
+        fontSize: FONT_SIZES.small,
+      }}
+    />
+  </div>
+);
+```
+
+**If you see a pattern 3+ times, extract it to a component!**
+
+### Constants Usage (Strictly Enforced)
+
+**ALWAYS import from constants, NEVER use inline values:**
+```typescript
+// ✅ GOOD
+import { SPACING, FONT_SIZES, UI_COLORS, AUTO_SAVE_DEBOUNCE_MS } from '../../constants';
+
+style={{
+  padding: SPACING.padding.input,
+  fontSize: FONT_SIZES.small,
+  color: UI_COLORS.textNormal,
+}}
+
+setTimeout(save, AUTO_SAVE_DEBOUNCE_MS);
+
+// ❌ BAD (Will be caught in code review)
+style={{ padding: '6px 8px', fontSize: '11px', color: 'var(--text-normal)' }}
+setTimeout(save, 1000);
+```
+
+**When to add a new constant:**
+- Value is used 2+ times across different files
+- Value represents a design token (color, spacing, font size, timing)
+- Value might need configuration/adjustment later
+- Value is a "magic number" that needs explanation
+
+**Constants are organized in:**
+- `src/constants/ui-constants.ts` - Spacing, colors, fonts, dimensions
+- `src/constants/timing-constants.ts` - Debounce delays, timeouts
+- `src/constants/validation-constants.ts` - Limits, types, validation rules
+- `src/constants/export-constants.ts` - Export configurations
+
+### Service Layer Architecture
+
+**Services contain business logic, React components handle UI:**
+```typescript
+// ✅ GOOD: Clear boundaries
+// Service handles all business logic
+class DiagramNavigationService {
+  /**
+   * Creates and links a child diagram
+   * Handles: file creation, relationship tracking, validation
+   */
+  async createChildDiagram(
+    parentPath: string,
+    nodeId: string,
+    nodeLabel: string,
+    parentType: 'context' | 'container',
+    childType: 'container' | 'component'
+  ): Promise<string> {
+    // Complex business logic here
+    // File operations, relationship management, validation
+    return childPath;
+  }
+}
+
+// Component orchestrates services
+const handleDrillDown = async (node: Node) => {
+  try {
+    const childPath = await navigationService.createChildDiagram(
+      filePath, node.id, node.data.label, diagramType, childType
+    );
+    await plugin.openCanvasViewInNewTab(childPath);
+  } catch (error) {
+    console.error('Drill-down failed:', error);
+    alert('Cannot create child diagram');
+  }
+};
+
+// ❌ BAD: Business logic in component
+const handleDrillDown = async (node: Node) => {
+  // All this logic should be in a service!
+  const childName = sanitizeName(node.data.label);
+  const childPath = `${parentDir}/${childName}.bac4`;
+
+  // Check if exists
+  if (await vault.adapter.exists(childPath)) {
+    // ... complex validation
+  }
+
+  // Create file
+  const content = JSON.stringify({ nodes: [], edges: [] });
+  await vault.adapter.write(childPath, content);
+
+  // Update relationships file
+  const relationships = await vault.adapter.read('diagram-relationships.json');
+  // ... complex relationship logic
+
+  // This is all business logic that belongs in a service!
+};
+```
+
+**Service responsibilities:**
+- File I/O operations
+- Data validation and sanitization
+- Relationship management
+- Complex business rules
+- Error handling and recovery
+
+**Component responsibilities:**
+- Rendering UI
+- Handling user interactions
+- Orchestrating services
+- Managing local UI state
+- Displaying feedback to users
+
+### TypeScript Standards (Strict Mode)
+
+**No `any` types - use proper interfaces:**
+```typescript
+// ✅ GOOD: Properly typed
+interface NodeData {
+  label: string;
+  color?: string;
+  description?: string;
+}
+
+const updateNode = (id: string, data: Partial<NodeData>): void => {
+  setNodes((nds) => nds.map((n) =>
+    n.id === id ? { ...n, data: { ...n.data, ...data } } : n
+  ));
+};
+
+// ❌ BAD: Using `any` as an escape hatch
+const updateNode = (id: string, data: any): void => { ... };
+const node = nodeArray as any; // Unsafe cast
+```
+
+**Use type guards for runtime validation:**
+```typescript
+// ✅ GOOD: Type guard with runtime check
+import { DIAGRAM_TYPES, DiagramType } from './constants';
+
+function isValidDiagramType(value: unknown): value is DiagramType {
+  return typeof value === 'string' &&
+         DIAGRAM_TYPES.includes(value as DiagramType);
+}
+
+// Usage
+if (isValidDiagramType(input)) {
+  setDiagramType(input); // TypeScript knows it's safe
+} else {
+  console.error('Invalid diagram type:', input);
+}
+
+// ❌ BAD: Unsafe cast
+const type = input as DiagramType; // No runtime validation!
+setDiagramType(type); // Could crash if input is invalid
+```
+
+### JSDoc for AI-Friendliness
+
+**Document INTENT and USAGE, not implementation details:**
+```typescript
+/**
+ * Creates a child diagram linked to a parent node
+ *
+ * This establishes a hierarchical relationship between diagrams, allowing
+ * users to drill down from Context → Container → Component.
+ *
+ * @param parentPath - Absolute path to parent diagram file (e.g., "Context.bac4")
+ * @param nodeId - ID of parent node to link from (e.g., "node-1")
+ * @param nodeLabel - Label of parent node, used for child diagram filename
+ * @param parentType - Type of parent diagram ("context" or "container")
+ * @param childType - Type of child to create ("container" or "component")
+ *
+ * @returns Absolute path to the created child diagram
+ *
+ * @throws {Error} If parent diagram doesn't exist in relationships file
+ * @throws {Error} If child already exists for this node
+ * @throws {Error} If file system operations fail
+ *
+ * @example
+ * ```typescript
+ * // Create a Container diagram linked to a System node
+ * const childPath = await service.createChildDiagram(
+ *   'diagrams/Context.bac4',
+ *   'node-1',
+ *   'Payment System',
+ *   'context',
+ *   'container'
+ * );
+ * // Returns: 'diagrams/Payment System.bac4'
+ * ```
+ */
+async createChildDiagram(
+  parentPath: string,
+  nodeId: string,
+  nodeLabel: string,
+  parentType: 'context' | 'container',
+  childType: 'container' | 'component'
+): Promise<string> {
+  // Implementation...
+}
+```
+
+**Special markers for AI/Developer guidance:**
+```typescript
+// <AI_MODIFIABLE>
+// This section is designed for extension.
+// Add new cloud providers following the AWS pattern.
+const CLOUD_PROVIDERS = {
+  aws: './aws',
+  // Add: azure: './azure', gcp: './gcp'
+} as const;
+// </AI_MODIFIABLE>
+
+// <TECH_DEBT priority="high" est_hours="3">
+// PropertyPanel.tsx (774 lines) needs decomposition.
+// Extract components: FormField, FormSection, ColorPicker, DiagramLinking
+// See: docs/templates/form-field-template.tsx
+// </TECH_DEBT>
+
+// <PERFORMANCE>
+// This useEffect runs on every node change.
+// Consider memoization if performance degrades.
+// </PERFORMANCE>
+```
+
+**Recognized markers:**
+- `<AI_MODIFIABLE>` - Safe extension point for AI/developers
+- `<DO_NOT_MODIFY>` - Critical logic requiring careful review
+- `<TECH_DEBT>` - Known issues to address (include priority and estimate)
+- `<PERFORMANCE>` - Performance-sensitive code
+- `<EXTRACT_COMPONENT>` - Refactoring opportunity
+
+### Component Templates
+
+**For new React components:**
+```typescript
+/**
+ * [ComponentName]
+ *
+ * @description Brief one-line description of what this component does
+ *
+ * @example
+ * ```tsx
+ * <ComponentName
+ *   label="Node Name"
+ *   value={node.data.label}
+ *   onChange={(val) => updateNode(node.id, { label: val })}
+ * />
+ * ```
+ */
+import * as React from 'react';
+import { FONT_SIZES, SPACING, UI_COLORS, BORDER_RADIUS } from '../../constants';
+
+interface ComponentNameProps {
+  /** Primary label text */
+  label: string;
+  /** Current value */
+  value: string;
+  /** Callback when value changes */
+  onChange: (value: string) => void;
+  /** Optional placeholder text */
+  placeholder?: string;
+}
+
+/**
+ * ComponentName - Brief description
+ */
+export const ComponentName: React.FC<ComponentNameProps> = ({
+  label,
+  value,
+  onChange,
+  placeholder = '',
+}) => {
+  return (
+    <div style={{
+      padding: SPACING.padding.card,
+      fontSize: FONT_SIZES.normal,
+      color: UI_COLORS.textNormal,
+      borderRadius: BORDER_RADIUS.normal,
+    }}>
+      <label>{label}</label>
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+      />
+    </div>
+  );
+};
+```
+
+**Keep components:**
+- Under 200 lines (extract if larger)
+- Single responsibility (one clear purpose)
+- Well-documented with JSDoc
+- Using constants (no inline values)
+- Properly typed (no `any`)
+
+### Refactoring Signals
+
+**Refactor immediately when:**
+- 🚨 File exceeds 500 lines
+- 🚨 Function exceeds 100 lines
+- 🚨 Component has 10+ props
+- 🚨 Code pattern repeated 3+ times
+- 🚨 Business logic mixed with rendering
+- 🚨 Multiple `any` types without justification
+- 🚨 Complex nested conditions (cyclomatic complexity > 10)
+
+**How to decompose a large file:**
+1. **Identify** distinct responsibilities (forms vs display vs logic)
+2. **Extract** shared patterns first (most repeated code)
+3. **Move** business logic to services
+4. **Create** focused, single-purpose components
+5. **Compose** components to rebuild functionality
+6. **Test** each extracted component independently
+
+**Example decomposition (PropertyPanel.tsx):**
+```
+PropertyPanel.tsx (774 lines)
+    ↓
+PropertyPanel.tsx (orchestration, 150 lines)
+    ├── FormField.tsx (reusable input, 40 lines)
+    ├── FormSection.tsx (labeled groups, 30 lines)
+    ├── ColorPicker.tsx (color selection, 80 lines)
+    ├── DiagramLinking.tsx (dropdown + button, 60 lines)
+    └── EdgeDirectionSelector.tsx (arrow buttons, 50 lines)
+```
+
+### Obsidian Plugin Specifics
+
+**Platform patterns to follow:**
+- Use `ItemView` for custom view types
+- Respect Obsidian CSS variables for theming
+- Use `plugin.app.vault.adapter` for all file I/O (NOT Node.js `fs` module)
+- Register views with `VIEW_TYPE_*` constants
+- Clean up resources in `onClose()` lifecycle
+- Handle async operations properly in Obsidian's environment
+
+**React Flow integration:**
+- Keep custom nodes under 100 lines (pure presentation)
+- Use `useNodesState` and `useEdgesState` hooks
+- Don't fight React Flow's patterns - embrace them
+- Custom edge components should be simple and focused
+- Let React Flow handle rendering optimization
+
 ## Notes for Claude
 
 - This is an Obsidian plugin, so it runs inside the Obsidian desktop app
@@ -248,3 +780,29 @@ npm run typecheck    # TypeScript type checking
 - C4 model hierarchy is the core concept - maintain separation of concerns between levels
 - AWS is first cloud provider, but architecture should be extensible
 - User workflow: Create Context → drill down to Container → drill down to Component
+
+### Recent Changes (Sprint 1.2)
+1. **Export Enhancement** - Added PNG/JPEG/SVG export with dropdown menu
+2. **Hierarchical Linking** - Property Panel dropdowns to link/create child diagrams
+3. **Toolbar Consolidation** - Moved all actions to unified horizontal toolbar
+4. **Central Relationships** - All diagram hierarchy in `diagram-relationships.json`
+
+### UI Layout
+```
+┌─────────────────────────────────────────────────────────────┐
+│ [Type] | [+ Node Buttons] | [Breadcrumbs] | [Actions] ←── │ Unified Toolbar
+├─────────────────────────────────────────────────────────────┤
+│                                                    ┌────────┐│
+│                                                    │Component││ Component Palette
+│                                                    │Palette ││ (top-right, only for
+│                                                    └────────┘│  Component diagrams)
+│                                                             │
+│                  CANVAS AREA                                │
+│          (React Flow with nodes and edges)                  │
+│                                                             │
+│ ┌──────────────┐                                           │
+│ │ Property     │                                           │
+│ │ Panel        │ ←─────────────────────────────────────────│ Property Panel
+│ └──────────────┘                            (bottom-left)  │
+└─────────────────────────────────────────────────────────────┘
+```
