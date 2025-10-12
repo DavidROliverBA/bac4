@@ -595,16 +595,33 @@ export class DiagramNavigationService {
     // Rename the file in vault
     await this.plugin.app.fileManager.renameFile(file as TFile, newPath);
 
-    // Update relationships.json with new path
+    // Update relationships.json with new path and displayName
     const data = await this.getRelationshipsData();
     const diagram = data.diagrams.find((d) => d.filePath === oldPath);
 
     if (diagram) {
+      const newDisplayName = fileName.replace('.bac4', '');
       diagram.filePath = newPath;
-      diagram.displayName = fileName.replace('.bac4', '');
+      diagram.displayName = newDisplayName;
       diagram.updatedAt = new Date().toISOString();
+
+      // CRITICAL FIX: Update parentNodeLabel in all relationships pointing to this diagram
+      const relationshipsAsChild = data.relationships.filter(
+        (r) => r.childDiagramId === diagram.id
+      );
+
+      for (const rel of relationshipsAsChild) {
+        console.log(
+          'BAC4: Updating parentNodeLabel in relationship from',
+          rel.parentNodeLabel,
+          'to',
+          newDisplayName
+        );
+        rel.parentNodeLabel = newDisplayName;
+      }
+
       await this.saveRelationshipsData(data);
-      console.log('BAC4: Updated diagram path in relationships');
+      console.log('BAC4: Updated diagram path and related parentNodeLabels in relationships');
     }
 
     console.log('BAC4: Rename complete:', newPath);

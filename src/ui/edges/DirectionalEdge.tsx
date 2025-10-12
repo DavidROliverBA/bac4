@@ -22,6 +22,44 @@ export interface DirectionalEdgeData {
   direction?: 'right' | 'left' | 'both';
 }
 
+// SVG marker definitions (defined once globally)
+const EdgeMarkerDefs: React.FC = () => (
+  <svg style={{ position: 'absolute', width: 0, height: 0 }}>
+    <defs>
+      <marker
+        id="bac4-arrow-end"
+        viewBox="0 0 10 10"
+        refX="9"
+        refY="5"
+        markerWidth="6"
+        markerHeight="6"
+        orient="auto"
+      >
+        <path
+          d="M 0 0 L 10 5 L 0 10 z"
+          fill={UI_COLORS.textMuted}
+        />
+      </marker>
+      <marker
+        id="bac4-arrow-start"
+        viewBox="0 0 10 10"
+        refX="1"
+        refY="5"
+        markerWidth="6"
+        markerHeight="6"
+        orient="auto"
+      >
+        <path
+          d="M 10 0 L 0 5 L 10 10 z"
+          fill={UI_COLORS.textMuted}
+        />
+      </marker>
+    </defs>
+  </svg>
+);
+
+let markersInitialized = false;
+
 export const DirectionalEdge: React.FC<EdgeProps<DirectionalEdgeData>> = ({
   id,
   sourceX,
@@ -50,22 +88,22 @@ export const DirectionalEdge: React.FC<EdgeProps<DirectionalEdgeData>> = ({
     switch (direction) {
       case 'right':
         return {
-          markerEnd: 'url(#arrow-end)',
+          markerEnd: 'url(#bac4-arrow-end)',
           markerStart: undefined,
         };
       case 'left':
         return {
           markerEnd: undefined,
-          markerStart: 'url(#arrow-start)',
+          markerStart: 'url(#bac4-arrow-start)',
         };
       case 'both':
         return {
-          markerEnd: 'url(#arrow-end)',
-          markerStart: 'url(#arrow-start)',
+          markerEnd: 'url(#bac4-arrow-end)',
+          markerStart: 'url(#bac4-arrow-start)',
         };
       default:
         return {
-          markerEnd: 'url(#arrow-end)',
+          markerEnd: 'url(#bac4-arrow-end)',
           markerStart: undefined,
         };
     }
@@ -75,43 +113,11 @@ export const DirectionalEdge: React.FC<EdgeProps<DirectionalEdgeData>> = ({
 
   return (
     <>
-      {/* Define arrow markers in SVG defs */}
-      <svg style={{ position: 'absolute', width: 0, height: 0 }}>
-        <defs>
-          <marker
-            id="arrow-end"
-            viewBox="0 0 10 10"
-            refX="5"
-            refY="5"
-            markerWidth="8"
-            markerHeight="8"
-            orient="auto"
-          >
-            <path
-              d="M 0 0 L 10 5 L 0 10 z"
-              fill={UI_COLORS.textMuted}
-              stroke={UI_COLORS.textMuted}
-              strokeWidth="1"
-            />
-          </marker>
-          <marker
-            id="arrow-start"
-            viewBox="0 0 10 10"
-            refX="5"
-            refY="5"
-            markerWidth="8"
-            markerHeight="8"
-            orient="auto"
-          >
-            <path
-              d="M 10 0 L 0 5 L 10 10 z"
-              fill={UI_COLORS.textMuted}
-              stroke={UI_COLORS.textMuted}
-              strokeWidth="1"
-            />
-          </marker>
-        </defs>
-      </svg>
+      {/* Render marker defs once */}
+      {!markersInitialized && (() => {
+        markersInitialized = true;
+        return <EdgeMarkerDefs />;
+      })()}
 
       {/* Render edge path with markers */}
       <BaseEdge
