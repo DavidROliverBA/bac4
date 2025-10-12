@@ -11,6 +11,7 @@ import * as React from 'react';
 import { useReactFlow } from 'reactflow';
 import { toPng, toJpeg, toSvg } from 'html-to-image';
 import { EXPORT_DELAY_MS, getExportOptions, getExportExtension } from '../../../../constants';
+import { ErrorHandler } from '../../../../utils/error-handling';
 
 export interface UseExportOptions {
   diagramName?: string;
@@ -67,7 +68,7 @@ export function useExport(options: UseExportOptions = {}): ExportHandlers {
       // Validation: Check if diagram has nodes
       const nodes = getNodes();
       if (nodes.length === 0) {
-        alert('No nodes to export');
+        ErrorHandler.showInfo('No nodes to export');
         return;
       }
 
@@ -75,7 +76,10 @@ export function useExport(options: UseExportOptions = {}): ExportHandlers {
       const element = getExportElement();
       if (!element) {
         console.error('Could not find React Flow viewport');
-        alert('Failed to find diagram container');
+        ErrorHandler.handleError(
+          new Error('Export element not found'),
+          'Failed to find diagram container'
+        );
         return;
       }
 
@@ -111,7 +115,8 @@ export function useExport(options: UseExportOptions = {}): ExportHandlers {
           })
           .catch((error) => {
             console.error(`BAC4: ❌ Error exporting ${format.toUpperCase()}:`, error);
-            alert(
+            ErrorHandler.handleError(
+              error,
               `Failed to export diagram as ${format.toUpperCase()}. Check console for details.`
             );
           })

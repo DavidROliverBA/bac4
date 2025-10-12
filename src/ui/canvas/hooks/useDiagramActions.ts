@@ -18,6 +18,7 @@ import type { DiagramNavigationService } from '../../../services/diagram-navigat
 import { RenameModal } from '../../components/RenameModal';
 import { DiagramTypeSwitchModal } from '../../components/DiagramTypeSwitchModal';
 import { getDiagramName } from '../utils/canvas-utils';
+import { ErrorHandler } from '../../../utils/error-handling';
 
 export interface UseDiagramActionsProps {
   app: App;
@@ -86,7 +87,7 @@ export function useDiagramActions(props: UseDiagramActionsProps): DiagramActions
         } catch (error) {
           console.error('BAC4: Error renaming diagram:', error);
           const msg = error instanceof Error ? error.message : 'Unknown error';
-          alert(`Cannot rename diagram: ${msg}`);
+          ErrorHandler.handleError(error, `Cannot rename diagram: ${msg}`);
         }
       },
       onCancel: () => {

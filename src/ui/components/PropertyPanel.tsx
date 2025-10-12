@@ -33,6 +33,7 @@ import {
   DIMENSIONS,
   Z_INDEX,
 } from '../../constants';
+import { ErrorHandler } from '../../utils/error-handling';
 
 // Imported extracted components
 import { FormField } from './form/FormField';
@@ -189,7 +190,7 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
         handlePropertyChange('hasChildDiagram', true);
       } catch (error) {
         console.error('BAC4: Error linking diagram:', error);
-        alert('Failed to link diagram. Check console for details.');
+        ErrorHandler.handleError(error, 'Failed to link diagram. Check console for details.');
       } finally {
         setLoading(false);
       }

@@ -19,6 +19,7 @@ import type BAC4Plugin from '../../../main';
 import type { CanvasNodeData } from '../../../types/canvas-types';
 import type { DiagramNavigationService } from '../../../services/diagram-navigation-service';
 import { canDrillDown, getChildDiagramType, getChildTypeLabel } from '../utils/canvas-utils';
+import { ErrorHandler } from '../../../utils/error-handling';
 
 export interface UseNodeHandlersProps {
   plugin: BAC4Plugin;
@@ -83,7 +84,7 @@ export function useNodeHandlers(props: UseNodeHandlersProps): NodeHandlers {
       // Validate we have a saved diagram
       if (!filePath) {
         console.error('BAC4: Cannot drill down - diagram not saved');
-        alert('Please save this diagram first before creating child diagrams.');
+        ErrorHandler.showInfo('Please save this diagram first before creating child diagrams.');
         return;
       }
 
@@ -144,7 +145,7 @@ export function useNodeHandlers(props: UseNodeHandlersProps): NodeHandlers {
         console.error('Error details:', error);
         console.error('Stack trace:', error instanceof Error ? error.stack : 'N/A');
         const msg = error instanceof Error ? error.message : 'Unknown error';
-        alert(`Cannot open child diagram:\n\n${msg}\n\nCheck console for details.`);
+        ErrorHandler.handleError(error, `Cannot open child diagram:\n\n${msg}\n\nCheck console for details.`);
       }
     },
     [diagramType, filePath, navigationService, plugin, setNodes]
