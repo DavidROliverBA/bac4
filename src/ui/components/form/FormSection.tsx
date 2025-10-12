@@ -20,6 +20,8 @@ interface FormSectionProps {
 /**
  * FormSection - Section with label and children
  *
+ * Performance: Memoized to prevent unnecessary re-renders when props haven't changed.
+ *
  * @example
  * ```tsx
  * <FormSection label="Common Relationships">
@@ -27,7 +29,7 @@ interface FormSectionProps {
  * </FormSection>
  * ```
  */
-export const FormSection: React.FC<FormSectionProps> = ({
+export const FormSection: React.FC<FormSectionProps> = React.memo(({
   label,
   children,
   marginBottom = SPACING.container,
@@ -49,4 +51,4 @@ export const FormSection: React.FC<FormSectionProps> = ({
       {children}
     </div>
   );
-};
+});

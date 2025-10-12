@@ -26,6 +26,8 @@ interface FormFieldProps {
 /**
  * FormField - Label + input with consistent styling
  *
+ * Performance: Memoized to prevent unnecessary re-renders when props haven't changed.
+ *
  * @example
  * ```tsx
  * <FormField
@@ -36,7 +38,7 @@ interface FormFieldProps {
  * />
  * ```
  */
-export const FormField: React.FC<FormFieldProps> = ({
+export const FormField: React.FC<FormFieldProps> = React.memo(({
   label,
   value,
   onChange,
@@ -96,4 +98,4 @@ export const FormField: React.FC<FormFieldProps> = ({
       )}
     </div>
   );
-};
+});

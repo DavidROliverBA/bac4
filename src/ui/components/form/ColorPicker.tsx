@@ -30,6 +30,8 @@ interface ColorPickerProps {
 /**
  * ColorPicker - Color selection UI with presets
  *
+ * Performance: Memoized to prevent unnecessary re-renders when props haven't changed.
+ *
  * @example
  * ```tsx
  * <ColorPicker
@@ -40,7 +42,7 @@ interface ColorPickerProps {
  * />
  * ```
  */
-export const ColorPicker: React.FC<ColorPickerProps> = ({
+export const ColorPicker: React.FC<ColorPickerProps> = React.memo(({
   label,
   value,
   onChange,
@@ -126,4 +128,4 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
       )}
     </div>
   );
-};
+});
