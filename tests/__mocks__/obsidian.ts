@@ -195,3 +195,61 @@ export class WorkspaceLeaf {
     // Mock implementation
   }
 }
+
+export class Notice {
+  message: string;
+  duration: number;
+
+  constructor(message: string, duration?: number) {
+    this.message = message;
+    this.duration = duration || 5000;
+  }
+}
+
+export class Modal {
+  app: any;
+  containerEl: any;
+
+  constructor(app: any) {
+    this.app = app;
+    this.containerEl = {
+      empty: jest.fn(),
+      createEl: jest.fn(),
+    };
+  }
+
+  open(): void {
+    // Mock implementation
+  }
+
+  close(): void {
+    // Mock implementation
+  }
+
+  onOpen(): void {
+    // Mock implementation
+  }
+
+  onClose(): void {
+    // Mock implementation
+  }
+}
+
+export class Menu {
+  items: any[] = [];
+
+  addItem(callback: (item: any) => void): this {
+    const item = {
+      setTitle: jest.fn().mockReturnThis(),
+      setIcon: jest.fn().mockReturnThis(),
+      onClick: jest.fn().mockReturnThis(),
+    };
+    callback(item);
+    this.items.push(item);
+    return this;
+  }
+
+  showAtMouseEvent(_event: MouseEvent): void {
+    // Mock implementation
+  }
+}
