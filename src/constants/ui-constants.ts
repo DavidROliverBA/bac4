@@ -170,8 +170,10 @@ export const SHADOWS = {
   strong: '0 4px 12px rgba(0,0,0,0.15)',
 } as const;
 
+// <AI_MODIFIABLE>
 /**
  * Color presets for node customization
+ * Add new color presets here to appear in ColorPicker component
  */
 export const COLOR_PRESETS = [
   { name: 'Blue', value: '#4A90E2' },
@@ -183,6 +185,7 @@ export const COLOR_PRESETS = [
   { name: 'Gray', value: '#95A5A6' },
   { name: 'Pink', value: '#E91E63' },
 ] as const;
+// </AI_MODIFIABLE>
 
 /**
  * Default node color

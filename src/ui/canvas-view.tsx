@@ -52,7 +52,10 @@ interface CanvasEditorProps {
   filePath?: string;
 }
 
+// <AI_MODIFIABLE>
 // Custom node types mapping
+// Add new node types here following the pattern:
+// yourNodeType: YourNodeComponent,
 const nodeTypes: NodeTypes = {
   c4: C4Node,
   cloudComponent: CloudComponentNode,
@@ -62,9 +65,12 @@ const nodeTypes: NodeTypes = {
 };
 
 // Custom edge types mapping
+// Add new edge types here following the pattern:
+// yourEdgeType: YourEdgeComponent,
 const edgeTypes: EdgeTypes = {
   directional: DirectionalEdge,
 };
+// </AI_MODIFIABLE>
 
 const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath }) => {
   console.log('CanvasEditor: Component rendered with filePath =', filePath);

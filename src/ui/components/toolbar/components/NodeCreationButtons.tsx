@@ -24,8 +24,12 @@ export interface NodeCreationButtonsProps {
   onAddNode: (nodeType: string, nodeData: Record<string, unknown>) => void;
 }
 
+// <AI_MODIFIABLE>
 /**
  * Get available node tools for the current diagram type
+ *
+ * Add new diagram types and their corresponding node tools here.
+ * Follow the existing pattern for consistency.
  *
  * @param diagramType - Current diagram type
  * @returns Array of node tool definitions
@@ -78,8 +82,14 @@ function getTools(diagramType: 'context' | 'container' | 'component'): NodeTool[
           data: { label: 'New Component', type: 'component' },
         },
       ];
+    // Add new diagram types here:
+    // case 'yourDiagramType':
+    //   return [
+    //     { type: 'yourNodeType', label: '+ Your Node', data: { label: 'New Node' } },
+    //   ];
   }
 }
+// </AI_MODIFIABLE>
 
 /**
  * Node creation buttons with drag-and-drop support

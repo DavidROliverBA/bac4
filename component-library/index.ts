@@ -9,10 +9,15 @@ export * from './aws';
 import { ComponentLibrary } from './types';
 import { awsLibrary } from './aws';
 
+// <AI_MODIFIABLE>
 /**
  * All available component libraries
+ * Add new cloud providers here following the pattern:
+ * 1. Import library: import { azureLibrary } from './azure';
+ * 2. Add to array: [awsLibrary, azureLibrary]
  */
 export const componentLibraries: ComponentLibrary[] = [awsLibrary];
+// </AI_MODIFIABLE>
 
 /**
  * Get all components from all libraries

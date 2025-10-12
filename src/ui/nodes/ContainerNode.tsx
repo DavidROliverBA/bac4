@@ -21,6 +21,8 @@ export interface ContainerNodeData {
   color?: string;
 }
 
+// <AI_MODIFIABLE>
+// Container type icons - Add new container types here
 const containerIcons = {
   webapp: '🌐',
   mobileapp: '📱',
@@ -30,6 +32,7 @@ const containerIcons = {
   service: '⚙️',
 };
 
+// Container type colors - Add matching colors for new container types
 const containerColors = {
   webapp: '#4A90E2',
   mobileapp: '#9B59B6',
@@ -38,6 +41,7 @@ const containerColors = {
   queue: '#F39C12',
   service: '#34495E',
 };
+// </AI_MODIFIABLE>
 
 export const ContainerNode: React.FC<NodeProps<ContainerNodeData>> = ({ data, selected }) => {
   const defaultColor = containerColors[data.containerType];

@@ -10,10 +10,12 @@
 import type { Node } from 'reactflow';
 import type { CanvasNodeData } from '../../../types/canvas-types';
 
+// <AI_MODIFIABLE>
 /**
  * Generate automatic name for a node based on its type
  *
  * Counts existing nodes of the same type and assigns the next sequential number.
+ * Add new node types here to support auto-naming.
  *
  * @param nodeType - The type of node (system, container, person, c4, cloudComponent)
  * @param existingNodes - Array of all existing nodes on the canvas
@@ -45,10 +47,14 @@ export function getAutoName(
       return `Component ${nextNumber}`;
     case 'cloudComponent':
       return `Cloud Component ${nextNumber}`;
+    // Add new node types here:
+    // case 'yourNodeType':
+    //   return `Your Node ${nextNumber}`;
     default:
       return `Node ${nextNumber}`;
   }
 }
+// </AI_MODIFIABLE>
 
 /**
  * Initialize node counter from existing nodes

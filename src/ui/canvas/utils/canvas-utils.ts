@@ -10,12 +10,15 @@
 import type { Edge } from 'reactflow';
 import type { EdgeData } from '../../../types/canvas-types';
 
+// <AI_MODIFIABLE>
 /**
  * Check if a node type can drill down from a given diagram type
  *
  * Rules:
  * - System nodes can drill down in Context diagrams → Container diagrams
  * - Container nodes can drill down in Container diagrams → Component diagrams
+ *
+ * Add new node types and their drill-down rules here.
  *
  * @param nodeType - The node type (system, container, person, etc.)
  * @param diagramType - The current diagram type (context, container, component)
@@ -35,11 +38,17 @@ export function canDrillDown(
   return (
     (nodeType === 'system' && diagramType === 'context') ||
     (nodeType === 'container' && diagramType === 'container')
+    // Add new drill-down rules here:
+    // || (nodeType === 'yourType' && diagramType === 'yourDiagramType')
   );
 }
+// </AI_MODIFIABLE>
 
+// <AI_MODIFIABLE>
 /**
  * Determine child diagram type for a given node type
+ *
+ * Add new parent → child diagram type mappings here.
  *
  * @param nodeType - The parent node type
  * @returns The child diagram type, or null if no child type exists
@@ -60,8 +69,13 @@ export function getChildDiagramType(
   if (nodeType === 'container') {
     return 'component';
   }
+  // Add new parent → child mappings here:
+  // if (nodeType === 'yourNodeType') {
+  //   return 'yourChildDiagramType';
+  // }
   return null;
 }
+// </AI_MODIFIABLE>
 
 /**
  * Normalize edges to ensure they have proper type and data
@@ -113,12 +127,15 @@ export function getDiagramName(filePath: string): string {
   return filePath.split('/').pop()?.replace('.bac4', '') || 'diagram';
 }
 
+// <AI_MODIFIABLE>
 /**
  * Check if a node should auto-create a child diagram
  *
  * Auto-creation happens for:
  * - System nodes in Context diagrams
  * - Container nodes in Container diagrams
+ *
+ * Add new auto-creation rules here for custom node types.
  *
  * @param nodeType - The node type
  * @param diagramType - The current diagram type
@@ -131,8 +148,11 @@ export function shouldAutoCreateChild(
   return (
     (nodeType === 'system' && diagramType === 'context') ||
     (nodeType === 'container' && diagramType === 'container')
+    // Add new auto-creation rules here:
+    // || (nodeType === 'yourNodeType' && diagramType === 'yourDiagramType')
   );
 }
+// </AI_MODIFIABLE>
 
 /**
  * Get display label for child diagram type

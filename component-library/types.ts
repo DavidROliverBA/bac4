@@ -3,13 +3,18 @@
  * Defines the structure for cloud component definitions
  */
 
+// <AI_MODIFIABLE>
 /**
  * Cloud provider types
+ * Add new cloud providers here (e.g., 'azure', 'gcp', 'digitalocean', etc.)
  */
 export type CloudProvider = 'aws' | 'azure' | 'gcp' | 'saas';
+// </AI_MODIFIABLE>
 
+// <AI_MODIFIABLE>
 /**
  * Component category types
+ * Add new categories here for organizing cloud components
  */
 export type ComponentCategory =
   | 'compute'
@@ -25,6 +30,7 @@ export type ComponentCategory =
   | 'cdn'
   | 'monitoring'
   | 'other';
+// </AI_MODIFIABLE>
 
 /**
  * Component definition

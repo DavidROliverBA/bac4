@@ -89,18 +89,24 @@ export const FIT_VIEW_PADDING = 0.2;
  */
 export const FIT_VIEW_MAX_ZOOM = 1.5;
 
+// <AI_MODIFIABLE>
 /**
  * Valid diagram types
+ * Add new diagram types here to extend the C4 hierarchy.
+ * The type union is auto-generated from this array.
  */
 export const DIAGRAM_TYPES = ['context', 'container', 'component'] as const;
 
 /**
- * Diagram type union
+ * Diagram type union (auto-generated)
  */
 export type DiagramType = typeof DIAGRAM_TYPES[number];
+// </AI_MODIFIABLE>
 
+// <AI_MODIFIABLE>
 /**
  * Valid node types
+ * Add new node types here. The type union is auto-generated from this array.
  */
 export const NODE_TYPES = [
   'c4',
@@ -111,9 +117,10 @@ export const NODE_TYPES = [
 ] as const;
 
 /**
- * Node type union
+ * Node type union (auto-generated)
  */
 export type NodeType = typeof NODE_TYPES[number];
+// </AI_MODIFIABLE>
 
 /**
  * Valid edge directions
@@ -125,8 +132,10 @@ export const EDGE_DIRECTIONS = ['right', 'left', 'both'] as const;
  */
 export type EdgeDirection = typeof EDGE_DIRECTIONS[number];
 
+// <AI_MODIFIABLE>
 /**
  * Common relationship labels
+ * Add new edge label presets here for quick selection in PropertyPanel
  */
 export const COMMON_RELATIONSHIPS = [
   'uses',
@@ -137,9 +146,12 @@ export const COMMON_RELATIONSHIPS = [
   'sends to',
   'contains',
 ] as const;
+// </AI_MODIFIABLE>
 
+// <AI_MODIFIABLE>
 /**
  * Container types
+ * Add new container types here (must also add icons and colors in ContainerNode.tsx)
  */
 export const CONTAINER_TYPES = [
   'webapp',
@@ -151,9 +163,10 @@ export const CONTAINER_TYPES = [
 ] as const;
 
 /**
- * Container type union
+ * Container type union (auto-generated)
  */
 export type ContainerType = typeof CONTAINER_TYPES[number];
+// </AI_MODIFIABLE>
 
 /**
  * Check if a value is a valid diagram type
