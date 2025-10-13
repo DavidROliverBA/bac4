@@ -15,11 +15,13 @@
 
 import * as React from 'react';
 import { Node, Edge } from 'reactflow';
-import { C4NodeData } from '../nodes/C4Node';
-import { CloudComponentNodeData } from '../nodes/CloudComponentNode';
-import { SystemNodeData } from '../nodes/SystemNode';
-import { PersonNodeData } from '../nodes/PersonNode';
-import { ContainerNodeData } from '../nodes/ContainerNode';
+import type {
+  C4NodeData,
+  CloudComponentNodeData,
+  SystemNodeData,
+  PersonNodeData,
+  ContainerNodeData,
+} from '../../types/canvas-types';
 import { DiagramNavigationService } from '../../services/diagram-navigation-service';
 import { DiagramNode } from '../../types/diagram-relationships';
 import BAC4Plugin from '../../main';
@@ -356,9 +358,9 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
             )}
 
             {/* Cloud Component specific properties */}
-            {isCloudNode && 'component' in node.data && (
+            {isCloudNode && 'provider' in node.data && (
               <>
-                <FormSection label="Component Type">
+                <FormSection label="Provider & Category">
                   <div
                     style={{
                       padding: SPACING.padding.input,
@@ -368,7 +370,7 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
                       color: UI_COLORS.textMuted,
                     }}
                   >
-                    {node.data.component.name} ({node.data.component.provider})
+                    {node.data.provider?.toUpperCase()} - {node.data.category || 'Component'}
                   </div>
                 </FormSection>
 

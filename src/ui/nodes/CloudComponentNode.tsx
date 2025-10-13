@@ -5,7 +5,7 @@
 
 import * as React from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
-import { ComponentDefinition } from '../../../component-library/types';
+import type { CloudComponentNodeData } from '../../types/canvas-types';
 import {
   FONT_SIZES,
   SPACING,
@@ -15,24 +15,21 @@ import {
 } from '../../constants';
 
 /**
- * Cloud Component Node Data Interface
- */
-export interface CloudComponentNodeData {
-  label: string;
-  component: ComponentDefinition;
-  properties?: Record<string, any>;
-  notes?: string;
-  color?: string;
-}
-
-/**
  * Cloud Component Node Component
  */
 export const CloudComponentNode: React.FC<NodeProps<CloudComponentNodeData>> = ({
   data,
   selected,
 }) => {
-  const color = data.color || data.component.color;
+  // Default colors by provider
+  const providerColors: Record<string, string> = {
+    aws: '#FF9900',
+    azure: '#0078D4',
+    gcp: '#4285F4',
+    saas: '#7C3AED',
+  };
+
+  const color = data.color || providerColors[data.provider || 'saas'] || '#7C3AED';
 
   const getNodeStyles = () => {
     // Convert hex to rgba with alpha
@@ -85,24 +82,26 @@ export const CloudComponentNode: React.FC<NodeProps<CloudComponentNodeData>> = (
       />
 
       {/* Provider badge */}
-      <div style={providerBadgeStyles}>{data.component.provider}</div>
+      <div style={providerBadgeStyles}>{data.provider || 'CLOUD'}</div>
 
       {/* Component name */}
       <div style={{ fontWeight: 600, marginBottom: SPACING.small, marginTop: SPACING.large }}>
         {data.label}
       </div>
 
-      {/* Component type */}
-      <div
-        style={{
-          fontSize: FONT_SIZES.small,
-          color: UI_COLORS.textMuted,
-          marginBottom: SPACING.small,
-          fontStyle: 'italic',
-        }}
-      >
-        {data.component.name}
-      </div>
+      {/* Component category */}
+      {data.category && (
+        <div
+          style={{
+            fontSize: FONT_SIZES.small,
+            color: UI_COLORS.textMuted,
+            marginBottom: SPACING.small,
+            fontStyle: 'italic',
+          }}
+        >
+          {data.category}
+        </div>
+      )}
 
       {/* Properties */}
       {data.properties && Object.keys(data.properties).length > 0 && (
