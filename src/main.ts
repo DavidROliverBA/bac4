@@ -75,8 +75,8 @@ export default class BAC4Plugin extends Plugin {
     // Register settings tab
     this.addSettingTab(new BAC4SettingsTab(this.app, this));
 
-    // Register ribbon icon
-    this.addRibbonIcon('layout-dashboard', 'BAC4 Dashboard', async () => {
+    // Register ribbon icon - using '4' for BAC4
+    this.addRibbonIcon('dice-4', 'BAC4 Dashboard', async () => {
       await this.openDashboard();
     });
 
