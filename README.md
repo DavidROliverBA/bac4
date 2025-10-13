@@ -1,9 +1,70 @@
 # BAC4 - AI-Native Cloud Architecture Management for Obsidian
 
-**Version:** 0.2.0 🎉
+**Version:** 0.3.0 🎉
 **Status:** Production-Ready ✅
 
 An Obsidian plugin that transforms your vault into a comprehensive enterprise architecture management platform. Extends the C4 model with cloud-specific component mappings and provides **THREE WAYS** to create diagrams: manual, AI API, or natural conversation with Claude Desktop via MCP.
+
+---
+
+## 📦 Installation
+
+### Method 1: Community Plugins (Recommended)
+
+> **Note:** Coming soon to Obsidian Community Plugins! For now, use manual installation below.
+
+1. Open Obsidian Settings
+2. Navigate to **Community Plugins**
+3. Disable **Restricted Mode** (if enabled)
+4. Click **Browse** and search for "BAC4"
+5. Click **Install**
+6. Enable the plugin in the **Installed Plugins** list
+
+### Method 2: Manual Installation from GitHub Release
+
+1. **Download the latest release** from [GitHub Releases](https://github.com/DavidROliverBA/bac4-plugin/releases)
+   - Download `bac4-plugin-v0.3.0.zip`
+
+2. **Extract the files** to your vault's plugins folder:
+   ```bash
+   # Navigate to your vault's plugins directory
+   cd /path/to/your-vault/.obsidian/plugins/
+
+   # Create BAC4 plugin directory
+   mkdir bac4-plugin
+
+   # Extract the zip contents into the directory
+   unzip ~/Downloads/bac4-plugin-v0.3.0.zip -d bac4-plugin/
+   ```
+
+3. **Enable the plugin** in Obsidian:
+   - Open Obsidian Settings
+   - Go to **Community Plugins**
+   - Find "BAC4" in your installed plugins
+   - Toggle it **ON**
+
+4. **Reload Obsidian** (Cmd+R on Mac, Ctrl+R on Windows/Linux)
+
+### Method 3: Manual Installation (BRAT)
+
+If you use the [BRAT plugin](https://github.com/TfTHacker/obsidian42-brat):
+
+1. Install and enable BRAT from Community Plugins
+2. Open BRAT settings
+3. Click **Add Beta plugin**
+4. Enter: `DavidROliverBA/bac4-plugin`
+5. Enable BAC4 in Community Plugins
+
+### Verify Installation
+
+After installation, verify BAC4 is working:
+
+1. Open Command Palette (Cmd+P / Ctrl+P)
+2. Type "BAC4"
+3. You should see commands like:
+   - `BAC4: Open Dashboard`
+   - `BAC4: Generate Context Diagram from Description`
+   - `BAC4: Import MCP-Generated Diagram`
 
 ---
 
@@ -316,7 +377,14 @@ BAC4 follows a layered plugin architecture:
 - ✅ Import command
 - ✅ Settings UI
 
-### **v0.3.0 - Advanced AI Features** (Planned)
+### **v0.3.0 - Enhanced User Experience** ✅ **COMPLETE**
+- ✅ Comprehensive installation documentation
+- ✅ BRAT plugin support for beta testing
+- ✅ Improved onboarding experience
+- ✅ GitHub release automation
+- ✅ Verified multi-tab stability
+
+### **v0.4.0 - Advanced AI Features** (Planned)
 - ⏳ Real-time diagram validation
 - ⏳ AI suggestions while editing
 - ⏳ Diagram improvement command
@@ -384,45 +452,54 @@ MIT License - see [LICENSE](LICENSE) file for details
 
 ---
 
-## 🎉 What's New in v0.2.0
+## 🎉 What's New in v0.3.0
 
-### **Major Features:**
+### **Major Improvements:**
 
-🎨 **AI-Powered Diagram Generation**
-- Generate diagrams from natural language descriptions
-- Three methods: Manual, API, MCP
-- Smart response parsing
-- Context-aware examples
+📦 **Enhanced Installation Experience**
+- Comprehensive installation documentation
+- Support for BRAT plugin (beta testing)
+- Three installation methods documented
+- Step-by-step verification guide
+- Clear instructions for manual installation from GitHub releases
 
-💬 **MCP Integration**
-- Chat with Claude Desktop to create diagrams
-- Direct file writing to vault
-- One-command import
-- Fastest generation method (~3-5 seconds)
+🔧 **Stability & Polish**
+- Verified multi-tab rendering stability
+- Improved documentation structure
+- Better onboarding for new users
+- GitHub release automation
+- Production-ready for wider distribution
 
-⚙️ **Settings UI**
-- Anthropic API key configuration
-- AI features toggle
-- Auto-validate and auto-suggest options (Phase 3)
-- Dynamic settings UI
+📚 **Documentation Enhancements**
+- Dedicated installation section in README
+- Clear verification steps
+- Multiple installation paths (Community Plugins, Manual, BRAT)
+- Updated roadmap with v0.3.0 features
 
-📊 **Enhanced Documentation**
-- Complete MCP workflow guide
-- AI integration technical docs
-- Example prompts and scenarios
-- Troubleshooting guides
+### **Technical Updates:**
 
-### **Technical Improvements:**
-
-- ✅ Added `@anthropic-ai/sdk` integration
-- ✅ Created `MCPService` for AI operations
-- ✅ Built description modal with examples
-- ✅ Added import command for MCP-generated diagrams
-- ✅ Auto-detection of diagram types
-- ✅ Smart JSON parsing with error handling
-- ✅ 104 tests passing (29.65% coverage)
-- ✅ Zero new TypeScript errors
+- ✅ Updated to version 0.3.0 across all manifests
+- ✅ Improved README structure and clarity
+- ✅ Added BRAT plugin support instructions
+- ✅ Enhanced installation verification steps
+- ✅ Maintained stability: 104 tests passing, 0 TypeScript errors
 - ✅ Bundle size: 533.7kb (optimized)
+
+---
+
+## 📜 Previous Releases
+
+### v0.2.0 - AI Integration (2025-10-13)
+- 🎨 AI-Powered diagram generation (API + MCP)
+- 💬 Claude Desktop integration via MCP
+- ⚙️ Settings UI for API configuration
+- 📊 Complete documentation and examples
+
+### v0.1.0 - Core Features (2025-10-12)
+- 🎨 Visual C4 diagram editor
+- 🔗 Hierarchical navigation and drill-down
+- ☁️ AWS component library
+- 📤 PNG/JPEG/SVG export
 
 ---
 

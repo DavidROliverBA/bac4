@@ -1,6 +1,6 @@
 {
   "name": "bac4-plugin",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "description": "BAC4 - AI-Native Cloud Architecture Management for Obsidian",
   "main": "main.js",
   "scripts": {
