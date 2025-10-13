@@ -29,26 +29,24 @@ interface FormSectionProps {
  * </FormSection>
  * ```
  */
-export const FormSection: React.FC<FormSectionProps> = React.memo(({
-  label,
-  children,
-  marginBottom = SPACING.container,
-}) => {
-  return (
-    <div style={{ marginBottom }}>
-      <label
-        style={{
-          display: 'block',
-          fontSize: FONT_SIZES.small,
-          fontWeight: 600,
-          color: UI_COLORS.textMuted,
-          marginBottom: SPACING.small,
-          textTransform: 'uppercase',
-        }}
-      >
-        {label}
-      </label>
-      {children}
-    </div>
-  );
-});
+export const FormSection: React.FC<FormSectionProps> = React.memo(
+  ({ label, children, marginBottom = SPACING.container }) => {
+    return (
+      <div style={{ marginBottom }}>
+        <label
+          style={{
+            display: 'block',
+            fontSize: FONT_SIZES.small,
+            fontWeight: 600,
+            color: UI_COLORS.textMuted,
+            marginBottom: SPACING.small,
+            textTransform: 'uppercase',
+          }}
+        >
+          {label}
+        </label>
+        {children}
+      </div>
+    );
+  }
+);

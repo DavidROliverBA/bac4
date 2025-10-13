@@ -61,9 +61,7 @@ export function canDrillDown(
  * getChildDiagramType('person') // null
  * ```
  */
-export function getChildDiagramType(
-  nodeType: string
-): 'container' | 'component' | null {
+export function getChildDiagramType(nodeType: string): 'container' | 'component' | null {
   if (nodeType === 'system') {
     return 'container';
   }
@@ -129,6 +127,8 @@ export function normalizeEdges(edges: Edge[]): Edge<EdgeData>[] {
   return edges.map((edge) => {
     const direction = (edge.data?.direction || 'right') as 'right' | 'left' | 'both';
     const markers = getEdgeMarkers(direction);
+
+    console.log('BAC4: Normalizing edge', edge.id, '- direction:', direction, '- markers:', markers);
 
     return {
       ...edge,

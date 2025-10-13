@@ -92,10 +92,7 @@ export const ErrorHandler = {
    * }
    * ```
    */
-  async handleAsync<T>(
-    promise: Promise<T>,
-    errorMessage: string
-  ): Promise<T | null> {
+  async handleAsync<T>(promise: Promise<T>, errorMessage: string): Promise<T | null> {
     try {
       return await promise;
     } catch (error) {

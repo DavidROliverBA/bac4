@@ -124,9 +124,7 @@ export function useEdgeHandlers(props: UseEdgeHandlersProps): EdgeHandlers {
 
       // Also update selected edge state if needed
       onEdgeSelect((prev: Edge<EdgeData> | null) =>
-        prev?.id === edgeId
-          ? { ...prev, ...markers, data: { ...prev.data, direction } }
-          : prev
+        prev?.id === edgeId ? { ...prev, ...markers, data: { ...prev.data, direction } } : prev
       );
       console.log('BAC4: ✅ Updated edge direction and markers', markers);
     },

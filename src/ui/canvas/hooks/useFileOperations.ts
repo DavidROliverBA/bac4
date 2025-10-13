@@ -124,10 +124,7 @@ export function useFileOperations(props: UseFileOperationsProps): void {
         } else {
           // Save as pure JSON (.bac4 file)
           console.log('BAC4: Saving as JSON (.bac4 file)');
-          await plugin.app.vault.adapter.write(
-            filePath,
-            JSON.stringify(diagramData, null, 2)
-          );
+          await plugin.app.vault.adapter.write(filePath, JSON.stringify(diagramData, null, 2));
           console.log('BAC4: ✅ Auto-saved JSON diagram successfully');
         }
       } catch (error) {
@@ -268,13 +265,5 @@ export function useFileOperations(props: UseFileOperationsProps): void {
       setEdges([]);
       nodeCounterRef.current = 0;
     }
-  }, [
-    filePath,
-    plugin,
-    navigationService,
-    setNodes,
-    setEdges,
-    setDiagramType,
-    nodeCounterRef,
-  ]);
+  }, [filePath, plugin, navigationService, setNodes, setEdges, setDiagramType, nodeCounterRef]);
 }

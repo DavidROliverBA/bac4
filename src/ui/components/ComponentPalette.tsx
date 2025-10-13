@@ -6,14 +6,7 @@
 import * as React from 'react';
 import { ComponentDefinition, CloudProvider } from '../../../component-library/types';
 import { ComponentLibraryService } from '../../services/component-library-service';
-import {
-  FONT_SIZES,
-  SPACING,
-  UI_COLORS,
-  BORDER_RADIUS,
-  SHADOWS,
-  Z_INDEX,
-} from '../../constants';
+import { FONT_SIZES, SPACING, UI_COLORS, BORDER_RADIUS, SHADOWS, Z_INDEX } from '../../constants';
 
 interface ComponentPaletteProps {
   service: ComponentLibraryService;
@@ -161,7 +154,10 @@ export const ComponentPalette: React.FC<ComponentPaletteProps> = ({
           onClick={() => setSelectedProvider('all')}
           style={{
             padding: SPACING.padding.button,
-            background: selectedProvider === 'all' ? UI_COLORS.interactiveAccent : UI_COLORS.backgroundSecondary,
+            background:
+              selectedProvider === 'all'
+                ? UI_COLORS.interactiveAccent
+                : UI_COLORS.backgroundSecondary,
             border: `1px solid ${UI_COLORS.backgroundModifierBorder}`,
             borderRadius: BORDER_RADIUS.small,
             color: selectedProvider === 'all' ? '#fff' : UI_COLORS.textNormal,
@@ -177,7 +173,10 @@ export const ComponentPalette: React.FC<ComponentPaletteProps> = ({
             onClick={() => setSelectedProvider(provider)}
             style={{
               padding: SPACING.padding.button,
-              background: selectedProvider === provider ? UI_COLORS.interactiveAccent : UI_COLORS.backgroundSecondary,
+              background:
+                selectedProvider === provider
+                  ? UI_COLORS.interactiveAccent
+                  : UI_COLORS.backgroundSecondary,
               border: `1px solid ${UI_COLORS.backgroundModifierBorder}`,
               borderRadius: BORDER_RADIUS.small,
               color: selectedProvider === provider ? '#fff' : UI_COLORS.textNormal,
@@ -192,7 +191,13 @@ export const ComponentPalette: React.FC<ComponentPaletteProps> = ({
       </div>
 
       {/* Components list */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: `0 ${SPACING.padding.panel} ${SPACING.padding.panel} ${SPACING.padding.panel}` }}>
+      <div
+        style={{
+          flex: 1,
+          overflowY: 'auto',
+          padding: `0 ${SPACING.padding.panel} ${SPACING.padding.panel} ${SPACING.padding.panel}`,
+        }}
+      >
         {Array.from(groupedComponents.entries()).map(([category, components]) => (
           <div key={category} style={{ marginBottom: SPACING.container }}>
             <div

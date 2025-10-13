@@ -5,12 +5,7 @@
 
 import * as React from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
-import {
-  FONT_SIZES,
-  SPACING,
-  UI_COLORS,
-  DEFAULT_NODE_COLOR,
-} from '../../constants';
+import { FONT_SIZES, SPACING, UI_COLORS, DEFAULT_NODE_COLOR } from '../../constants';
 
 export interface SystemNodeData {
   label: string;
@@ -47,15 +42,19 @@ export const SystemNode: React.FC<NodeProps<SystemNodeData>> = ({ data, selected
       boxShadow: selected
         ? `0 0 0 3px ${UI_COLORS.interactiveAccent}`
         : data.hasChildDiagram
-        ? '0 3px 6px rgba(0,0,0,0.2)'
-        : '0 2px 4px rgba(0,0,0,0.15)',
+          ? '0 3px 6px rgba(0,0,0,0.2)'
+          : '0 2px 4px rgba(0,0,0,0.15)',
       position: 'relative' as const,
     };
   };
 
   return (
     <div style={getNodeStyles()}>
-      <Handle type="target" position={Position.Top} style={{ background: color, width: '14px', height: '14px' }} />
+      <Handle
+        type="target"
+        position={Position.Top}
+        style={{ background: color, width: '14px', height: '14px' }}
+      />
 
       {/* Drill-down indicator - Enhanced badge */}
       {data.hasChildDiagram && (
@@ -83,9 +82,7 @@ export const SystemNode: React.FC<NodeProps<SystemNodeData>> = ({ data, selected
       )}
 
       {/* Label */}
-      <div style={{ marginBottom: data.description ? SPACING.large : '0' }}>
-        {data.label}
-      </div>
+      <div style={{ marginBottom: data.description ? SPACING.large : '0' }}>{data.label}</div>
 
       {/* Description */}
       {data.description && (
@@ -115,7 +112,11 @@ export const SystemNode: React.FC<NodeProps<SystemNodeData>> = ({ data, selected
         </div>
       )}
 
-      <Handle type="source" position={Position.Bottom} style={{ background: color, width: '14px', height: '14px' }} />
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        style={{ background: color, width: '14px', height: '14px' }}
+      />
     </div>
   );
 };

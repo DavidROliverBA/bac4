@@ -100,7 +100,7 @@ export const DIAGRAM_TYPES = ['context', 'container', 'component'] as const;
 /**
  * Diagram type union (auto-generated)
  */
-export type DiagramType = typeof DIAGRAM_TYPES[number];
+export type DiagramType = (typeof DIAGRAM_TYPES)[number];
 // </AI_MODIFIABLE>
 
 // <AI_MODIFIABLE>
@@ -108,18 +108,12 @@ export type DiagramType = typeof DIAGRAM_TYPES[number];
  * Valid node types
  * Add new node types here. The type union is auto-generated from this array.
  */
-export const NODE_TYPES = [
-  'c4',
-  'cloudComponent',
-  'system',
-  'person',
-  'container',
-] as const;
+export const NODE_TYPES = ['c4', 'cloudComponent', 'system', 'person', 'container'] as const;
 
 /**
  * Node type union (auto-generated)
  */
-export type NodeType = typeof NODE_TYPES[number];
+export type NodeType = (typeof NODE_TYPES)[number];
 // </AI_MODIFIABLE>
 
 /**
@@ -130,7 +124,7 @@ export const EDGE_DIRECTIONS = ['right', 'left', 'both'] as const;
 /**
  * Edge direction union
  */
-export type EdgeDirection = typeof EDGE_DIRECTIONS[number];
+export type EdgeDirection = (typeof EDGE_DIRECTIONS)[number];
 
 // <AI_MODIFIABLE>
 /**
@@ -165,7 +159,7 @@ export const CONTAINER_TYPES = [
 /**
  * Container type union (auto-generated)
  */
-export type ContainerType = typeof CONTAINER_TYPES[number];
+export type ContainerType = (typeof CONTAINER_TYPES)[number];
 // </AI_MODIFIABLE>
 
 /**

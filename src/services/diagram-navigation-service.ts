@@ -113,10 +113,7 @@ export class DiagramNavigationService {
    */
   private async saveRelationshipsData(data: DiagramRelationshipsData): Promise<void> {
     data.updatedAt = new Date().toISOString();
-    await this.plugin.app.vault.adapter.write(
-      RELATIONSHIPS_FILE,
-      JSON.stringify(data, null, 2)
-    );
+    await this.plugin.app.vault.adapter.write(RELATIONSHIPS_FILE, JSON.stringify(data, null, 2));
   }
 
   /**
@@ -264,12 +261,8 @@ export class DiagramNavigationService {
     if (!parentDiagram) {
       // Auto-register parent if not already registered
       const parentFile = this.plugin.app.vault.getAbstractFileByPath(parentPath);
-      const parentDisplayName = (parentFile instanceof TFile) ? parentFile.basename : 'Diagram';
-      await this.registerDiagram(
-        parentPath,
-        parentDisplayName,
-        parentDiagramType
-      );
+      const parentDisplayName = parentFile instanceof TFile ? parentFile.basename : 'Diagram';
+      await this.registerDiagram(parentPath, parentDisplayName, parentDiagramType);
       parentDiagram = await this.getDiagramByPath(parentPath);
     }
 

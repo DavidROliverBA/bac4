@@ -7,18 +7,8 @@
  */
 
 import * as React from 'react';
-import {
-  EdgeProps,
-  getBezierPath,
-  EdgeLabelRenderer,
-  BaseEdge,
-} from 'reactflow';
-import {
-  FONT_SIZES,
-  SPACING,
-  UI_COLORS,
-  BORDER_RADIUS,
-} from '../../constants';
+import { EdgeProps, getBezierPath, EdgeLabelRenderer, BaseEdge } from 'reactflow';
+import { FONT_SIZES, SPACING, UI_COLORS, BORDER_RADIUS } from '../../constants';
 
 export interface DirectionalEdgeData {
   label?: string;

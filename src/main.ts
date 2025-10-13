@@ -1,6 +1,12 @@
 import { Plugin, WorkspaceLeaf, TFile } from 'obsidian';
 import { BAC4Settings } from './core/settings';
-import { DEFAULT_SETTINGS, COMMAND_OPEN_DASHBOARD, COMMAND_CREATE_PROJECT, COMMAND_OPEN_SETTINGS, VIEW_TYPE_CANVAS } from './core/constants';
+import {
+  DEFAULT_SETTINGS,
+  COMMAND_OPEN_DASHBOARD,
+  COMMAND_CREATE_PROJECT,
+  COMMAND_OPEN_SETTINGS,
+  VIEW_TYPE_CANVAS,
+} from './core/constants';
 import { BAC4SettingsTab } from './ui/settings-tab';
 import { BAC4CanvasView } from './ui/canvas-view';
 import { hasBac4Diagram } from './utils/frontmatter-parser';
@@ -45,10 +51,7 @@ export default class BAC4Plugin extends Plugin {
     await this.loadSettings();
 
     // Register canvas view
-    this.registerView(
-      VIEW_TYPE_CANVAS,
-      (leaf: WorkspaceLeaf) => new BAC4CanvasView(leaf, this)
-    );
+    this.registerView(VIEW_TYPE_CANVAS, (leaf: WorkspaceLeaf) => new BAC4CanvasView(leaf, this));
 
     // Register .bac4 file extension to open with canvas view
     this.registerExtensions(['bac4'], VIEW_TYPE_CANVAS);
@@ -110,7 +113,7 @@ export default class BAC4Plugin extends Plugin {
                 // Switch to canvas view
                 await activeLeaf.setViewState({
                   type: VIEW_TYPE_CANVAS,
-                  state: { file: file.path }
+                  state: { file: file.path },
                 });
               }
             }
@@ -258,10 +261,7 @@ export default class BAC4Plugin extends Plugin {
    * @returns Promise that resolves when diagram is opened
    * @private
    */
-  private async openDiagram(
-    filePath: string,
-    options: { newTab?: boolean } = {}
-  ): Promise<void> {
+  private async openDiagram(filePath: string, options: { newTab?: boolean } = {}): Promise<void> {
     console.log('BAC4: Opening diagram:', filePath, 'newTab:', options.newTab);
 
     // Check if already open

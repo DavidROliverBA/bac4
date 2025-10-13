@@ -28,10 +28,7 @@ import type { CanvasNodeData } from '../../../types/canvas-types';
  * // Returns "System 3" if 2 system nodes already exist
  * ```
  */
-export function getAutoName(
-  nodeType: string,
-  existingNodes: Node<CanvasNodeData>[]
-): string {
+export function getAutoName(nodeType: string, existingNodes: Node<CanvasNodeData>[]): string {
   // Count existing nodes of the same type
   const sameTypeNodes = existingNodes.filter((n) => n.type === nodeType);
   const nextNumber = sameTypeNodes.length + 1;

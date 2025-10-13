@@ -5,12 +5,7 @@
  */
 
 import { App, Modal } from 'obsidian';
-import {
-  FONT_SIZES,
-  SPACING,
-  UI_COLORS,
-  BORDER_RADIUS,
-} from '../../constants';
+import { FONT_SIZES, SPACING, UI_COLORS, BORDER_RADIUS } from '../../constants';
 
 interface RenameModalOptions {
   currentName: string;

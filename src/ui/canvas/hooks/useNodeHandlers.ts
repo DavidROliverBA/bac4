@@ -151,7 +151,10 @@ export function useNodeHandlers(props: UseNodeHandlersProps): NodeHandlers {
         console.error('Error details:', error);
         console.error('Stack trace:', error instanceof Error ? error.stack : 'N/A');
         const msg = error instanceof Error ? error.message : 'Unknown error';
-        ErrorHandler.handleError(error, `Cannot open child diagram:\n\n${msg}\n\nCheck console for details.`);
+        ErrorHandler.handleError(
+          error,
+          `Cannot open child diagram:\n\n${msg}\n\nCheck console for details.`
+        );
       }
     },
     [diagramType, filePath, navigationService, plugin, setNodes]

@@ -41,7 +41,10 @@ import { stringify as yamlStringify, parse as yamlParse } from 'yaml';
  * @extends Error
  */
 export class FileIOError extends Error {
-  constructor(message: string, public readonly cause?: Error) {
+  constructor(
+    message: string,
+    public readonly cause?: Error
+  ) {
     super(message);
     this.name = 'FileIOError';
   }

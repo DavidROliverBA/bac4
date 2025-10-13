@@ -137,10 +137,7 @@ function parseYAML(yamlText: string): FrontmatterData {
 /**
  * Build markdown content with frontmatter
  */
-export function buildMarkdownWithFrontmatter(
-  frontmatter: FrontmatterData,
-  body: string
-): string {
+export function buildMarkdownWithFrontmatter(frontmatter: FrontmatterData, body: string): string {
   const yamlLines: string[] = [];
 
   // Add frontmatter fields
@@ -156,14 +153,14 @@ export function buildMarkdownWithFrontmatter(
       if (value.includes('\n')) {
         yamlLines.push(`${key}: |`);
         // Indent each line with 2 spaces
-        const indentedLines = value.split('\n').map(line => `  ${line}`);
+        const indentedLines = value.split('\n').map((line) => `  ${line}`);
         yamlLines.push(...indentedLines);
       } else {
         yamlLines.push(`${key}: ${value}`);
       }
     } else if (Array.isArray(value)) {
       yamlLines.push(`${key}:`);
-      value.forEach(item => {
+      value.forEach((item) => {
         yamlLines.push(`  - ${item}`);
       });
     }

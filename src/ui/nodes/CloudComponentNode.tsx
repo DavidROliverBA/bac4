@@ -6,13 +6,7 @@
 import * as React from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
 import type { CloudComponentNodeData } from '../../types/canvas-types';
-import {
-  FONT_SIZES,
-  SPACING,
-  UI_COLORS,
-  BORDER_RADIUS,
-  NODE_DIMENSIONS,
-} from '../../constants';
+import { FONT_SIZES, SPACING, UI_COLORS, BORDER_RADIUS, NODE_DIMENSIONS } from '../../constants';
 
 /**
  * Cloud Component Node Component
@@ -75,17 +69,20 @@ export const CloudComponentNode: React.FC<NodeProps<CloudComponentNodeData>> = (
 
   return (
     <div style={getNodeStyles()}>
-      <Handle
-        type="target"
-        position={Position.Top}
-        style={{ background: color }}
-      />
+      <Handle type="target" position={Position.Top} style={{ background: color }} />
 
       {/* Provider badge */}
       <div style={providerBadgeStyles}>{data.provider || 'CLOUD'}</div>
 
       {/* Component name */}
-      <div style={{ fontWeight: 600, marginBottom: SPACING.tiny, marginTop: SPACING.medium, fontSize: FONT_SIZES.small }}>
+      <div
+        style={{
+          fontWeight: 600,
+          marginBottom: SPACING.tiny,
+          marginTop: SPACING.medium,
+          fontSize: FONT_SIZES.small,
+        }}
+      >
         {data.label}
       </div>
 
@@ -139,11 +136,7 @@ export const CloudComponentNode: React.FC<NodeProps<CloudComponentNodeData>> = (
         </div>
       )}
 
-      <Handle
-        type="source"
-        position={Position.Bottom}
-        style={{ background: color }}
-      />
+      <Handle type="source" position={Position.Bottom} style={{ background: color }} />
     </div>
   );
 };

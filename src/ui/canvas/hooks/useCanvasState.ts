@@ -166,7 +166,10 @@ export function useCanvasState(props: UseCanvasStateProps): CanvasStateHandlers 
       setNodes((nds) => [...nds, newNode]);
 
       // Auto-create child diagram
-      setTimeout(() => onCreateChildDiagram(nodeId, nodeType, autoName), AUTO_CREATE_CHILD_DELAY_MS);
+      setTimeout(
+        () => onCreateChildDiagram(nodeId, nodeType, autoName),
+        AUTO_CREATE_CHILD_DELAY_MS
+      );
     },
     [setNodes, nodeCounterRef, nodes, onCreateChildDiagram]
   );

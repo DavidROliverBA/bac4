@@ -5,12 +5,7 @@
 
 import * as React from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
-import {
-  FONT_SIZES,
-  SPACING,
-  UI_COLORS,
-  DEFAULT_NODE_COLOR,
-} from '../../constants';
+import { FONT_SIZES, SPACING, UI_COLORS, DEFAULT_NODE_COLOR } from '../../constants';
 
 export interface PersonNodeData {
   label: string;
@@ -39,7 +34,11 @@ export const PersonNode: React.FC<NodeProps<PersonNodeData>> = ({ data, selected
         padding: SPACING.large,
       }}
     >
-      <Handle type="target" position={Position.Top} style={{ background: color, width: '12px', height: '12px' }} />
+      <Handle
+        type="target"
+        position={Position.Top}
+        style={{ background: color, width: '12px', height: '12px' }}
+      />
 
       {/* Person icon */}
       <div
@@ -54,7 +53,9 @@ export const PersonNode: React.FC<NodeProps<PersonNodeData>> = ({ data, selected
           justifyContent: 'center',
           fontSize: '16px',
           marginBottom: SPACING.medium,
-          boxShadow: selected ? `0 0 0 3px ${UI_COLORS.interactiveAccent}` : '0 2px 4px rgba(0,0,0,0.15)',
+          boxShadow: selected
+            ? `0 0 0 3px ${UI_COLORS.interactiveAccent}`
+            : '0 2px 4px rgba(0,0,0,0.15)',
         }}
       >
         👤
@@ -87,7 +88,11 @@ export const PersonNode: React.FC<NodeProps<PersonNodeData>> = ({ data, selected
         </div>
       )}
 
-      <Handle type="source" position={Position.Bottom} style={{ background: color, width: '12px', height: '12px' }} />
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        style={{ background: color, width: '12px', height: '12px' }}
+      />
     </div>
   );
 };

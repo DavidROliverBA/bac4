@@ -44,7 +44,12 @@ import { ColorPicker } from './form/ColorPicker';
 import { EdgeDirectionSelector } from './edges/EdgeDirectionSelector';
 import { DiagramLinking } from './diagram/DiagramLinking';
 
-type CanvasNodeData = C4NodeData | CloudComponentNodeData | SystemNodeData | PersonNodeData | ContainerNodeData;
+type CanvasNodeData =
+  | C4NodeData
+  | CloudComponentNodeData
+  | SystemNodeData
+  | PersonNodeData
+  | ContainerNodeData;
 
 interface PropertyPanelProps {
   node: Node<CanvasNodeData> | null;
@@ -91,16 +96,26 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
   const [loading, setLoading] = React.useState(false);
 
   // Determine if this node can have child diagrams
-  const canHaveChildren = (isSystemNode && currentDiagramType === 'context') ||
-                          (isContainerNode && currentDiagramType === 'container');
+  const canHaveChildren =
+    (isSystemNode && currentDiagramType === 'context') ||
+    (isContainerNode && currentDiagramType === 'container');
 
   // Determine target diagram type
-  const targetDiagramType: 'container' | 'component' | null =
-    canHaveChildren ? (isSystemNode ? 'container' : 'component') : null;
+  const targetDiagramType: 'container' | 'component' | null = canHaveChildren
+    ? isSystemNode
+      ? 'container'
+      : 'component'
+    : null;
 
   // Load available diagrams and existing link
   React.useEffect(() => {
-    if (!canHaveChildren || !node || !navigationService || !currentDiagramPath || !targetDiagramType) {
+    if (
+      !canHaveChildren ||
+      !node ||
+      !navigationService ||
+      !currentDiagramPath ||
+      !targetDiagramType
+    ) {
       return;
     }
 
@@ -156,7 +171,11 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
       // Unlink
       if (linkedDiagram) {
         // Show warning
-        if (confirm('Warning: This will unlink the current diagram. The diagram file will not be deleted. Continue?')) {
+        if (
+          confirm(
+            'Warning: This will unlink the current diagram. The diagram file will not be deleted. Continue?'
+          )
+        ) {
           setLoading(true);
           try {
             await navigationService.unlinkNode(currentDiagramPath, node.id);
@@ -173,7 +192,11 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
       // Link to existing diagram
       if (linkedDiagram && selectedPath !== linkedDiagram.filePath) {
         // Show warning when changing existing link
-        if (!confirm('Warning: Changing the linked diagram will break existing relationships with this node. Continue?')) {
+        if (
+          !confirm(
+            'Warning: Changing the linked diagram will break existing relationships with this node. Continue?'
+          )
+        ) {
           return;
         }
       }
@@ -284,11 +307,23 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
             />
 
             {/* Edge ID (read-only) */}
-            <div style={{ marginTop: SPACING.container, paddingTop: SPACING.container, borderTop: `1px solid ${UI_COLORS.backgroundModifierBorder}` }}>
+            <div
+              style={{
+                marginTop: SPACING.container,
+                paddingTop: SPACING.container,
+                borderTop: `1px solid ${UI_COLORS.backgroundModifierBorder}`,
+              }}
+            >
               <div style={{ fontSize: FONT_SIZES.extraSmall, color: UI_COLORS.textFaint }}>
                 Edge ID: {edge.id}
               </div>
-              <div style={{ fontSize: FONT_SIZES.extraSmall, color: UI_COLORS.textFaint, marginTop: SPACING.small }}>
+              <div
+                style={{
+                  fontSize: FONT_SIZES.extraSmall,
+                  color: UI_COLORS.textFaint,
+                  marginTop: SPACING.small,
+                }}
+              >
                 From: {edge.source} → To: {edge.target}
               </div>
             </div>
@@ -298,11 +333,7 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
         {/* Node Properties */}
         {node && (
           <>
-            <FormField
-              label="Label"
-              value={node.data.label}
-              onChange={handleLabelChange}
-            />
+            <FormField label="Label" value={node.data.label} onChange={handleLabelChange} />
 
             <ColorPicker
               label="Node Color"
@@ -374,43 +405,45 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
                   </div>
                 </FormSection>
 
-                {'properties' in node.data && node.data.properties && Object.keys(node.data.properties).length > 0 && (
-                  <FormSection label="Properties">
-                    {Object.entries(node.data.properties).map(([key, value]) => (
-                      <div key={key} style={{ marginBottom: SPACING.large }}>
-                        <label
-                          style={{
-                            display: 'block',
-                            fontSize: FONT_SIZES.extraSmall,
-                            color: UI_COLORS.textMuted,
-                            marginBottom: SPACING.tiny,
-                          }}
-                        >
-                          {key}
-                        </label>
-                        <input
-                          type="text"
-                          value={String(value)}
-                          onChange={(e) => {
-                            if ('properties' in node.data && node.data.properties) {
-                              const newProps = { ...node.data.properties, [key]: e.target.value };
-                              handlePropertyChange('properties', newProps);
-                            }
-                          }}
-                          style={{
-                            width: '100%',
-                            padding: SPACING.padding.compact,
-                            background: UI_COLORS.backgroundSecondary,
-                            border: `1px solid ${UI_COLORS.backgroundModifierBorder}`,
-                            borderRadius: BORDER_RADIUS.small,
-                            color: UI_COLORS.textNormal,
-                            fontSize: FONT_SIZES.medium,
-                          }}
-                        />
-                      </div>
-                    ))}
-                  </FormSection>
-                )}
+                {'properties' in node.data &&
+                  node.data.properties &&
+                  Object.keys(node.data.properties).length > 0 && (
+                    <FormSection label="Properties">
+                      {Object.entries(node.data.properties).map(([key, value]) => (
+                        <div key={key} style={{ marginBottom: SPACING.large }}>
+                          <label
+                            style={{
+                              display: 'block',
+                              fontSize: FONT_SIZES.extraSmall,
+                              color: UI_COLORS.textMuted,
+                              marginBottom: SPACING.tiny,
+                            }}
+                          >
+                            {key}
+                          </label>
+                          <input
+                            type="text"
+                            value={String(value)}
+                            onChange={(e) => {
+                              if ('properties' in node.data && node.data.properties) {
+                                const newProps = { ...node.data.properties, [key]: e.target.value };
+                                handlePropertyChange('properties', newProps);
+                              }
+                            }}
+                            style={{
+                              width: '100%',
+                              padding: SPACING.padding.compact,
+                              background: UI_COLORS.backgroundSecondary,
+                              border: `1px solid ${UI_COLORS.backgroundModifierBorder}`,
+                              borderRadius: BORDER_RADIUS.small,
+                              color: UI_COLORS.textNormal,
+                              fontSize: FONT_SIZES.medium,
+                            }}
+                          />
+                        </div>
+                      ))}
+                    </FormSection>
+                  )}
 
                 <FormField
                   label="Notes"
@@ -428,7 +461,7 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
               <>
                 <FormField
                   label="Description"
-                  value={'description' in node.data ? (node.data.description || '') : ''}
+                  value={'description' in node.data ? node.data.description || '' : ''}
                   onChange={(value) => handlePropertyChange('description', value)}
                   type="textarea"
                   placeholder="System description"
@@ -436,14 +469,23 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
                 />
 
                 <div style={{ marginBottom: SPACING.container }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: SPACING.large, cursor: 'pointer' }}>
+                  <label
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: SPACING.large,
+                      cursor: 'pointer',
+                    }}
+                  >
                     <input
                       type="checkbox"
-                      checked={'external' in node.data ? (node.data.external || false) : false}
+                      checked={'external' in node.data ? node.data.external || false : false}
                       onChange={(e) => handlePropertyChange('external', e.target.checked)}
                       style={{ cursor: 'pointer' }}
                     />
-                    <span style={{ fontSize: FONT_SIZES.normal, color: UI_COLORS.textNormal }}>External System</span>
+                    <span style={{ fontSize: FONT_SIZES.normal, color: UI_COLORS.textNormal }}>
+                      External System
+                    </span>
                   </label>
                 </div>
 
@@ -466,7 +508,7 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
             {isPersonNode && (
               <FormField
                 label="Role"
-                value={'role' in node.data ? (node.data.role || '') : ''}
+                value={'role' in node.data ? node.data.role || '' : ''}
                 onChange={(value) => handlePropertyChange('role', value)}
                 placeholder="e.g., Administrator, Customer"
               />
@@ -500,14 +542,14 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
 
                 <FormField
                   label="Technology"
-                  value={'technology' in node.data ? (node.data.technology || '') : ''}
+                  value={'technology' in node.data ? node.data.technology || '' : ''}
                   onChange={(value) => handlePropertyChange('technology', value)}
                   placeholder="e.g., Node.js, PostgreSQL"
                 />
 
                 <FormField
                   label="Description"
-                  value={'description' in node.data ? (node.data.description || '') : ''}
+                  value={'description' in node.data ? node.data.description || '' : ''}
                   onChange={(value) => handlePropertyChange('description', value)}
                   type="textarea"
                   placeholder="Container description"
@@ -530,7 +572,13 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
             )}
 
             {/* Node ID (read-only) */}
-            <div style={{ marginTop: SPACING.container, paddingTop: SPACING.container, borderTop: `1px solid ${UI_COLORS.backgroundModifierBorder}` }}>
+            <div
+              style={{
+                marginTop: SPACING.container,
+                paddingTop: SPACING.container,
+                borderTop: `1px solid ${UI_COLORS.backgroundModifierBorder}`,
+              }}
+            >
               <div style={{ fontSize: FONT_SIZES.extraSmall, color: UI_COLORS.textFaint }}>
                 ID: {node.id}
               </div>

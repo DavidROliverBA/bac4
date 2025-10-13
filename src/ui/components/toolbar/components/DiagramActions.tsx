@@ -57,11 +57,7 @@ export const DiagramActions: React.FC<DiagramActionsProps> = ({
         onClick={onDeleteNode}
         disabled={!selectedNode}
         variant="danger"
-        title={
-          selectedNode
-            ? `Delete node: ${selectedNode.data.label}`
-            : 'Select a node to delete'
-        }
+        title={selectedNode ? `Delete node: ${selectedNode.data.label}` : 'Select a node to delete'}
       />
     </div>
   );

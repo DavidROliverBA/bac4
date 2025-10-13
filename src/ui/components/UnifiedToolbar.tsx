@@ -113,9 +113,7 @@ export const UnifiedToolbar: React.FC<UnifiedToolbarProps> = ({
             {breadcrumbs.map((crumb, index) => (
               <React.Fragment key={crumb.path}>
                 {index > 0 && (
-                  <span style={{ color: UI_COLORS.textMuted, fontSize: FONT_SIZES.small }}>
-                    →
-                  </span>
+                  <span style={{ color: UI_COLORS.textMuted, fontSize: FONT_SIZES.small }}>→</span>
                 )}
                 <button
                   onClick={() => crumb.path !== currentPath && onNavigate(crumb.path)}
@@ -123,13 +121,10 @@ export const UnifiedToolbar: React.FC<UnifiedToolbarProps> = ({
                   style={{
                     padding: SPACING.padding.button,
                     background:
-                      crumb.path === currentPath
-                        ? UI_COLORS.backgroundPrimaryAlt
-                        : 'transparent',
+                      crumb.path === currentPath ? UI_COLORS.backgroundPrimaryAlt : 'transparent',
                     border: 'none',
                     borderRadius: BORDER_RADIUS.normal,
-                    color:
-                      crumb.path === currentPath ? UI_COLORS.textNormal : UI_COLORS.textAccent,
+                    color: crumb.path === currentPath ? UI_COLORS.textNormal : UI_COLORS.textAccent,
                     cursor: crumb.path === currentPath ? 'default' : 'pointer',
                     fontSize: FONT_SIZES.small,
                     fontWeight: crumb.path === currentPath ? 600 : 500,

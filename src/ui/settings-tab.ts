@@ -38,12 +38,10 @@ export class BAC4SettingsTab extends PluginSettingTab {
       .setName('Enable AI features')
       .setDesc('Enable AI-assisted architecture via Model Context Protocol (requires Claude Code)')
       .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.settings.enableAIFeatures)
-          .onChange(async (value) => {
-            this.plugin.settings.enableAIFeatures = value;
-            await this.plugin.saveSettings();
-          })
+        toggle.setValue(this.plugin.settings.enableAIFeatures).onChange(async (value) => {
+          this.plugin.settings.enableAIFeatures = value;
+          await this.plugin.saveSettings();
+        })
       );
 
     // Auto-save Interval

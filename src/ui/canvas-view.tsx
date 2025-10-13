@@ -82,7 +82,9 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath }) => {
   const [reactFlowInstance, setReactFlowInstance] = React.useState<ReactFlowInstance | null>(null);
   const [selectedNode, setSelectedNode] = React.useState<Node<CanvasNodeData> | null>(null);
   const [selectedEdge, setSelectedEdge] = React.useState<Edge | null>(null);
-  const [diagramType, setDiagramType] = React.useState<'context' | 'container' | 'component'>('context');
+  const [diagramType, setDiagramType] = React.useState<'context' | 'container' | 'component'>(
+    'context'
+  );
   const [breadcrumbs, setBreadcrumbs] = React.useState<BreadcrumbItem[]>([]);
   const [breadcrumbRefreshTrigger, setBreadcrumbRefreshTrigger] = React.useState(0);
   const nodeCounterRef = React.useRef(0);
@@ -159,24 +161,18 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath }) => {
   /**
    * Handle node selection
    */
-  const handleNodeSelect = React.useCallback(
-    (node: Node<CanvasNodeData> | null) => {
-      setSelectedNode(node);
-      setSelectedEdge(null);
-    },
-    []
-  );
+  const handleNodeSelect = React.useCallback((node: Node<CanvasNodeData> | null) => {
+    setSelectedNode(node);
+    setSelectedEdge(null);
+  }, []);
 
   /**
    * Handle edge selection
    */
-  const handleEdgeSelect = React.useCallback(
-    (edge: Edge | null) => {
-      setSelectedEdge(edge);
-      setSelectedNode(null);
-    },
-    []
-  );
+  const handleEdgeSelect = React.useCallback((edge: Edge | null) => {
+    setSelectedEdge(edge);
+    setSelectedNode(null);
+  }, []);
 
   /**
    * Handle pane click (deselect)
@@ -281,8 +277,16 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath }) => {
           position: 'relative',
         }}
       >
-        {console.log('BAC4: Rendering ReactFlow with', nodes.length, 'nodes,', edges.length, 'edges, diagramType:', diagramType)}
+        {console.log(
+          'BAC4: Rendering ReactFlow with',
+          nodes.length,
+          'nodes,',
+          edges.length,
+          'edges, diagramType:',
+          diagramType
+        )}
         <ReactFlow
+          id={filePath ? `rf-${filePath.replace(/[^a-zA-Z0-9]/g, '-')}` : 'rf-default'}
           nodes={nodes}
           edges={edges}
           nodeTypes={nodeTypes}
@@ -388,7 +392,41 @@ export class BAC4CanvasView extends ItemView {
   }
 
   async setState(state: { file?: string; filePath?: string }, result: unknown): Promise<void> {
-    console.log('BAC4CanvasView: setState called with', state);
+    console.log('BAC4CanvasView: ⚠️ setState called with', state);
+
+    const newFilePath = state.file || state.filePath;
+
+    // CRITICAL: Check for duplicates BEFORE setting file path
+    if (newFilePath) {
+      console.log('BAC4CanvasView: Checking for existing tabs with file:', newFilePath);
+
+      const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_CANVAS);
+      const leavesWithThisFile = leaves.filter((leaf) => {
+        const view = leaf.view as BAC4CanvasView;
+        const hasFile = view.file?.path === newFilePath || view.filePath === newFilePath;
+        return hasFile && leaf !== this.leaf;
+      });
+
+      console.log(
+        'BAC4CanvasView: Found',
+        leavesWithThisFile.length,
+        'OTHER leaves with file',
+        newFilePath
+      );
+
+      // If file already open in another leaf, activate it and close this one
+      if (leavesWithThisFile.length > 0) {
+        console.log(
+          'BAC4CanvasView: ❌ DUPLICATE DETECTED in setState! Closing this leaf and activating existing'
+        );
+        const otherLeaf = leavesWithThisFile[0];
+        this.app.workspace.setActiveLeaf(otherLeaf, { focus: true });
+        this.leaf.detach();
+        return; // Don't continue
+      }
+
+      console.log('BAC4CanvasView: ✅ No duplicate found in setState, proceeding');
+    }
 
     // Handle file path from state
     if (state.file) {
@@ -428,36 +466,42 @@ export class BAC4CanvasView extends ItemView {
   }
 
   async onLoadFile(file: TFile): Promise<void> {
-    this.file = file;
-    this.filePath = file.path;
-    console.log('BAC4CanvasView: onLoadFile called with', file.path);
+    console.log('BAC4CanvasView: ⚠️ onLoadFile called with', file.path);
+    console.log('BAC4CanvasView: Current leaf ID:', (this.leaf as any).id);
 
-    // Check if this file is already open in another leaf
+    // CRITICAL: Check for duplicates BEFORE setting file
     const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_CANVAS);
+    console.log('BAC4CanvasView: Total BAC4 canvas leaves:', leaves.length);
+
     const leavesWithThisFile = leaves.filter((leaf) => {
       const view = leaf.view as BAC4CanvasView;
-      return view.file?.path === file.path;
+      const hasFile = view.file?.path === file.path || view.filePath === file.path;
+      if (hasFile) {
+        console.log('BAC4CanvasView: Leaf', (leaf as any).id, 'has file', file.path);
+      }
+      return hasFile && leaf !== this.leaf;
     });
 
-    console.log('BAC4CanvasView: Found', leavesWithThisFile.length, 'leaves with file', file.path);
+    console.log(
+      'BAC4CanvasView: Found',
+      leavesWithThisFile.length,
+      'OTHER leaves with file',
+      file.path
+    );
 
-    // If this file is already open in another leaf, close this one and activate the other
-    if (leavesWithThisFile.length > 1) {
-      console.log('BAC4CanvasView: File already open, closing duplicate');
-
-      // Find the other leaf (not this one)
-      const otherLeaf = leavesWithThisFile.find((l) => l !== this.leaf);
-
-      if (otherLeaf) {
-        console.log('BAC4CanvasView: Activating existing leaf');
-        this.app.workspace.setActiveLeaf(otherLeaf, { focus: true });
-
-        // Close this duplicate leaf
-        console.log('BAC4CanvasView: Detaching duplicate leaf');
-        this.leaf.detach();
-        return; // Don't continue loading
-      }
+    // If file already open in another leaf, activate it and close this one
+    if (leavesWithThisFile.length > 0) {
+      console.log('BAC4CanvasView: ❌ DUPLICATE DETECTED! Closing this leaf and activating existing');
+      const otherLeaf = leavesWithThisFile[0];
+      this.app.workspace.setActiveLeaf(otherLeaf, { focus: true });
+      this.leaf.detach();
+      return; // Don't continue loading
     }
+
+    // No duplicate found, proceed normally
+    console.log('BAC4CanvasView: ✅ No duplicate found, loading file normally');
+    this.file = file;
+    this.filePath = file.path;
 
     // Re-render with new file path if root exists
     if (this.root) {

@@ -38,64 +38,58 @@ interface FormFieldProps {
  * />
  * ```
  */
-export const FormField: React.FC<FormFieldProps> = React.memo(({
-  label,
-  value,
-  onChange,
-  type = 'text',
-  placeholder,
-  rows = 3,
-  disabled = false,
-}) => {
-  const inputStyle: React.CSSProperties = {
-    width: '100%',
-    padding: SPACING.padding.input,
-    background: UI_COLORS.backgroundSecondary,
-    border: `1px solid ${UI_COLORS.backgroundModifierBorder}`,
-    borderRadius: BORDER_RADIUS.normal,
-    color: UI_COLORS.textNormal,
-    fontSize: FONT_SIZES.normal,
-    fontFamily: UI_COLORS.fontInterface,
-  };
+export const FormField: React.FC<FormFieldProps> = React.memo(
+  ({ label, value, onChange, type = 'text', placeholder, rows = 3, disabled = false }) => {
+    const inputStyle: React.CSSProperties = {
+      width: '100%',
+      padding: SPACING.padding.input,
+      background: UI_COLORS.backgroundSecondary,
+      border: `1px solid ${UI_COLORS.backgroundModifierBorder}`,
+      borderRadius: BORDER_RADIUS.normal,
+      color: UI_COLORS.textNormal,
+      fontSize: FONT_SIZES.normal,
+      fontFamily: UI_COLORS.fontInterface,
+    };
 
-  const textareaStyle: React.CSSProperties = {
-    ...inputStyle,
-    resize: 'vertical' as const,
-  };
+    const textareaStyle: React.CSSProperties = {
+      ...inputStyle,
+      resize: 'vertical' as const,
+    };
 
-  return (
-    <div style={{ marginBottom: SPACING.container }}>
-      <label
-        style={{
-          display: 'block',
-          fontSize: FONT_SIZES.small,
-          fontWeight: 600,
-          color: UI_COLORS.textMuted,
-          marginBottom: SPACING.small,
-          textTransform: 'uppercase',
-        }}
-      >
-        {label}
-      </label>
-      {type === 'textarea' ? (
-        <textarea
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          rows={rows}
-          disabled={disabled}
-          style={textareaStyle}
-        />
-      ) : (
-        <input
-          type={type}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          disabled={disabled}
-          style={inputStyle}
-        />
-      )}
-    </div>
-  );
-});
+    return (
+      <div style={{ marginBottom: SPACING.container }}>
+        <label
+          style={{
+            display: 'block',
+            fontSize: FONT_SIZES.small,
+            fontWeight: 600,
+            color: UI_COLORS.textMuted,
+            marginBottom: SPACING.small,
+            textTransform: 'uppercase',
+          }}
+        >
+          {label}
+        </label>
+        {type === 'textarea' ? (
+          <textarea
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={placeholder}
+            rows={rows}
+            disabled={disabled}
+            style={textareaStyle}
+          />
+        ) : (
+          <input
+            type={type}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={placeholder}
+            disabled={disabled}
+            style={inputStyle}
+          />
+        )}
+      </div>
+    );
+  }
+);

@@ -9,10 +9,7 @@
 
 import type { TFile } from 'obsidian';
 import type BAC4Plugin from '../main';
-import type {
-  CanvasNode,
-  CanvasEdge,
-} from './canvas-types';
+import type { CanvasNode, CanvasEdge } from './canvas-types';
 import type { ComponentDefinition } from '../../component-library/types';
 import type { BreadcrumbItem as BreadcrumbItemType } from './diagram-relationships';
 

@@ -5,7 +5,6 @@ import {
   SPACING,
   UI_COLORS,
   BORDER_RADIUS,
-  SHADOWS,
   NODE_DIMENSIONS,
   C4_TYPE_COLORS,
 } from '../../constants';
@@ -48,7 +47,9 @@ export const C4Node: React.FC<NodeProps<C4NodeData>> = ({ data, selected }) => {
       color: UI_COLORS.textNormal,
       fontFamily: 'var(--font-interface)',
       fontSize: FONT_SIZES.small,
-      boxShadow: selected ? `0 0 0 3px ${UI_COLORS.interactiveAccent}` : '0 1px 4px rgba(0,0,0,0.15)',
+      boxShadow: selected
+        ? `0 0 0 3px ${UI_COLORS.interactiveAccent}`
+        : '0 1px 4px rgba(0,0,0,0.15)',
     };
   };
 
@@ -61,13 +62,25 @@ export const C4Node: React.FC<NodeProps<C4NodeData>> = ({ data, selected }) => {
       </div>
 
       {data.technology && (
-        <div style={{ fontSize: FONT_SIZES.tiny, color: UI_COLORS.textMuted, marginBottom: SPACING.tiny }}>
+        <div
+          style={{
+            fontSize: FONT_SIZES.tiny,
+            color: UI_COLORS.textMuted,
+            marginBottom: SPACING.tiny,
+          }}
+        >
           [{data.technology}]
         </div>
       )}
 
       {data.description && (
-        <div style={{ fontSize: FONT_SIZES.tiny, color: UI_COLORS.textMuted, marginTop: SPACING.small }}>
+        <div
+          style={{
+            fontSize: FONT_SIZES.tiny,
+            color: UI_COLORS.textMuted,
+            marginTop: SPACING.small,
+          }}
+        >
           {data.description}
         </div>
       )}

@@ -13,12 +13,7 @@
  */
 
 import * as React from 'react';
-import {
-  FONT_SIZES,
-  SPACING,
-  UI_COLORS,
-  BORDER_RADIUS,
-} from '../../../constants';
+import { FONT_SIZES, SPACING, UI_COLORS, BORDER_RADIUS } from '../../../constants';
 import { DiagramNode } from '../../../types/diagram-relationships';
 
 interface DiagramLinkingProps {

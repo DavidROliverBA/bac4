@@ -8,13 +8,7 @@
  */
 
 import * as React from 'react';
-import {
-  FONT_SIZES,
-  SPACING,
-  UI_COLORS,
-  BORDER_RADIUS,
-  TRANSITIONS,
-} from '../../../../constants';
+import { FONT_SIZES, SPACING, UI_COLORS, BORDER_RADIUS, TRANSITIONS } from '../../../../constants';
 
 export interface ToolbarButtonProps {
   /** Button label text */

@@ -12,13 +12,7 @@
  */
 
 import * as React from 'react';
-import {
-  FONT_SIZES,
-  SPACING,
-  UI_COLORS,
-  BORDER_RADIUS,
-  TRANSITIONS,
-} from '../../../constants';
+import { FONT_SIZES, SPACING, UI_COLORS, BORDER_RADIUS, TRANSITIONS } from '../../../constants';
 
 interface EdgeDirectionSelectorProps {
   label: string;
@@ -103,8 +97,8 @@ const DirectionButton: React.FC<{
         background: isSelected
           ? UI_COLORS.interactiveAccent
           : isHovered
-          ? UI_COLORS.backgroundModifierHover
-          : UI_COLORS.backgroundSecondary,
+            ? UI_COLORS.backgroundModifierHover
+            : UI_COLORS.backgroundSecondary,
         border: isSelected
           ? `2px solid ${UI_COLORS.interactiveAccent}`
           : `1px solid ${UI_COLORS.backgroundModifierBorder}`,

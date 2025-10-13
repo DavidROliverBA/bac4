@@ -5,12 +5,7 @@
 
 import * as React from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
-import {
-  FONT_SIZES,
-  SPACING,
-  UI_COLORS,
-  BORDER_RADIUS,
-} from '../../constants';
+import { FONT_SIZES, SPACING, UI_COLORS, BORDER_RADIUS } from '../../constants';
 
 export interface ContainerNodeData {
   label: string;
@@ -72,12 +67,16 @@ export const ContainerNode: React.FC<NodeProps<ContainerNodeData>> = ({ data, se
         boxShadow: selected
           ? `0 0 0 3px ${UI_COLORS.interactiveAccent}`
           : data.hasChildDiagram
-          ? '0 2.5px 5px rgba(0,0,0,0.18)'
-          : '0 1.5px 3px rgba(0,0,0,0.12)',
+            ? '0 2.5px 5px rgba(0,0,0,0.18)'
+            : '0 1.5px 3px rgba(0,0,0,0.12)',
         position: 'relative',
       }}
     >
-      <Handle type="target" position={Position.Top} style={{ background: color, width: '12px', height: '12px' }} />
+      <Handle
+        type="target"
+        position={Position.Top}
+        style={{ background: color, width: '12px', height: '12px' }}
+      />
 
       {/* Drill-down indicator - Enhanced badge */}
       {data.hasChildDiagram && (
@@ -105,7 +104,15 @@ export const ContainerNode: React.FC<NodeProps<ContainerNodeData>> = ({ data, se
       )}
 
       {/* Icon and Label */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: SPACING.tiny, marginBottom: SPACING.small }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: SPACING.tiny,
+          marginBottom: SPACING.small,
+        }}
+      >
         <span style={{ fontSize: FONT_SIZES.small }}>{icon}</span>
         <span style={{ fontWeight: 600, fontSize: FONT_SIZES.small }}>{data.label}</span>
       </div>
@@ -136,7 +143,11 @@ export const ContainerNode: React.FC<NodeProps<ContainerNodeData>> = ({ data, se
         </div>
       )}
 
-      <Handle type="source" position={Position.Bottom} style={{ background: color, width: '12px', height: '12px' }} />
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        style={{ background: color, width: '12px', height: '12px' }}
+      />
     </div>
   );
 };

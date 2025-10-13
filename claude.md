@@ -362,16 +362,34 @@ npm run typecheck    # TypeScript type checking
 
 ## Common Tasks
 
+### 📌 AI Extension Points
+
+**The plugin has 7 marked extension points for safe additions:**
+
+All extension points are marked with `<AI_MODIFIABLE>` tags in the source code.
+
+**Quick Reference:**
+- **Node Types:** `canvas-view.tsx:55` - Register custom node components
+- **Edge Types:** `canvas-view.tsx:67` - Register custom edge components
+- **Cloud Providers:** `component-library/index.ts:12` - Add Azure, GCP, etc.
+- **Diagram Types:** `validation-constants.ts:92` - Extend C4 hierarchy
+- **Node Creation Tools:** `NodeCreationButtons.tsx:27` - Add toolbar buttons
+- **Edge Labels:** `validation-constants.ts:135` - Add relationship presets
+- **Container Types:** `validation-constants.ts:151` - Add container categories
+- **Color Presets:** `ui-constants.ts:184` - Add node color options
+
+**📖 Complete Guide:** See `docs/AI_EXTENSION_POINTS.md` for detailed instructions with code examples, related files, and testing procedures for each extension point.
+
 ### Adding a New Node Type
 1. Create `src/ui/nodes/NewNode.tsx` with component
 2. Export type and data interface
-3. Register in `nodeTypes` object in `canvas-view.tsx`
-4. Add to appropriate diagram type in `UnifiedToolbar.tsx` (in `getTools()` function)
+3. Register in `nodeTypes` object in `canvas-view.tsx` (marked with `<AI_MODIFIABLE>`)
+4. Add to appropriate diagram type in `NodeCreationButtons.tsx` getTools() function
 
 ### Adding a Cloud Provider
 1. Create `component-library/azure/` or `component-library/gcp/`
-2. Add component definitions JSON
-3. Update `ComponentLibraryService` to load new provider
+2. Add component definitions JSON following AWS pattern
+3. Update `componentLibraries` array in `component-library/index.ts` (marked with `<AI_MODIFIABLE>`)
 4. Add icons/assets
 
 ### Modifying Canvas Behavior
