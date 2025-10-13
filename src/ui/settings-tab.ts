@@ -58,5 +58,64 @@ export class BAC4SettingsTab extends PluginSettingTab {
             await this.plugin.saveSettings();
           })
       );
+
+    // AI Settings Section
+    containerEl.createEl('h3', { text: 'AI Assistant Settings' });
+
+    // MCP/AI Features Toggle
+    new Setting(containerEl)
+      .setName('Enable AI diagram generation')
+      .setDesc('Use Claude AI to generate diagrams from natural language descriptions')
+      .addToggle((toggle) =>
+        toggle.setValue(this.plugin.settings.mcp.enabled).onChange(async (value) => {
+          this.plugin.settings.mcp.enabled = value;
+          await this.plugin.saveSettings();
+          this.display(); // Refresh to show/hide API key field
+        })
+      );
+
+    // Anthropic API Key (only show if AI features enabled)
+    if (this.plugin.settings.mcp.enabled) {
+      new Setting(containerEl)
+        .setName('Anthropic API key')
+        .setDesc(
+          'Your Anthropic API key for Claude AI. Get one at https://console.anthropic.com/'
+        )
+        .addText((text) => {
+          text
+            .setPlaceholder('sk-ant-...')
+            .setValue(this.plugin.settings.mcp.apiKey)
+            .onChange(async (value) => {
+              this.plugin.settings.mcp.apiKey = value;
+              await this.plugin.saveSettings();
+            });
+          text.inputEl.type = 'password'; // Hide API key
+          return text;
+        });
+
+      // Auto-validate toggle
+      new Setting(containerEl)
+        .setName('Auto-validate diagrams')
+        .setDesc(
+          'Real-time AI validation while editing (may impact performance and use API credits)'
+        )
+        .addToggle((toggle) =>
+          toggle.setValue(this.plugin.settings.mcp.autoValidate).onChange(async (value) => {
+            this.plugin.settings.mcp.autoValidate = value;
+            await this.plugin.saveSettings();
+          })
+        );
+
+      // Auto-suggest toggle
+      new Setting(containerEl)
+        .setName('Auto-suggest improvements')
+        .setDesc('AI suggestions while creating diagrams (may use API credits)')
+        .addToggle((toggle) =>
+          toggle.setValue(this.plugin.settings.mcp.autoSuggest).onChange(async (value) => {
+            this.plugin.settings.mcp.autoSuggest = value;
+            await this.plugin.saveSettings();
+          })
+        );
+    }
   }
 }

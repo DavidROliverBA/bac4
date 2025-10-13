@@ -20,4 +20,10 @@ export const DEFAULT_SETTINGS = {
   enableAIFeatures: true,
   autoSaveInterval: 30000, // 30 seconds
   dashboardPath: 'BAC4/Context.bac4', // Default dashboard path
+  mcp: {
+    enabled: true,          // AI features enabled by default
+    apiKey: '',             // User must provide their Anthropic API key
+    autoValidate: false,    // Disabled by default (can be performance intensive)
+    autoSuggest: false,     // Disabled by default (user-initiated generation only)
+  },
 };

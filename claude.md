@@ -193,7 +193,22 @@ npm run typecheck    # TypeScript type checking
 
 ## Current Status
 
-### ✅ Completed Features (Sprint 1.2 - Latest)
+### ✅ Completed Features (v0.2.0-dev - Latest)
+
+**MCP Integration - Phase 1 Complete** 🎉
+- **MCPService** class with AI-powered diagram generation interface
+- **Description Modal** for natural language architecture input
+- **Three generation commands:**
+  - Generate Context Diagram from Description
+  - Generate Container Diagram from Description
+  - Generate Component Diagram from Description
+- **MCP Settings** with enabled/autoValidate/autoSuggest toggles
+- **Complete UI workflow** from command palette → modal → diagram creation
+- **Graceful fallback** to empty diagrams (MCP protocol integration Phase 2)
+- **Status:** UI & infrastructure ready, MCP communication stubbed
+- **Docs:** `docs/MCP_INTEGRATION_STATUS.md`, `docs/MCP_INTEGRATION_PLAN.md`
+
+### ✅ Completed Features (Sprint 1.2)
 
 #### **Core Features**
 - **Canvas Editor**

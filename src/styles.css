@@ -116,3 +116,62 @@
   left: 50%;
   transform: translateX(-50%);
 }
+
+/* Description Modal Styles */
+.bac4-description-textarea {
+  width: 100%;
+  min-height: 200px;
+  margin-top: 8px;
+  padding: 12px;
+  font-family: var(--font-monospace);
+  font-size: 14px;
+  line-height: 1.5;
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  color: var(--text-normal);
+  resize: vertical;
+}
+
+.bac4-description-textarea:focus {
+  outline: none;
+  border-color: var(--interactive-accent);
+}
+
+.bac4-example-section {
+  margin: 16px 0;
+  padding: 12px;
+  background: var(--background-secondary);
+  border-radius: 4px;
+  border-left: 3px solid var(--interactive-accent);
+}
+
+.bac4-example-section h3 {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.bac4-example-text {
+  margin: 0;
+  padding: 8px;
+  font-family: var(--font-monospace);
+  font-size: 12px;
+  background: var(--background-primary);
+  border-radius: 4px;
+  color: var(--text-muted);
+  white-space: pre-wrap;
+}
+
+.bac4-modal-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.bac4-modal-buttons button {
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+}

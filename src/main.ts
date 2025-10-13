@@ -1,4 +1,4 @@
-import { Plugin, WorkspaceLeaf, TFile } from 'obsidian';
+import { Plugin, WorkspaceLeaf, TFile, Notice } from 'obsidian';
 import { BAC4Settings } from './core/settings';
 import {
   DEFAULT_SETTINGS,
@@ -383,6 +383,7 @@ export default class BAC4Plugin extends Plugin {
    * - Open Dashboard: Opens main Context diagram
    * - Create New Project: Project structure creation (TODO)
    * - Open Settings: Opens plugin settings tab
+   * - Generate Diagram from Description: AI-powered diagram generation
    *
    * @private
    */
@@ -418,5 +419,233 @@ export default class BAC4Plugin extends Plugin {
         this.app.setting.openTabById(this.manifest.id);
       },
     });
+
+    // MCP-Powered Commands
+    // Generate Context Diagram from Description
+    this.addCommand({
+      id: 'bac4-generate-context-diagram',
+      name: 'Generate Context Diagram from Description',
+      callback: async () => {
+        await this.generateDiagramFromDescription('context');
+      },
+    });
+
+    // Generate Container Diagram from Description
+    this.addCommand({
+      id: 'bac4-generate-container-diagram',
+      name: 'Generate Container Diagram from Description',
+      callback: async () => {
+        await this.generateDiagramFromDescription('container');
+      },
+    });
+
+    // Generate Component Diagram from Description
+    this.addCommand({
+      id: 'bac4-generate-component-diagram',
+      name: 'Generate Component Diagram from Description',
+      callback: async () => {
+        await this.generateDiagramFromDescription('component');
+      },
+    });
+
+    // MCP Direct Generation - Import from File
+    this.addCommand({
+      id: 'bac4-import-mcp-generated-diagram',
+      name: 'Import MCP-Generated Diagram',
+      callback: async () => {
+        await this.importMCPGeneratedDiagram();
+      },
+    });
+  }
+
+  /**
+   * Generate diagram from natural language description using MCP
+   *
+   * @param diagramType - Type of diagram to generate
+   */
+  private async generateDiagramFromDescription(
+    diagramType: 'context' | 'container' | 'component'
+  ): Promise<void> {
+    console.log('BAC4: Generating diagram from description:', diagramType);
+
+    // Check if MCP is enabled
+    if (!this.settings.mcp.enabled) {
+      new Notice('MCP features are disabled. Enable them in settings.');
+      return;
+    }
+
+    // Import modal dynamically
+    const { DescriptionModal } = await import('./ui/modals/description-modal');
+
+    // Show modal and wait for user input
+    const modal = new DescriptionModal(
+      this.app,
+      diagramType,
+      async (description: string) => {
+        // User submitted description
+        console.log('BAC4: User provided description:', description);
+
+        try {
+          // Show loading notice
+          const loadingNotice = new Notice('Generating diagram with AI...', 0);
+
+          // Import MCP service
+          const { MCPService } = await import('./services/mcp-service');
+          const mcpService = new MCPService(this);
+
+          // Check if AI service is available
+          const available = await mcpService.isAvailable();
+          if (!available) {
+            loadingNotice.hide();
+
+            // Check if it's because API key is missing
+            if (!this.settings.mcp.apiKey || this.settings.mcp.apiKey.trim() === '') {
+              new Notice('Please configure your Anthropic API key in BAC4 settings first.', 8000);
+            } else {
+              new Notice('AI service not available. Please check your configuration.', 5000);
+            }
+            return;
+          }
+
+          // Generate diagram
+          try {
+            const { nodes, edges } = await mcpService.generateDiagram(description, diagramType);
+
+            loadingNotice.hide();
+
+            // Create new diagram file
+            const timestamp = Date.now();
+            const fileName = `Generated_${diagramType}_${timestamp}.bac4`;
+            const filePath = `BAC4/${fileName}`;
+
+            // Ensure BAC4 directory exists
+            if (!(await this.app.vault.adapter.exists('BAC4'))) {
+              await this.app.vault.createFolder('BAC4');
+            }
+
+            // Create file
+            const diagramData = {
+              nodes,
+              edges,
+            };
+
+            const file = await this.app.vault.create(
+              filePath,
+              JSON.stringify(diagramData, null, 2)
+            );
+
+            // Register in relationships
+            const { DiagramNavigationService } = await import('./services/diagram-navigation-service');
+            const navService = new DiagramNavigationService(this);
+            await navService.registerDiagram(filePath, file.basename, diagramType);
+
+            // Open the diagram
+            await this.openCanvasView(filePath);
+
+            new Notice(`Created ${fileName}`);
+          } catch (error) {
+            loadingNotice.hide();
+            console.error('BAC4: Error generating diagram:', error);
+            new Notice('Failed to generate diagram. MCP integration is in development.');
+
+            // For now, create an empty diagram as fallback
+            const timestamp = Date.now();
+            const fileName = `Generated_${diagramType}_${timestamp}.bac4`;
+            const filePath = `BAC4/${fileName}`;
+
+            // Ensure BAC4 directory exists
+            if (!(await this.app.vault.adapter.exists('BAC4'))) {
+              await this.app.vault.createFolder('BAC4');
+            }
+
+            const emptyDiagram = {
+              nodes: [],
+              edges: [],
+            };
+
+            const file = await this.app.vault.create(
+              filePath,
+              JSON.stringify(emptyDiagram, null, 2)
+            );
+
+            // Register in relationships
+            const { DiagramNavigationService } = await import('./services/diagram-navigation-service');
+            const navService = new DiagramNavigationService(this);
+            await navService.registerDiagram(filePath, file.basename, diagramType);
+
+            // Open the diagram
+            await this.openCanvasView(filePath);
+
+            new Notice(`Created empty ${fileName}. MCP integration coming soon!`);
+          }
+        } catch (error) {
+          console.error('BAC4: Error in diagram generation flow:', error);
+          new Notice('An error occurred while generating the diagram.');
+        }
+      },
+      () => {
+        // User cancelled
+        console.log('BAC4: User cancelled diagram generation');
+      }
+    );
+
+    modal.open();
+  }
+
+  /**
+   * Import a diagram that was generated via MCP (Claude directly writing to vault)
+   *
+   * This allows Claude Code to generate diagrams by writing .bac4 files directly
+   * to the vault through MCP, then the plugin can open and register them.
+   */
+  private async importMCPGeneratedDiagram(): Promise<void> {
+    console.log('BAC4: Importing MCP-generated diagram');
+
+    // Look for the most recently created .bac4 file in BAC4/ directory
+    const bac4Files = this.app.vault.getFiles().filter(
+      (file) => file.extension === 'bac4' && file.path.startsWith('BAC4/')
+    );
+
+    if (bac4Files.length === 0) {
+      new Notice('No BAC4 diagrams found. Ask Claude to create one first!');
+      return;
+    }
+
+    // Sort by creation time (most recent first)
+    bac4Files.sort((a, b) => b.stat.ctime - a.stat.ctime);
+    const mostRecent = bac4Files[0];
+
+    console.log('BAC4: Most recent diagram:', mostRecent.path);
+
+    // Read the file to detect diagram type
+    const content = await this.app.vault.read(mostRecent);
+    const data = JSON.parse(content);
+
+    // Detect diagram type from nodes
+    let diagramType: 'context' | 'container' | 'component' = 'context';
+    if (data.nodes && data.nodes.length > 0) {
+      const hasCloudComponents = data.nodes.some((n: any) => n.type === 'cloudComponent');
+      const hasContainers = data.nodes.some((n: any) => n.type === 'container');
+      const hasSystems = data.nodes.some((n: any) => n.type === 'system' || n.type === 'person');
+
+      if (hasCloudComponents) {
+        diagramType = 'component';
+      } else if (hasContainers) {
+        diagramType = 'container';
+      } else if (hasSystems) {
+        diagramType = 'context';
+      }
+    }
+
+    // Register in relationships
+    const { DiagramNavigationService } = await import('./services/diagram-navigation-service');
+    const navService = new DiagramNavigationService(this);
+    await navService.ensureRelationshipsFile();
+    await navService.registerDiagram(mostRecent.path, mostRecent.basename, diagramType);
+
+    // Open the diagram
+    await this.openCanvasView(mostRecent.path);
+
+    new Notice(`Imported ${mostRecent.basename}`);
   }
 }
