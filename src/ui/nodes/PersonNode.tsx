@@ -34,9 +34,17 @@ export const PersonNode: React.FC<NodeProps<PersonNodeData>> = ({ data, selected
         padding: SPACING.large,
       }}
     >
+      {/* Connection handles - all four sides */}
       <Handle
         type="target"
         position={Position.Top}
+        id="top"
+        style={{ background: color, width: '12px', height: '12px' }}
+      />
+      <Handle
+        type="target"
+        position={Position.Left}
+        id="left"
         style={{ background: color, width: '12px', height: '12px' }}
       />
 
@@ -90,7 +98,14 @@ export const PersonNode: React.FC<NodeProps<PersonNodeData>> = ({ data, selected
 
       <Handle
         type="source"
+        position={Position.Right}
+        id="right"
+        style={{ background: color, width: '12px', height: '12px' }}
+      />
+      <Handle
+        type="source"
         position={Position.Bottom}
+        id="bottom"
         style={{ background: color, width: '12px', height: '12px' }}
       />
     </div>

@@ -44,6 +44,7 @@ export function useEdgeHandlers(props: UseEdgeHandlersProps): EdgeHandlers {
    */
   const onConnect = React.useCallback(
     (params: Connection) => {
+      console.log('BAC4: onConnect params:', params);
       const direction = 'right';
       const markers = getEdgeMarkers(direction);
 
@@ -57,6 +58,7 @@ export function useEdgeHandlers(props: UseEdgeHandlersProps): EdgeHandlers {
           direction,
         },
       };
+      console.log('BAC4: Creating edge:', edge);
       setEdges((eds) => addEdge(edge, eds));
     },
     [setEdges]

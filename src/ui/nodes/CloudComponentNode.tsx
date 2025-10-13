@@ -69,7 +69,9 @@ export const CloudComponentNode: React.FC<NodeProps<CloudComponentNodeData>> = (
 
   return (
     <div style={getNodeStyles()}>
-      <Handle type="target" position={Position.Top} style={{ background: color }} />
+      {/* Connection handles - all four sides */}
+      <Handle type="target" position={Position.Top} id="top" style={{ background: color }} />
+      <Handle type="target" position={Position.Left} id="left" style={{ background: color }} />
 
       {/* Provider badge */}
       <div style={providerBadgeStyles}>{data.provider || 'CLOUD'}</div>
@@ -136,7 +138,8 @@ export const CloudComponentNode: React.FC<NodeProps<CloudComponentNodeData>> = (
         </div>
       )}
 
-      <Handle type="source" position={Position.Bottom} style={{ background: color }} />
+      <Handle type="source" position={Position.Right} id="right" style={{ background: color }} />
+      <Handle type="source" position={Position.Bottom} id="bottom" style={{ background: color }} />
     </div>
   );
 };

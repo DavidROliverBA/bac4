@@ -20,6 +20,7 @@ export interface BaseNodeData {
   description?: string;
   hasChildDiagram?: boolean;
   linkedDiagramPath?: string;
+  linkedMarkdownFile?: string; // Vault-relative path to linked markdown file
 }
 
 /**

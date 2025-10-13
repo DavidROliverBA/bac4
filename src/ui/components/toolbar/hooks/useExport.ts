@@ -23,16 +23,31 @@ export interface ExportHandlers {
 }
 
 /**
- * Get the React Flow viewport element for export
+ * Get the React Flow container element for export
  *
- * @returns The viewport HTML element or null if not found
+ * We export the main .react-flow container, not the .react-flow__viewport,
+ * because the viewport can be transformed/scaled and may have zero dimensions.
+ * The container always has the full visible dimensions.
+ *
+ * @returns The React Flow HTML element or null if not found
  */
 function getExportElement(): HTMLElement | null {
+  // First, try to get the main React Flow container
+  const reactFlow = document.querySelector('.react-flow') as HTMLElement;
+  if (reactFlow) {
+    const rect = reactFlow.getBoundingClientRect();
+    if (rect.width > 0 && rect.height > 0) {
+      return reactFlow;
+    }
+  }
+
+  // Fallback: try viewport (though this usually has issues)
   const viewport = document.querySelector('.react-flow__viewport') as HTMLElement;
   if (viewport) {
     return viewport;
   }
-  return document.querySelector('.react-flow') as HTMLElement;
+
+  return null;
 }
 
 /**
@@ -75,15 +90,40 @@ export function useExport(options: UseExportOptions = {}): ExportHandlers {
       // Validation: Find export element
       const element = getExportElement();
       if (!element) {
-        console.error('Could not find React Flow viewport');
+        console.error('BAC4: ❌ Could not find React Flow container');
+        console.error('BAC4: Available elements:', {
+          reactFlow: document.querySelectorAll('.react-flow').length,
+          viewport: document.querySelectorAll('.react-flow__viewport').length,
+        });
         ErrorHandler.handleError(
           new Error('Export element not found'),
-          'Failed to find diagram container'
+          'Failed to find diagram container. Make sure the diagram is fully loaded.'
         );
         return;
       }
 
-      console.log(`BAC4: Exporting ${format.toUpperCase()} from viewport`);
+      // Log element dimensions for debugging
+      const rect = element.getBoundingClientRect();
+      console.log(`BAC4: Exporting ${format.toUpperCase()} from element`, {
+        elementClass: element.className,
+        width: rect.width,
+        height: rect.height,
+        nodes: nodes.length,
+      });
+
+      // Additional validation: Check if element has valid dimensions
+      if (rect.width === 0 || rect.height === 0) {
+        console.error('BAC4: ❌ Export element has zero dimensions', {
+          width: rect.width,
+          height: rect.height,
+        });
+        ErrorHandler.handleError(
+          new Error('Export element has zero dimensions'),
+          'Cannot export: diagram container has no size. Try waiting for the diagram to fully render.'
+        );
+        return;
+      }
+
       setIsExporting(true);
 
       // Small delay to allow UI to update before export
@@ -106,12 +146,22 @@ export function useExport(options: UseExportOptions = {}): ExportHandlers {
 
         exportPromise
           .then((dataUrl) => {
+            // Validate dataUrl is not empty
+            if (!dataUrl || dataUrl.length < 100) {
+              console.error('BAC4: ❌ Export produced empty or invalid data URL');
+              ErrorHandler.handleError(
+                new Error('Empty export result'),
+                `Export failed: Generated ${format.toUpperCase()} appears to be empty. Try again or use a different format.`
+              );
+              return;
+            }
+
             // Create download link and trigger download
             const link = document.createElement('a');
             link.download = `${diagramName}.${getExportExtension(format)}`;
             link.href = dataUrl;
             link.click();
-            console.log(`BAC4: ✅ ${format.toUpperCase()} export successful`);
+            console.log(`BAC4: ✅ ${format.toUpperCase()} export successful (${dataUrl.length} bytes)`);
           })
           .catch((error) => {
             console.error(`BAC4: ❌ Error exporting ${format.toUpperCase()}:`, error);

@@ -5,9 +5,15 @@
 
 export * from './types';
 export * from './aws';
+export * from './azure';
+export * from './gcp';
+export * from './it';
 
 import { ComponentLibrary } from './types';
 import { awsLibrary } from './aws';
+import { azureLibrary } from './azure';
+import { gcpLibrary } from './gcp';
+import { itLibrary } from './it';
 
 // <AI_MODIFIABLE>
 /**
@@ -16,7 +22,12 @@ import { awsLibrary } from './aws';
  * 1. Import library: import { azureLibrary } from './azure';
  * 2. Add to array: [awsLibrary, azureLibrary]
  */
-export const componentLibraries: ComponentLibrary[] = [awsLibrary];
+export const componentLibraries: ComponentLibrary[] = [
+  awsLibrary,
+  azureLibrary,
+  gcpLibrary,
+  itLibrary,
+];
 // </AI_MODIFIABLE>
 
 /**

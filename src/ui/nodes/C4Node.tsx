@@ -55,7 +55,9 @@ export const C4Node: React.FC<NodeProps<C4NodeData>> = ({ data, selected }) => {
 
   return (
     <div style={getNodeStyles()}>
-      <Handle type="target" position={Position.Top} style={{ background: color }} />
+      {/* Connection handles - all four sides */}
+      <Handle type="target" position={Position.Top} id="top" style={{ background: color }} />
+      <Handle type="target" position={Position.Left} id="left" style={{ background: color }} />
 
       <div style={{ fontWeight: 600, marginBottom: SPACING.tiny, fontSize: FONT_SIZES.small }}>
         {data.label}
@@ -85,7 +87,8 @@ export const C4Node: React.FC<NodeProps<C4NodeData>> = ({ data, selected }) => {
         </div>
       )}
 
-      <Handle type="source" position={Position.Bottom} style={{ background: color }} />
+      <Handle type="source" position={Position.Right} id="right" style={{ background: color }} />
+      <Handle type="source" position={Position.Bottom} id="bottom" style={{ background: color }} />
     </div>
   );
 };

@@ -33,6 +33,7 @@ import { ComponentLibraryService } from '../services/component-library-service';
 import { DiagramNavigationService } from '../services/diagram-navigation-service';
 import type { CanvasNodeData, ReactFlowInstance } from '../types/canvas-types';
 import type { BreadcrumbItem } from '../types/component-props';
+import { getNavigationIconVisibility } from '../utils/navigation-utils';
 
 // Import custom hooks
 import { useNodeHandlers } from './canvas/hooks/useNodeHandlers';
@@ -245,6 +246,54 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath }) => {
     navigationService,
   });
 
+  /**
+   * Handle navigation icon: drill down to child diagram
+   */
+  const handleNavigateToChild = React.useCallback(async () => {
+    if (!selectedNode || !filePath) return;
+
+    try {
+      await nodeHandlers.handleCreateOrOpenChildDiagram(selectedNode);
+    } catch (error) {
+      console.error('BAC4: Error navigating to child:', error);
+    }
+  }, [selectedNode, filePath, nodeHandlers]);
+
+  /**
+   * Handle navigation icon: go to parent diagram
+   */
+  const handleNavigateToParent = React.useCallback(async () => {
+    if (!filePath) return;
+
+    try {
+      const parentPath = await navigationService.navigateToParent(filePath);
+      if (parentPath) {
+        diagramActions.handleBreadcrumbNavigate(parentPath);
+      }
+    } catch (error) {
+      console.error('BAC4: Error navigating to parent:', error);
+    }
+  }, [filePath, navigationService, diagramActions]);
+
+  /**
+   * Calculate navigation icon visibility
+   */
+  const navigationIconVisibility = React.useMemo(() => {
+    if (!selectedNode || !filePath) {
+      return { showPlus: false, showMinus: false };
+    }
+
+    // Check if diagram has parent
+    const hasParent = breadcrumbs.length > 1;
+
+    return getNavigationIconVisibility(
+      selectedNode.type,
+      diagramType,
+      selectedNode.data.hasChildDiagram || false,
+      hasParent
+    );
+  }, [selectedNode, filePath, diagramType, breadcrumbs]);
+
   return (
     <div
       style={{
@@ -277,14 +326,6 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath }) => {
           position: 'relative',
         }}
       >
-        {console.log(
-          'BAC4: Rendering ReactFlow with',
-          nodes.length,
-          'nodes,',
-          edges.length,
-          'edges, diagramType:',
-          diagramType
-        )}
         <ReactFlow
           id={filePath ? `rf-${filePath.replace(/[^a-zA-Z0-9]/g, '-')}` : 'rf-default'}
           nodes={nodes}
@@ -320,7 +361,7 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath }) => {
             gap={12}
             size={1}
           />
-          <Controls />
+          <Controls position="bottom-right" />
           <MiniMap />
 
           {/* Right Side Panel - Component Palette */}
@@ -343,6 +384,7 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath }) => {
           onUpdateProperties={nodeHandlers.updateNodeProperties}
           onUpdateEdgeLabel={edgeHandlers.updateEdgeLabel}
           onUpdateEdgeDirection={edgeHandlers.updateEdgeDirection}
+          onDeleteEdge={edgeHandlers.handleDeleteEdge}
           onClose={() => {
             setSelectedNode(null);
             setSelectedEdge(null);
@@ -358,6 +400,17 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath }) => {
               await nodeHandlers.handleCreateOrOpenChildDiagram(node);
             }
           }}
+          app={plugin.app}
+          vault={plugin.app.vault}
+          workspace={plugin.app.workspace}
+          onLinkMarkdownFile={nodeHandlers.linkMarkdownFile}
+          onUnlinkMarkdownFile={nodeHandlers.unlinkMarkdownFile}
+          onCreateAndLinkMarkdownFile={nodeHandlers.createAndLinkMarkdownFile}
+          onOpenLinkedMarkdownFile={nodeHandlers.openLinkedMarkdownFile}
+          onNavigateToChild={handleNavigateToChild}
+          onNavigateToParent={handleNavigateToParent}
+          showNavigateToChild={navigationIconVisibility.showPlus}
+          showNavigateToParent={navigationIconVisibility.showMinus}
         />
       </div>
     </div>

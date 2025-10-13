@@ -22,11 +22,12 @@ export const AUTO_SAVE_DEBOUNCE_MS = 1000;
 /**
  * Export delay in milliseconds
  *
- * Small delay before triggering export to ensure rendering is complete.
+ * Delay before triggering export to ensure all SVG elements and styles are fully rendered.
+ * Increased to 500ms to prevent zero-byte exports due to incomplete rendering.
  *
- * @default 100ms
+ * @default 500ms
  */
-export const EXPORT_DELAY_MS = 100;
+export const EXPORT_DELAY_MS = 500;
 
 /**
  * Duplicate tab detection delay in milliseconds

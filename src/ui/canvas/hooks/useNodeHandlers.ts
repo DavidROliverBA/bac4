@@ -20,6 +20,7 @@ import type { CanvasNodeData } from '../../../types/canvas-types';
 import type { DiagramNavigationService } from '../../../services/diagram-navigation-service';
 import { canDrillDown, getChildDiagramType, getChildTypeLabel } from '../utils/canvas-utils';
 import { ErrorHandler } from '../../../utils/error-handling';
+import { MarkdownLinkService } from '../../../services/markdown-link-service';
 
 export interface UseNodeHandlersProps {
   plugin: BAC4Plugin;
@@ -41,6 +42,10 @@ export interface NodeHandlers {
   updateNodeProperties: (nodeId: string, updates: Partial<CanvasNodeData>) => void;
   handleCreateOrOpenChildDiagram: (node: Node<CanvasNodeData>) => Promise<void>;
   handleDeleteNode: (nodeId: string) => void;
+  linkMarkdownFile: (nodeId: string, filePath: string) => void;
+  unlinkMarkdownFile: (nodeId: string) => void;
+  createAndLinkMarkdownFile: (nodeId: string, filePath: string) => Promise<void>;
+  openLinkedMarkdownFile: (nodeId: string) => Promise<void>;
 }
 
 /**
@@ -314,6 +319,113 @@ export function useNodeHandlers(props: UseNodeHandlersProps): NodeHandlers {
     [setNodes, setEdges]
   );
 
+  /**
+   * Link a markdown file to a node
+   */
+  const linkMarkdownFile = React.useCallback(
+    (nodeId: string, filePath: string) => {
+      console.log('BAC4: Linking markdown file', { nodeId, filePath });
+      setNodes((nds) =>
+        nds.map((node) =>
+          node.id === nodeId
+            ? { ...node, data: { ...node.data, linkedMarkdownFile: filePath } }
+            : node
+        )
+      );
+    },
+    [setNodes]
+  );
+
+  /**
+   * Unlink a markdown file from a node
+   */
+  const unlinkMarkdownFile = React.useCallback(
+    (nodeId: string) => {
+      console.log('BAC4: Unlinking markdown file', { nodeId });
+      setNodes((nds) =>
+        nds.map((node) =>
+          node.id === nodeId
+            ? { ...node, data: { ...node.data, linkedMarkdownFile: undefined } }
+            : node
+        )
+      );
+    },
+    [setNodes]
+  );
+
+  /**
+   * Create a markdown file and link it to a node
+   */
+  const createAndLinkMarkdownFile = React.useCallback(
+    async (nodeId: string, filePath: string) => {
+      const node = nodes.find((n) => n.id === nodeId);
+      if (!node) {
+        console.error('BAC4: Node not found:', nodeId);
+        return;
+      }
+
+      try {
+        console.log('BAC4: Creating markdown file', { nodeId, filePath });
+        await MarkdownLinkService.createMarkdownFile(
+          plugin.app.vault,
+          filePath,
+          node.data.label,
+          node.type || 'generic'
+        );
+        console.log('BAC4: ✅ Markdown file created');
+
+        // Link the file
+        linkMarkdownFile(nodeId, filePath);
+
+        // Open the file
+        await MarkdownLinkService.openMarkdownFile(
+          plugin.app.workspace,
+          plugin.app.vault,
+          filePath,
+          false
+        );
+        console.log('BAC4: ✅ Markdown file opened');
+
+        ErrorHandler.showSuccess('Markdown file created and linked');
+      } catch (error) {
+        console.error('BAC4: Error creating markdown file:', error);
+        ErrorHandler.handleError(error, 'Failed to create markdown file');
+      }
+    },
+    [nodes, plugin, linkMarkdownFile]
+  );
+
+  /**
+   * Open the linked markdown file for a node
+   */
+  const openLinkedMarkdownFile = React.useCallback(
+    async (nodeId: string) => {
+      const node = nodes.find((n) => n.id === nodeId);
+      if (!node?.data.linkedMarkdownFile) {
+        console.error('BAC4: No linked markdown file for node:', nodeId);
+        return;
+      }
+
+      try {
+        console.log('BAC4: Opening linked markdown file', {
+          nodeId,
+          filePath: node.data.linkedMarkdownFile,
+        });
+        await MarkdownLinkService.openMarkdownFile(
+          plugin.app.workspace,
+          plugin.app.vault,
+          node.data.linkedMarkdownFile,
+          false
+        );
+        console.log('BAC4: ✅ Markdown file opened');
+      } catch (error) {
+        console.error('BAC4: Error opening markdown file:', error);
+        ErrorHandler.handleError(error, 'Failed to open markdown file. File may have been moved or deleted.');
+      }
+    },
+    [nodes, plugin]
+  );
+
   return {
     onNodeClick,
     onNodeDoubleClick,
@@ -322,5 +434,9 @@ export function useNodeHandlers(props: UseNodeHandlersProps): NodeHandlers {
     updateNodeProperties,
     handleCreateOrOpenChildDiagram,
     handleDeleteNode,
+    linkMarkdownFile,
+    unlinkMarkdownFile,
+    createAndLinkMarkdownFile,
+    openLinkedMarkdownFile,
   };
 }

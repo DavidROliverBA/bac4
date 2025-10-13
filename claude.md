@@ -44,13 +44,17 @@ All diagram controls consolidated in one horizontal bar:
 
 ### Hierarchical Navigation & Linking
 - **Drill-down:** Double-click System → Container diagram, Container → Component diagram
+- **Navigation Buttons:** Property Panel displays **− Parent** and **+ Child** buttons at the top
+  - **− Parent** button: Navigate to parent diagram (Container/Component diagrams only)
+  - **+ Child** button: Open child diagram (System/Container nodes with children only)
+  - Buttons auto-show/hide based on hierarchy and node type
 - **Property Panel Linking:** Select existing diagrams or create new ones from dropdown
   - System nodes → Link to Container diagrams
   - Container nodes → Link to Component diagrams
   - "[+ Create New...]" option auto-creates and links child diagrams
 - **Warning Dialogs:** Prevent accidental link changes
-- **Open Linked Diagram:** Direct navigation button in Property Panel
-- **Breadcrumbs:** Navigate back up the hierarchy
+- **Open Linked Diagram:** Direct navigation button in Property Panel dropdown
+- **Breadcrumbs:** Navigate back up the hierarchy (top toolbar)
 - **Relationships File:** `diagram-relationships.json` tracks all parent-child links
 
 ### Node Types
@@ -236,6 +240,7 @@ npm run typecheck    # TypeScript type checking
   - `diagram-relationships.json` central registry
 
 - **Property Panel**
+  - **Navigation buttons** at top: **− Parent** and **+ Child** for quick hierarchy navigation
   - Node/edge property editing
   - Edge label quick-select (uses, depends on, calls, etc.)
   - Directional edges (→, ←, ↔)
@@ -1263,9 +1268,14 @@ This issue can happen whenever:
 │                  CANVAS AREA                                │
 │          (React Flow with nodes and edges)                  │
 │                                                             │
-│ ┌──────────────┐                                           │
-│ │ Property     │                                           │
-│ │ Panel        │ ←─────────────────────────────────────────│ Property Panel
-│ └──────────────┘                            (bottom-left)  │
+│ ┌──────────────────┐                                       │
+│ │ Node Properties  │                                       │
+│ ├──────────────────┤                                       │
+│ │ [− Parent][+ Child] ← Navigation Buttons                │
+│ │ ─────────────────│                                       │
+│ │ Label: ...       │ ←─────────────────────────────────────│ Property Panel
+│ │ Color: [picker]  │                         (bottom-left) │
+│ │ ...              │                                       │
+│ └──────────────────┘                                       │
 └─────────────────────────────────────────────────────────────┘
 ```

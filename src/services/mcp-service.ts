@@ -218,6 +218,7 @@ REQUIREMENTS:
 - Position nodes for good visual layout (avoid overlaps)
 - Create meaningful edge labels
 - Follow C4 model best practices
+- IMPORTANT: For edges, always set sourceHandle: null and targetHandle: null (React Flow will auto-calculate closest connection point)
 
 EXAMPLE FORMAT:
 ${examples}
@@ -282,7 +283,9 @@ Create a markdown document with:
             {
               id: 'edge-1',
               source: 'node-1',
+              sourceHandle: null,
               target: 'node-2',
+              targetHandle: null,
               type: 'directional',
               data: { label: 'uses', direction: 'right' }
             }
@@ -309,7 +312,9 @@ Create a markdown document with:
             {
               id: 'edge-1',
               source: 'node-1',
+              sourceHandle: null,
               target: 'node-2',
+              targetHandle: null,
               type: 'directional',
               data: { label: 'calls', direction: 'right' }
             }
@@ -354,9 +359,21 @@ Create a markdown document with:
       const jsonStr = jsonMatch ? jsonMatch[1] : response;
       const parsed = JSON.parse(jsonStr);
 
+      // Sanitize edges to remove explicit handle specifications
+      // This allows React Flow to automatically connect to the closest handle
+      const sanitizedEdges = (parsed.edges || []).map((edge: any) => {
+        const { sourceHandle, targetHandle, ...rest } = edge;
+        // Explicitly set to null to let React Flow calculate closest handle
+        return {
+          ...rest,
+          sourceHandle: null,
+          targetHandle: null,
+        };
+      });
+
       return {
         nodes: parsed.nodes || [],
-        edges: parsed.edges || []
+        edges: sanitizedEdges
       };
     } catch (error) {
       console.error('BAC4 MCP: Error parsing diagram response:', error);

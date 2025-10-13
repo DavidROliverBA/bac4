@@ -15,6 +15,7 @@
 
 import * as React from 'react';
 import { Node, Edge } from 'reactflow';
+import { App, Vault, Workspace } from 'obsidian';
 import type {
   C4NodeData,
   CloudComponentNodeData,
@@ -36,6 +37,8 @@ import {
   Z_INDEX,
 } from '../../constants';
 import { ErrorHandler } from '../../utils/error-handling';
+import { MarkdownLinkService } from '../../services/markdown-link-service';
+import { LinkMarkdownModal } from '../modals/LinkMarkdownModal';
 
 // Imported extracted components
 import { FormField } from './form/FormField';
@@ -58,6 +61,7 @@ interface PropertyPanelProps {
   onUpdateProperties: (nodeId: string, updates: any) => void;
   onUpdateEdgeLabel: (edgeId: string, label: string) => void;
   onUpdateEdgeDirection: (edgeId: string, direction: 'right' | 'left' | 'both') => void;
+  onDeleteEdge?: (edgeId: string) => void;
   onClose: () => void;
   // New props for diagram linking
   plugin?: BAC4Plugin;
@@ -66,6 +70,19 @@ interface PropertyPanelProps {
   navigationService?: DiagramNavigationService;
   onOpenDiagram?: (path: string) => void;
   onCreateAndLinkChild?: (nodeId: string) => Promise<void>;
+  // New props for markdown linking
+  app?: App;
+  vault?: Vault;
+  workspace?: Workspace;
+  onLinkMarkdownFile?: (nodeId: string, filePath: string) => void;
+  onUnlinkMarkdownFile?: (nodeId: string) => void;
+  onCreateAndLinkMarkdownFile?: (nodeId: string, filePath: string) => Promise<void>;
+  onOpenLinkedMarkdownFile?: (nodeId: string) => Promise<void>;
+  // New props for navigation
+  onNavigateToChild?: () => void;
+  onNavigateToParent?: () => void;
+  showNavigateToChild?: boolean;
+  showNavigateToParent?: boolean;
 }
 
 export const PropertyPanel: React.FC<PropertyPanelProps> = ({
@@ -75,12 +92,24 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
   onUpdateProperties,
   onUpdateEdgeLabel,
   onUpdateEdgeDirection,
+  onDeleteEdge,
   onClose,
   currentDiagramPath,
   currentDiagramType,
   navigationService,
   onOpenDiagram,
   onCreateAndLinkChild,
+  app,
+  vault,
+  workspace,
+  onLinkMarkdownFile,
+  onUnlinkMarkdownFile,
+  onCreateAndLinkMarkdownFile,
+  onOpenLinkedMarkdownFile,
+  onNavigateToChild,
+  onNavigateToParent,
+  showNavigateToChild,
+  showNavigateToParent,
 }) => {
   if (!node && !edge) return null;
 
@@ -90,10 +119,13 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
   const isPersonNode = node?.type === 'person';
   const isContainerNode = node?.type === 'container';
 
-  // State for linking
+  // State for diagram linking
   const [availableDiagrams, setAvailableDiagrams] = React.useState<DiagramNode[]>([]);
   const [linkedDiagram, setLinkedDiagram] = React.useState<DiagramNode | null>(null);
   const [loading, setLoading] = React.useState(false);
+
+  // State for markdown linking
+  const [markdownFileExists, setMarkdownFileExists] = React.useState(false);
 
   // Determine if this node can have child diagrams
   const canHaveChildren =
@@ -138,6 +170,17 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
 
     loadData();
   }, [canHaveChildren, node?.id, navigationService, currentDiagramPath, targetDiagramType]);
+
+  // Check if linked markdown file exists
+  React.useEffect(() => {
+    if (node?.data.linkedMarkdownFile && vault) {
+      MarkdownLinkService.fileExists(vault, node.data.linkedMarkdownFile).then(
+        setMarkdownFileExists
+      );
+    } else {
+      setMarkdownFileExists(false);
+    }
+  }, [node?.data.linkedMarkdownFile, vault]);
 
   const handleLabelChange = (value: string) => {
     if (node) onUpdateLabel(node.id, value);
@@ -221,6 +264,42 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
     }
   };
 
+  // Markdown linking handlers
+  const handleLinkMarkdownFile = () => {
+    if (!node || !app || !currentDiagramPath) return;
+
+    const modal = new LinkMarkdownModal(
+      app,
+      node.data.label,
+      currentDiagramPath,
+      async (filePath, createIfMissing) => {
+        if (createIfMissing) {
+          await onCreateAndLinkMarkdownFile?.(node.id, filePath);
+        } else {
+          onLinkMarkdownFile?.(node.id, filePath);
+        }
+      }
+    );
+    modal.open();
+  };
+
+  const handleOpenMarkdownFile = async () => {
+    if (!node) return;
+    await onOpenLinkedMarkdownFile?.(node.id);
+  };
+
+  const handleUnlinkMarkdownFile = () => {
+    if (!node) return;
+    if (confirm('Unlink this markdown file? The file will not be deleted.')) {
+      onUnlinkMarkdownFile?.(node.id);
+    }
+  };
+
+  const handleCreateMarkdownFile = async () => {
+    if (!node || !node.data.linkedMarkdownFile) return;
+    await onCreateAndLinkMarkdownFile?.(node.id, node.data.linkedMarkdownFile);
+  };
+
   return (
     <div
       style={{
@@ -268,6 +347,68 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
 
       {/* Properties */}
       <div style={{ flex: 1, overflowY: 'auto', padding: SPACING.padding.panel }}>
+        {/* Navigation Buttons - Only for nodes */}
+        {node && (showNavigateToChild || showNavigateToParent) && (
+          <div
+            style={{
+              display: 'flex',
+              gap: SPACING.small,
+              marginBottom: SPACING.container,
+              paddingBottom: SPACING.container,
+              borderBottom: `1px solid ${UI_COLORS.backgroundModifierBorder}`,
+            }}
+          >
+            {showNavigateToParent && onNavigateToParent && (
+              <button
+                onClick={onNavigateToParent}
+                style={{
+                  flex: 1,
+                  padding: SPACING.padding.input,
+                  background: UI_COLORS.backgroundSecondary,
+                  border: `1px solid ${UI_COLORS.backgroundModifierBorder}`,
+                  borderRadius: BORDER_RADIUS.normal,
+                  color: UI_COLORS.textNormal,
+                  cursor: 'pointer',
+                  fontSize: FONT_SIZES.normal,
+                  fontWeight: 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: SPACING.small,
+                }}
+                title="Navigate to parent diagram"
+              >
+                <span style={{ fontSize: FONT_SIZES.large }}>−</span>
+                <span>Parent</span>
+              </button>
+            )}
+            {showNavigateToChild && onNavigateToChild && (
+              <button
+                onClick={onNavigateToChild}
+                style={{
+                  flex: 1,
+                  padding: SPACING.padding.input,
+                  background: UI_COLORS.interactiveAccent,
+                  border: 'none',
+                  borderRadius: BORDER_RADIUS.normal,
+                  color: '#fff',
+                  cursor: 'pointer',
+                  fontSize: FONT_SIZES.normal,
+                  fontWeight: 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: SPACING.small,
+                }}
+                title="Navigate to child diagram"
+              >
+                <span style={{ fontSize: FONT_SIZES.large }}>+</span>
+                <span>Child</span>
+              </button>
+            )}
+          </div>
+        )}
+
         {/* Edge Properties */}
         {edge && (
           <>
@@ -305,6 +446,33 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
               value={(edge as any).data?.direction || (edge as any).direction || 'right'}
               onChange={(dir) => onUpdateEdgeDirection(edge.id, dir)}
             />
+
+            {/* Delete Edge Button */}
+            {onDeleteEdge && (
+              <div style={{ marginTop: SPACING.container }}>
+                <button
+                  onClick={() => {
+                    if (confirm('Delete this edge? This action cannot be undone.')) {
+                      onDeleteEdge(edge.id);
+                      onClose();
+                    }
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: SPACING.padding.input,
+                    background: '#E74C3C',
+                    border: 'none',
+                    borderRadius: BORDER_RADIUS.normal,
+                    color: '#fff',
+                    cursor: 'pointer',
+                    fontSize: FONT_SIZES.normal,
+                    fontWeight: 600,
+                  }}
+                >
+                  Delete Edge
+                </button>
+              </div>
+            )}
 
             {/* Edge ID (read-only) */}
             <div
@@ -569,6 +737,150 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
                   />
                 )}
               </>
+            )}
+
+            {/* Linked Markdown Documentation */}
+            {app && vault && workspace && (
+              <FormSection label="Linked Documentation">
+                {!node.data.linkedMarkdownFile ? (
+                  // No file linked
+                  <button
+                    onClick={handleLinkMarkdownFile}
+                    style={{
+                      width: '100%',
+                      padding: SPACING.padding.input,
+                      background: UI_COLORS.interactiveAccent,
+                      border: 'none',
+                      borderRadius: BORDER_RADIUS.normal,
+                      color: '#fff',
+                      cursor: 'pointer',
+                      fontSize: FONT_SIZES.normal,
+                      fontWeight: 600,
+                    }}
+                  >
+                    Link to Markdown File
+                  </button>
+                ) : markdownFileExists ? (
+                  // File exists
+                  <>
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: SPACING.small,
+                        padding: SPACING.padding.input,
+                        background: UI_COLORS.backgroundSecondary,
+                        borderRadius: BORDER_RADIUS.normal,
+                        marginBottom: SPACING.small,
+                      }}
+                    >
+                      <span style={{ fontSize: FONT_SIZES.normal }}>📄</span>
+                      <span
+                        style={{
+                          fontSize: FONT_SIZES.small,
+                          color: UI_COLORS.textNormal,
+                          flex: 1,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {MarkdownLinkService.getFileName(node.data.linkedMarkdownFile)}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', gap: SPACING.small }}>
+                      <button
+                        onClick={handleOpenMarkdownFile}
+                        style={{
+                          flex: 1,
+                          padding: SPACING.padding.input,
+                          background: UI_COLORS.interactiveAccent,
+                          border: 'none',
+                          borderRadius: BORDER_RADIUS.normal,
+                          color: '#fff',
+                          cursor: 'pointer',
+                          fontSize: FONT_SIZES.normal,
+                          fontWeight: 600,
+                        }}
+                      >
+                        Open File
+                      </button>
+                      <button
+                        onClick={handleUnlinkMarkdownFile}
+                        style={{
+                          padding: SPACING.padding.input,
+                          background: UI_COLORS.backgroundSecondary,
+                          border: `1px solid ${UI_COLORS.backgroundModifierBorder}`,
+                          borderRadius: BORDER_RADIUS.normal,
+                          color: UI_COLORS.textMuted,
+                          cursor: 'pointer',
+                          fontSize: FONT_SIZES.small,
+                        }}
+                      >
+                        Unlink
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  // File doesn't exist
+                  <>
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: SPACING.small,
+                        padding: SPACING.padding.input,
+                        background: 'rgba(231, 76, 60, 0.1)',
+                        borderRadius: BORDER_RADIUS.normal,
+                        marginBottom: SPACING.small,
+                      }}
+                    >
+                      <span style={{ fontSize: FONT_SIZES.normal }}>⚠️</span>
+                      <span
+                        style={{
+                          fontSize: FONT_SIZES.small,
+                          color: UI_COLORS.textNormal,
+                          flex: 1,
+                        }}
+                      >
+                        {MarkdownLinkService.getFileName(node.data.linkedMarkdownFile)} (not found)
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', gap: SPACING.small }}>
+                      <button
+                        onClick={handleCreateMarkdownFile}
+                        style={{
+                          flex: 1,
+                          padding: SPACING.padding.input,
+                          background: UI_COLORS.interactiveAccent,
+                          border: 'none',
+                          borderRadius: BORDER_RADIUS.normal,
+                          color: '#fff',
+                          cursor: 'pointer',
+                          fontSize: FONT_SIZES.normal,
+                          fontWeight: 600,
+                        }}
+                      >
+                        Create File
+                      </button>
+                      <button
+                        onClick={handleLinkMarkdownFile}
+                        style={{
+                          padding: SPACING.padding.input,
+                          background: UI_COLORS.backgroundSecondary,
+                          border: `1px solid ${UI_COLORS.backgroundModifierBorder}`,
+                          borderRadius: BORDER_RADIUS.normal,
+                          color: UI_COLORS.textNormal,
+                          cursor: 'pointer',
+                          fontSize: FONT_SIZES.small,
+                        }}
+                      >
+                        Change Link
+                      </button>
+                    </div>
+                  </>
+                )}
+              </FormSection>
             )}
 
             {/* Node ID (read-only) */}

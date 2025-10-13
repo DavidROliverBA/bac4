@@ -493,9 +493,25 @@ export class DiagramNavigationService {
   }
 
   /**
-   * Navigate to parent diagram
+   * Get parent diagram for a given diagram
+   *
+   * Looks up the parent diagram in the relationships graph. Returns null
+   * if the diagram is at the root level (no parent).
+   *
+   * @param currentPath - Path to the current .bac4 file
+   * @returns Parent DiagramNode or null if at root
+   *
+   * @example
+   * ```ts
+   * const parent = await navService.getParentDiagram('API_Gateway.bac4');
+   * if (parent) {
+   *   console.log('Parent:', parent.displayName, parent.filePath);
+   * } else {
+   *   console.log('This is a root diagram');
+   * }
+   * ```
    */
-  async navigateToParent(currentPath: string): Promise<string | null> {
+  async getParentDiagram(currentPath: string): Promise<DiagramNode | null> {
     const data = await this.getRelationshipsData();
     const currentDiagram = data.diagrams.find((d) => d.filePath === currentPath);
 
@@ -511,6 +527,14 @@ export class DiagramNavigationService {
 
     // Get parent diagram
     const parent = data.diagrams.find((d) => d.id === parentRel.parentDiagramId);
+    return parent || null;
+  }
+
+  /**
+   * Navigate to parent diagram
+   */
+  async navigateToParent(currentPath: string): Promise<string | null> {
+    const parent = await this.getParentDiagram(currentPath);
     return parent?.filePath || null;
   }
 

@@ -50,9 +50,17 @@ export const SystemNode: React.FC<NodeProps<SystemNodeData>> = ({ data, selected
 
   return (
     <div style={getNodeStyles()}>
+      {/* Connection handles - all four sides */}
       <Handle
         type="target"
         position={Position.Top}
+        id="top"
+        style={{ background: color, width: '14px', height: '14px' }}
+      />
+      <Handle
+        type="target"
+        position={Position.Left}
+        id="left"
         style={{ background: color, width: '14px', height: '14px' }}
       />
 
@@ -114,7 +122,14 @@ export const SystemNode: React.FC<NodeProps<SystemNodeData>> = ({ data, selected
 
       <Handle
         type="source"
+        position={Position.Right}
+        id="right"
+        style={{ background: color, width: '14px', height: '14px' }}
+      />
+      <Handle
+        type="source"
         position={Position.Bottom}
+        id="bottom"
         style={{ background: color, width: '14px', height: '14px' }}
       />
     </div>

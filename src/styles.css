@@ -175,3 +175,33 @@
   border-radius: 4px;
   cursor: pointer;
 }
+
+/* Navigation Icons - Plus/Minus for drill-down */
+.bac4-nav-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  opacity: 0.8;
+}
+
+.bac4-nav-icon:hover {
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+.bac4-nav-icon:active {
+  transform: scale(0.95);
+}
+
+.bac4-nav-icon svg {
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+.bac4-nav-icon:hover svg circle {
+  fill: var(--interactive-accent-hover);
+}

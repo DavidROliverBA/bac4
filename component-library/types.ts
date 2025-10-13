@@ -8,7 +8,7 @@
  * Cloud provider types
  * Add new cloud providers here (e.g., 'azure', 'gcp', 'digitalocean', etc.)
  */
-export type CloudProvider = 'aws' | 'azure' | 'gcp' | 'saas';
+export type CloudProvider = 'aws' | 'azure' | 'gcp' | 'saas' | 'it';
 // </AI_MODIFIABLE>
 
 // <AI_MODIFIABLE>
