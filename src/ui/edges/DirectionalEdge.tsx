@@ -1,6 +1,9 @@
 /**
  * Directional Edge Component
  * Custom edge with direction property (right, left, both)
+ *
+ * NOTE: Markers are set on the edge data when creating/updating edges,
+ * not in this component. This component just renders the edge path and label.
  */
 
 import * as React from 'react';
@@ -9,7 +12,6 @@ import {
   getBezierPath,
   EdgeLabelRenderer,
   BaseEdge,
-  MarkerType,
 } from 'reactflow';
 import {
   FONT_SIZES,
@@ -33,11 +35,9 @@ export const DirectionalEdge: React.FC<EdgeProps<DirectionalEdgeData>> = ({
   targetPosition,
   data,
   style = {},
-  markerEnd: defaultMarkerEnd,
-  markerStart: defaultMarkerStart,
+  markerEnd,
+  markerStart,
 }) => {
-  const direction = data?.direction || 'right';
-
   // Calculate path
   const [edgePath, labelX, labelY] = getBezierPath({
     sourceX,
@@ -48,39 +48,9 @@ export const DirectionalEdge: React.FC<EdgeProps<DirectionalEdgeData>> = ({
     targetPosition,
   });
 
-  // Define marker configuration based on direction
-  // CRITICAL: width and height are required, default to 0 (invisible)!
-  const arrow = {
-    type: MarkerType.ArrowClosed,
-    color: '#888888',
-    width: 20,
-    height: 20,
-  };
-
-  let markerEnd;
-  let markerStart;
-
-  switch (direction) {
-    case 'right':
-      markerEnd = arrow;
-      markerStart = undefined;
-      break;
-    case 'left':
-      markerEnd = undefined;
-      markerStart = arrow;
-      break;
-    case 'both':
-      markerEnd = arrow;
-      markerStart = arrow;
-      break;
-    default:
-      markerEnd = arrow;
-      markerStart = undefined;
-  }
-
   return (
     <>
-      {/* Render edge path with markers */}
+      {/* Render edge path - markers are passed through from edge data */}
       <BaseEdge
         id={id}
         path={edgePath}

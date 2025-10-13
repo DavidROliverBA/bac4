@@ -15,6 +15,7 @@ import * as React from 'react';
 import type { Edge, Connection } from 'reactflow';
 import { addEdge } from 'reactflow';
 import type { EdgeData } from '../../../types/canvas-types';
+import { getEdgeMarkers } from '../utils/canvas-utils';
 
 export interface UseEdgeHandlersProps {
   setEdges: React.Dispatch<React.SetStateAction<Edge<EdgeData>[]>>;
@@ -43,13 +44,17 @@ export function useEdgeHandlers(props: UseEdgeHandlersProps): EdgeHandlers {
    */
   const onConnect = React.useCallback(
     (params: Connection) => {
+      const direction = 'right';
+      const markers = getEdgeMarkers(direction);
+
       const edge = {
         ...params,
         type: 'directional',
         animated: false,
+        ...markers,
         data: {
           label: 'uses',
-          direction: 'right' as const,
+          direction,
         },
       };
       setEdges((eds) => addEdge(edge, eds));
@@ -98,15 +103,18 @@ export function useEdgeHandlers(props: UseEdgeHandlersProps): EdgeHandlers {
   const updateEdgeDirection = React.useCallback(
     (edgeId: string, direction: 'right' | 'left' | 'both') => {
       console.log('BAC4: updateEdgeDirection called', { edgeId, direction });
+      const markers = getEdgeMarkers(direction);
+
       setEdges((eds) =>
         eds.map((edge) => {
           if (edge.id === edgeId) {
             console.log('BAC4: Found edge to update', {
               oldDirection: edge.data?.direction,
-              direction,
+              newDirection: direction,
             });
             return {
               ...edge,
+              ...markers,
               data: { ...edge.data, direction },
             };
           }
@@ -116,9 +124,11 @@ export function useEdgeHandlers(props: UseEdgeHandlersProps): EdgeHandlers {
 
       // Also update selected edge state if needed
       onEdgeSelect((prev: Edge<EdgeData> | null) =>
-        prev?.id === edgeId ? { ...prev, data: { ...prev.data, direction } } : prev
+        prev?.id === edgeId
+          ? { ...prev, ...markers, data: { ...prev.data, direction } }
+          : prev
       );
-      console.log('BAC4: ✅ Updated edge direction');
+      console.log('BAC4: ✅ Updated edge direction and markers', markers);
     },
     [setEdges, onEdgeSelect]
   );

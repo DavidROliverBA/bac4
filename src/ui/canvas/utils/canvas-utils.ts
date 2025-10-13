@@ -8,6 +8,7 @@
  */
 
 import type { Edge } from 'reactflow';
+import { MarkerType } from 'reactflow';
 import type { EdgeData } from '../../../types/canvas-types';
 
 // <AI_MODIFIABLE>
@@ -78,15 +79,42 @@ export function getChildDiagramType(
 // </AI_MODIFIABLE>
 
 /**
+ * Get marker configuration based on direction
+ *
+ * @param direction - Edge direction ('right', 'left', 'both')
+ * @returns Object with markerEnd and markerStart properties
+ */
+export function getEdgeMarkers(direction: 'right' | 'left' | 'both') {
+  const arrow = {
+    type: MarkerType.ArrowClosed,
+    width: 20,
+    height: 20,
+    color: '#888888',
+  };
+
+  switch (direction) {
+    case 'right':
+      return { markerEnd: arrow, markerStart: undefined };
+    case 'left':
+      return { markerEnd: undefined, markerStart: arrow };
+    case 'both':
+      return { markerEnd: arrow, markerStart: arrow };
+    default:
+      return { markerEnd: arrow, markerStart: undefined };
+  }
+}
+
+/**
  * Normalize edges to ensure they have proper type and data
  *
  * Ensures all edges have:
  * - type: 'directional'
  * - data.label: defaults to 'uses'
  * - data.direction: defaults to 'right'
+ * - markerEnd/markerStart: based on direction
  *
  * @param edges - Array of edges to normalize
- * @returns Normalized edges with complete data
+ * @returns Normalized edges with complete data and markers
  *
  * @example
  * ```ts
@@ -94,19 +122,25 @@ export function getChildDiagramType(
  *   { id: 'e1', source: 'n1', target: 'n2' },
  *   { id: 'e2', source: 'n2', target: 'n3', label: 'calls' }
  * ]);
- * // All edges now have type: 'directional' and data.label, data.direction
+ * // All edges now have type: 'directional', data.label, data.direction, and markers
  * ```
  */
 export function normalizeEdges(edges: Edge[]): Edge<EdgeData>[] {
-  return edges.map((edge) => ({
-    ...edge,
-    type: edge.type || 'directional',
-    data: {
-      label: edge.data?.label || (edge as any).label || 'uses',
-      direction: edge.data?.direction || 'right',
-      ...edge.data,
-    },
-  }));
+  return edges.map((edge) => {
+    const direction = (edge.data?.direction || 'right') as 'right' | 'left' | 'both';
+    const markers = getEdgeMarkers(direction);
+
+    return {
+      ...edge,
+      type: edge.type || 'directional',
+      ...markers,
+      data: {
+        label: edge.data?.label || (edge as any).label || 'uses',
+        direction,
+        ...edge.data,
+      },
+    };
+  });
 }
 
 /**
