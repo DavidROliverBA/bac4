@@ -248,7 +248,7 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
           <>
             <FormField
               label="Relationship Label"
-              value={String(edge.label || '')}
+              value={String((edge as any).data?.label || '')}
               onChange={(value) => onUpdateEdgeLabel(edge.id, value)}
               placeholder="e.g., uses, depends on, calls"
             />

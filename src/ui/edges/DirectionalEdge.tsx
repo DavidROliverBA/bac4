@@ -33,6 +33,8 @@ export const DirectionalEdge: React.FC<EdgeProps<DirectionalEdgeData>> = ({
   targetPosition,
   data,
   style = {},
+  markerEnd: defaultMarkerEnd,
+  markerStart: defaultMarkerStart,
 }) => {
   const direction = data?.direction || 'right';
 
@@ -47,59 +49,34 @@ export const DirectionalEdge: React.FC<EdgeProps<DirectionalEdgeData>> = ({
   });
 
   // Define marker configuration based on direction
-  // Using React Flow's MarkerType enum
   // CRITICAL: width and height are required, default to 0 (invisible)!
-  const getMarkers = () => {
-    switch (direction) {
-      case 'right':
-        return {
-          markerEnd: {
-            type: MarkerType.ArrowClosed,
-            color: '#888888',
-            width: 20,
-            height: 20,
-          },
-          markerStart: undefined,
-        };
-      case 'left':
-        return {
-          markerEnd: undefined,
-          markerStart: {
-            type: MarkerType.ArrowClosed,
-            color: '#888888',
-            width: 20,
-            height: 20,
-          },
-        };
-      case 'both':
-        return {
-          markerEnd: {
-            type: MarkerType.ArrowClosed,
-            color: '#888888',
-            width: 20,
-            height: 20,
-          },
-          markerStart: {
-            type: MarkerType.ArrowClosed,
-            color: '#888888',
-            width: 20,
-            height: 20,
-          },
-        };
-      default:
-        return {
-          markerEnd: {
-            type: MarkerType.ArrowClosed,
-            color: '#888888',
-            width: 20,
-            height: 20,
-          },
-          markerStart: undefined,
-        };
-    }
+  const arrow = {
+    type: MarkerType.ArrowClosed,
+    color: '#888888',
+    width: 20,
+    height: 20,
   };
 
-  const markers = getMarkers();
+  let markerEnd;
+  let markerStart;
+
+  switch (direction) {
+    case 'right':
+      markerEnd = arrow;
+      markerStart = undefined;
+      break;
+    case 'left':
+      markerEnd = undefined;
+      markerStart = arrow;
+      break;
+    case 'both':
+      markerEnd = arrow;
+      markerStart = arrow;
+      break;
+    default:
+      markerEnd = arrow;
+      markerStart = undefined;
+  }
 
   return (
     <>
@@ -107,8 +84,8 @@ export const DirectionalEdge: React.FC<EdgeProps<DirectionalEdgeData>> = ({
       <BaseEdge
         id={id}
         path={edgePath}
-        markerEnd={markers.markerEnd}
-        markerStart={markers.markerStart}
+        markerEnd={markerEnd}
+        markerStart={markerStart}
         style={{
           stroke: '#888888',
           strokeWidth: 2,
