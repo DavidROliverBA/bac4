@@ -9,6 +9,7 @@ import {
   getBezierPath,
   EdgeLabelRenderer,
   BaseEdge,
+  MarkerType,
 } from 'reactflow';
 import {
   FONT_SIZES,
@@ -32,8 +33,6 @@ export const DirectionalEdge: React.FC<EdgeProps<DirectionalEdgeData>> = ({
   targetPosition,
   data,
   style = {},
-  markerEnd,
-  markerStart,
 }) => {
   const direction = data?.direction || 'right';
 
@@ -48,27 +47,27 @@ export const DirectionalEdge: React.FC<EdgeProps<DirectionalEdgeData>> = ({
   });
 
   // Define marker configuration based on direction
-  // Using simple arrow strings that React Flow understands
+  // Using React Flow's MarkerType enum
   const getMarkers = () => {
     switch (direction) {
       case 'right':
         return {
-          markerEnd: 'arrow',
+          markerEnd: { type: MarkerType.ArrowClosed, color: '#888888' },
           markerStart: undefined,
         };
       case 'left':
         return {
           markerEnd: undefined,
-          markerStart: 'arrow',
+          markerStart: { type: MarkerType.ArrowClosed, color: '#888888' },
         };
       case 'both':
         return {
-          markerEnd: 'arrow',
-          markerStart: 'arrow',
+          markerEnd: { type: MarkerType.ArrowClosed, color: '#888888' },
+          markerStart: { type: MarkerType.ArrowClosed, color: '#888888' },
         };
       default:
         return {
-          markerEnd: 'arrow',
+          markerEnd: { type: MarkerType.ArrowClosed, color: '#888888' },
           markerStart: undefined,
         };
     }
@@ -85,7 +84,7 @@ export const DirectionalEdge: React.FC<EdgeProps<DirectionalEdgeData>> = ({
         markerEnd={markers.markerEnd}
         markerStart={markers.markerStart}
         style={{
-          stroke: UI_COLORS.textMuted,
+          stroke: '#888888',
           strokeWidth: 2,
           ...style,
         }}
