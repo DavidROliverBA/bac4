@@ -14,6 +14,10 @@ import type {
   CanvasEdge,
 } from './canvas-types';
 import type { ComponentDefinition } from '../../component-library/types';
+import type { BreadcrumbItem as BreadcrumbItemType } from './diagram-relationships';
+
+// Re-export BreadcrumbItem for backward compatibility
+export type { BreadcrumbItemType as BreadcrumbItem };
 
 /**
  * Property Panel props
@@ -42,7 +46,7 @@ export interface UnifiedToolbarProps {
   currentDiagramPath: string;
   plugin: BAC4Plugin;
   onDiagramTypeChange: (newType: 'context' | 'container' | 'component') => void;
-  breadcrumbs: BreadcrumbItem[];
+  breadcrumbs: BreadcrumbItemType[];
   onBreadcrumbClick: (path: string) => void;
   onRenameDiagram: () => void;
   onDeleteDiagram: () => void;
@@ -57,20 +61,10 @@ export interface ComponentPaletteProps {
 }
 
 /**
- * Breadcrumb item
- */
-export interface BreadcrumbItem {
-  label: string;
-  path: string;
-  type: 'context' | 'container' | 'component' | 'current' | 'child' | string;
-  id?: string;
-}
-
-/**
  * Breadcrumbs component props
  */
 export interface BreadcrumbsProps {
-  breadcrumbs: BreadcrumbItem[];
+  breadcrumbs: BreadcrumbItemType[];
   currentPath: string;
   onNavigate: (path: string) => void;
 }

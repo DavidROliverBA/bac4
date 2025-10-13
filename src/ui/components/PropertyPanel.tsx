@@ -69,7 +69,6 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
   onUpdateEdgeLabel,
   onUpdateEdgeDirection,
   onClose,
-  plugin,
   currentDiagramPath,
   currentDiagramType,
   navigationService,

@@ -115,6 +115,12 @@ export function useNodeHandlers(props: UseNodeHandlersProps): NodeHandlers {
           console.log('BAC4: Parent path:', filePath);
           console.log('BAC4: Node ID:', node.id);
 
+          // Type guard: component diagrams cannot have children (already filtered by canDrillDown)
+          if (diagramType === 'component') {
+            console.error('BAC4: Component diagrams cannot have children');
+            return;
+          }
+
           childPath = await navigationService.createChildDiagram(
             filePath,
             node.id,
@@ -225,8 +231,6 @@ export function useNodeHandlers(props: UseNodeHandlersProps): NodeHandlers {
         console.error('BAC4: Node not found:', nodeId);
         return;
       }
-
-      const oldLabel = node.data.label;
 
       // Update the node label
       setNodes((nds) => {

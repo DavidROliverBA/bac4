@@ -264,8 +264,8 @@ export class DiagramNavigationService {
     if (!parentDiagram) {
       // Auto-register parent if not already registered
       const parentFile = this.plugin.app.vault.getAbstractFileByPath(parentPath);
-      const parentDisplayName = parentFile?.basename || 'Diagram';
-      const parentId = await this.registerDiagram(
+      const parentDisplayName = (parentFile instanceof TFile) ? parentFile.basename : 'Diagram';
+      await this.registerDiagram(
         parentPath,
         parentDisplayName,
         parentDiagramType
@@ -449,9 +449,12 @@ export class DiagramNavigationService {
     if (!currentDiagram) {
       console.log('BAC4 NavService: Diagram not registered, auto-registering');
       const file = this.plugin.app.vault.getAbstractFileByPath(currentPath);
-      if (file) {
+      if (file instanceof TFile) {
         await this.registerDiagram(currentPath, file.basename, 'context');
-        currentDiagram = await this.getDiagramByPath(currentPath);
+        const registered = await this.getDiagramByPath(currentPath);
+        if (registered) {
+          currentDiagram = registered;
+        }
       }
     }
 

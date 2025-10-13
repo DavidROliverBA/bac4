@@ -18,6 +18,8 @@ export interface BaseNodeData {
   type?: string;
   color?: string;
   description?: string;
+  hasChildDiagram?: boolean;
+  linkedDiagramPath?: string;
 }
 
 /**

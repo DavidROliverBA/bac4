@@ -44,18 +44,18 @@ export const ExportMenu: React.FC<ExportMenuProps> = ({ onExport, isExporting = 
 
   // Close menu when clicking outside
   React.useEffect(() => {
+    if (!showMenu) return;
+
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as globalThis.Node)) {
         setShowMenu(false);
       }
     };
 
-    if (showMenu) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => {
-        document.removeEventListener('mousedown', handleClickOutside);
-      };
-    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
   }, [showMenu]);
 
   const handleExportClick = (format: 'png' | 'jpeg' | 'svg') => {

@@ -185,8 +185,10 @@ export function createCloudComponentNode(
     position,
     data: {
       label,
-      component,
-      properties: { ...component.defaultProps },
+      componentId: component.id,
+      provider: component.provider as 'aws' | 'azure' | 'gcp' | 'saas',
+      category: component.category,
+      icon: component.icon,
     },
   };
 }

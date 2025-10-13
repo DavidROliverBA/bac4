@@ -22,7 +22,7 @@ import {
   buildMarkdownWithFrontmatter,
 } from '../../../utils/frontmatter-parser';
 import { AUTO_SAVE_DEBOUNCE_MS } from '../../../constants';
-import { normalizeEdges, getDiagramName } from '../utils/canvas-utils';
+import { normalizeEdges } from '../utils/canvas-utils';
 import { initializeNodeCounter } from '../utils/auto-naming';
 
 export interface UseFileOperationsProps {

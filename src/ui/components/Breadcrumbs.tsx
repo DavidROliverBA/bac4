@@ -27,7 +27,6 @@ interface BreadcrumbsProps {
 
 export const Breadcrumbs: React.FC<BreadcrumbsProps> = ({
   breadcrumbs,
-  currentPath,
   onNavigate,
 }) => {
   if (breadcrumbs.length === 0) {

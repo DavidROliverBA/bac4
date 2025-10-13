@@ -74,6 +74,8 @@ export const SPACING = {
 
   /** Common gap sizes */
   gap: {
+    /** 2px - Tiny gap */
+    tiny: '2px',
     /** 4px - Tight grouping */
     tight: '4px',
     /** 6px - Normal spacing */
@@ -111,6 +113,15 @@ export const UI_COLORS = {
   interactiveHover: 'var(--interactive-hover)',
   interactiveAccent: 'var(--interactive-accent)',
   interactiveAccentHover: 'var(--interactive-accent-hover)',
+
+  // Border colors
+  border: 'var(--background-modifier-border)',
+
+  // Danger colors (for delete/warning actions)
+  dangerBackground: 'rgba(220, 38, 38, 0.1)',
+  dangerBackgroundHover: 'rgba(220, 38, 38, 0.15)',
+  dangerBorder: 'rgba(220, 38, 38, 0.3)',
+  dangerText: 'rgb(220, 38, 38)',
 
   // Font
   fontInterface: 'var(--font-interface)',

@@ -22,44 +22,6 @@ export interface DirectionalEdgeData {
   direction?: 'right' | 'left' | 'both';
 }
 
-// SVG marker definitions (defined once globally)
-const EdgeMarkerDefs: React.FC = () => (
-  <svg style={{ position: 'absolute', width: 0, height: 0 }}>
-    <defs>
-      <marker
-        id="bac4-arrow-end"
-        viewBox="0 0 10 10"
-        refX="9"
-        refY="5"
-        markerWidth="6"
-        markerHeight="6"
-        orient="auto"
-      >
-        <path
-          d="M 0 0 L 10 5 L 0 10 z"
-          fill={UI_COLORS.textMuted}
-        />
-      </marker>
-      <marker
-        id="bac4-arrow-start"
-        viewBox="0 0 10 10"
-        refX="1"
-        refY="5"
-        markerWidth="6"
-        markerHeight="6"
-        orient="auto"
-      >
-        <path
-          d="M 10 0 L 0 5 L 10 10 z"
-          fill={UI_COLORS.textMuted}
-        />
-      </marker>
-    </defs>
-  </svg>
-);
-
-let markersInitialized = false;
-
 export const DirectionalEdge: React.FC<EdgeProps<DirectionalEdgeData>> = ({
   id,
   sourceX,
@@ -70,6 +32,8 @@ export const DirectionalEdge: React.FC<EdgeProps<DirectionalEdgeData>> = ({
   targetPosition,
   data,
   style = {},
+  markerEnd,
+  markerStart,
 }) => {
   const direction = data?.direction || 'right';
 
@@ -84,26 +48,27 @@ export const DirectionalEdge: React.FC<EdgeProps<DirectionalEdgeData>> = ({
   });
 
   // Define marker configuration based on direction
+  // Using simple arrow strings that React Flow understands
   const getMarkers = () => {
     switch (direction) {
       case 'right':
         return {
-          markerEnd: 'url(#bac4-arrow-end)',
+          markerEnd: 'arrow',
           markerStart: undefined,
         };
       case 'left':
         return {
           markerEnd: undefined,
-          markerStart: 'url(#bac4-arrow-start)',
+          markerStart: 'arrow',
         };
       case 'both':
         return {
-          markerEnd: 'url(#bac4-arrow-end)',
-          markerStart: 'url(#bac4-arrow-start)',
+          markerEnd: 'arrow',
+          markerStart: 'arrow',
         };
       default:
         return {
-          markerEnd: 'url(#bac4-arrow-end)',
+          markerEnd: 'arrow',
           markerStart: undefined,
         };
     }
@@ -113,12 +78,6 @@ export const DirectionalEdge: React.FC<EdgeProps<DirectionalEdgeData>> = ({
 
   return (
     <>
-      {/* Render marker defs once */}
-      {!markersInitialized && (() => {
-        markersInitialized = true;
-        return <EdgeMarkerDefs />;
-      })()}
-
       {/* Render edge path with markers */}
       <BaseEdge
         id={id}

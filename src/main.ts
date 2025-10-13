@@ -56,7 +56,7 @@ export default class BAC4Plugin extends Plugin {
     // Override file menu handler to prevent duplicate tabs
     this.registerEvent(
       this.app.workspace.on('file-menu', (menu, file) => {
-        if (file.extension === 'bac4') {
+        if (file instanceof TFile && file.extension === 'bac4') {
           menu.addItem((item) => {
             item
               .setTitle('Open in BAC4 Canvas')
