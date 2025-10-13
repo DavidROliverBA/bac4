@@ -48,26 +48,52 @@ export const DirectionalEdge: React.FC<EdgeProps<DirectionalEdgeData>> = ({
 
   // Define marker configuration based on direction
   // Using React Flow's MarkerType enum
+  // CRITICAL: width and height are required, default to 0 (invisible)!
   const getMarkers = () => {
     switch (direction) {
       case 'right':
         return {
-          markerEnd: { type: MarkerType.ArrowClosed, color: '#888888' },
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+            color: '#888888',
+            width: 20,
+            height: 20,
+          },
           markerStart: undefined,
         };
       case 'left':
         return {
           markerEnd: undefined,
-          markerStart: { type: MarkerType.ArrowClosed, color: '#888888' },
+          markerStart: {
+            type: MarkerType.ArrowClosed,
+            color: '#888888',
+            width: 20,
+            height: 20,
+          },
         };
       case 'both':
         return {
-          markerEnd: { type: MarkerType.ArrowClosed, color: '#888888' },
-          markerStart: { type: MarkerType.ArrowClosed, color: '#888888' },
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+            color: '#888888',
+            width: 20,
+            height: 20,
+          },
+          markerStart: {
+            type: MarkerType.ArrowClosed,
+            color: '#888888',
+            width: 20,
+            height: 20,
+          },
         };
       default:
         return {
-          markerEnd: { type: MarkerType.ArrowClosed, color: '#888888' },
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+            color: '#888888',
+            width: 20,
+            height: 20,
+          },
           markerStart: undefined,
         };
     }
