@@ -41,8 +41,8 @@ export const CloudComponentNode: React.FC<NodeProps<CloudComponentNodeData>> = (
     };
 
     const baseStyles = {
-      padding: SPACING.padding.node,
-      borderRadius: BORDER_RADIUS.large,
+      padding: SPACING.padding.card,
+      borderRadius: BORDER_RADIUS.normal,
       border: 'none',
       minWidth: NODE_DIMENSIONS.minWidth,
       maxWidth: NODE_DIMENSIONS.maxWidth,
@@ -50,7 +50,7 @@ export const CloudComponentNode: React.FC<NodeProps<CloudComponentNodeData>> = (
       backgroundColor: hexToRgba(color, 0.15),
       color: UI_COLORS.textNormal,
       fontFamily: UI_COLORS.fontInterface,
-      fontSize: FONT_SIZES.large,
+      fontSize: FONT_SIZES.small,
       boxShadow: selected
         ? `0 0 0 3px ${UI_COLORS.interactiveAccent}`
         : '0 2px 4px rgba(0,0,0,0.1)',
@@ -62,10 +62,10 @@ export const CloudComponentNode: React.FC<NodeProps<CloudComponentNodeData>> = (
 
   const providerBadgeStyles = {
     position: 'absolute' as const,
-    top: SPACING.small,
-    right: SPACING.small,
-    fontSize: FONT_SIZES.tiny,
-    padding: SPACING.padding.compact,
+    top: SPACING.tiny,
+    right: SPACING.tiny,
+    fontSize: '7px',
+    padding: '2px 4px',
     borderRadius: BORDER_RADIUS.small,
     backgroundColor: color,
     color: '#fff',
@@ -85,7 +85,7 @@ export const CloudComponentNode: React.FC<NodeProps<CloudComponentNodeData>> = (
       <div style={providerBadgeStyles}>{data.provider || 'CLOUD'}</div>
 
       {/* Component name */}
-      <div style={{ fontWeight: 600, marginBottom: SPACING.small, marginTop: SPACING.large }}>
+      <div style={{ fontWeight: 600, marginBottom: SPACING.tiny, marginTop: SPACING.medium, fontSize: FONT_SIZES.small }}>
         {data.label}
       </div>
 
@@ -93,9 +93,9 @@ export const CloudComponentNode: React.FC<NodeProps<CloudComponentNodeData>> = (
       {data.category && (
         <div
           style={{
-            fontSize: FONT_SIZES.small,
+            fontSize: FONT_SIZES.tiny,
             color: UI_COLORS.textMuted,
-            marginBottom: SPACING.small,
+            marginBottom: SPACING.tiny,
             fontStyle: 'italic',
           }}
         >
@@ -107,11 +107,11 @@ export const CloudComponentNode: React.FC<NodeProps<CloudComponentNodeData>> = (
       {data.properties && Object.keys(data.properties).length > 0 && (
         <div
           style={{
-            fontSize: FONT_SIZES.extraSmall,
+            fontSize: FONT_SIZES.tiny,
             color: UI_COLORS.textFaint,
-            marginTop: SPACING.large,
+            marginTop: SPACING.small,
             borderTop: `1px solid ${UI_COLORS.backgroundModifierBorder}`,
-            paddingTop: SPACING.medium,
+            paddingTop: SPACING.tiny,
           }}
         >
           {Object.entries(data.properties)
@@ -129,9 +129,9 @@ export const CloudComponentNode: React.FC<NodeProps<CloudComponentNodeData>> = (
         <div
           style={{
             position: 'absolute',
-            bottom: SPACING.small,
-            left: SPACING.small,
-            fontSize: FONT_SIZES.extraSmall,
+            bottom: SPACING.tiny,
+            left: SPACING.tiny,
+            fontSize: FONT_SIZES.tiny,
             color: UI_COLORS.textFaint,
           }}
         >

@@ -150,10 +150,11 @@ bac4-plugin/
 ```
 
 ### React Flow Integration
-- Uses `ReactFlowProvider` wrapper
+- Uses `ReactFlowProvider` wrapper (required for Zustand state management)
 - Custom node types registered in `nodeTypes` object
 - Drag & drop via `onDrop`, `onDragOver` handlers
 - Auto-save with 1-second debounce
+- **CRITICAL:** Each `<Background>` component MUST have unique `id` prop when multiple tabs open
 
 ### Obsidian Integration
 - Registers custom view type: `VIEW_TYPE_CANVAS = 'bac4-canvas'`
@@ -404,6 +405,124 @@ npm run typecheck    # TypeScript type checking
 - Check filePath is set correctly
 - Verify debounce timeout (1 second)
 - Check browser console for save errors
+
+### ⚠️ CRITICAL: Background Dots / Arrows Missing with Multiple Tabs Open
+
+**Problem:** First diagram tab renders correctly (dots + arrows), but opening a second tab causes it to lose background dots and arrows.
+
+**Root Cause:** React Flow's `<Background>` component uses SVG patterns with IDs. When multiple React Flow instances exist on the same page WITHOUT unique IDs, the SVG pattern definitions conflict - the second instance overwrites the first instance's pattern, causing the first to stop rendering.
+
+**The Fix:** Add unique `id` prop to Background component based on file path:
+
+```typescript
+// src/ui/canvas-view.tsx - CanvasEditor component
+<ReactFlow ...>
+  <Background
+    id={filePath ? `bg-${filePath.replace(/[^a-zA-Z0-9]/g, '-')}` : 'bg-default'}
+    variant={BackgroundVariant.Dots}
+    gap={12}
+    size={1}
+  />
+</ReactFlow>
+```
+
+**Why This Works:**
+- Each diagram file gets a unique Background ID: `bg-BAC4-Context-bac4`, `bg-BAC4-Container-1-bac4`, etc.
+- SVG patterns no longer conflict between tabs
+- All tabs render independently without interfering
+
+**DO NOT:**
+- ❌ Remove `ReactFlowProvider` (required for Zustand state management)
+- ❌ Use the same Background ID across multiple instances
+- ❌ Omit the `id` prop when multiple tabs might be open
+
+**ALWAYS:**
+- ✅ Include unique `id` prop on `<Background>` component
+- ✅ Base ID on file path or other unique identifier
+- ✅ Sanitize file path to create valid HTML/SVG ID (alphanumeric + hyphens)
+- ✅ Test with 2-3 tabs open simultaneously
+
+**Reference:**
+- React Flow docs: https://reactflow.dev/api-reference/components/background
+- GitHub issue: https://github.com/wbkd/react-flow/issues/1037
+
+### ⚠️ CRITICAL: Edge Arrows Not Displaying (React Flow 11 Issue)
+
+**Problem:** Arrows work on new edges but disappear after file save/reload, or don't work at all on certain diagram types.
+
+**Root Cause:** React Flow 11 has an **inconsistent marker serialization issue**. When edges are saved to JSON:
+- `MarkerType.ArrowClosed` enum → serializes as string `"arrowclosed"` (lowercase)
+- On reload, React Flow may not properly recognize the lowercase string value
+- Background dots also disappearing indicates React Flow isn't rendering properly
+
+**GitHub Issue Reference:**
+https://github.com/xyflow/xyflow/issues/5411 - Inconsistent typing for EdgeMarker.type after toObject() serialization
+
+**The Fix - Two-Part Solution:**
+
+#### Part 1: Ensure Markers Always Use MarkerType Enum
+```typescript
+// src/ui/canvas/utils/canvas-utils.ts
+import { MarkerType } from 'reactflow';
+
+export function getEdgeMarkers(direction: 'right' | 'left' | 'both') {
+  const arrow = {
+    type: MarkerType.ArrowClosed,  // ← MUST use enum, not string
+    width: 20,   // ← MUST be explicit (defaults to 0!)
+    height: 20,  // ← MUST be explicit (defaults to 0!)
+    color: '#888888',
+  };
+  // ... return based on direction
+}
+```
+
+#### Part 2: Always Regenerate Markers When Loading Files
+```typescript
+// src/ui/canvas/utils/canvas-utils.ts
+export function normalizeEdges(edges: Edge[]): Edge<EdgeData>[] {
+  return edges.map((edge) => {
+    const direction = (edge.data?.direction || 'right') as 'right' | 'left' | 'both';
+    const markers = getEdgeMarkers(direction); // ← Regenerate markers
+
+    return {
+      ...edge,
+      type: edge.type || 'directional',
+      ...markers,  // ← Overwrite any saved markers
+      data: {
+        label: edge.data?.label || (edge as any).label || 'uses',
+        direction,
+        ...edge.data,
+      },
+    };
+  });
+}
+```
+
+**Why This Works:**
+1. **On Save:** React Flow serializes `MarkerType.ArrowClosed` → `"arrowclosed"` string (can't prevent this)
+2. **On Load:** `normalizeEdges()` **ignores** the saved lowercase string and regenerates proper enum values
+3. **Fresh Markers:** Every edge gets fresh `MarkerType.ArrowClosed` enum values, not deserialized strings
+
+**DO NOT:**
+- ❌ Try to "fix" the saved JSON files manually
+- ❌ Use string literals `type: 'arrowclosed'` in code
+- ❌ Skip calling `normalizeEdges()` when loading edges
+- ❌ Assume saved marker values will work after deserialization
+
+**ALWAYS:**
+- ✅ Use `MarkerType.ArrowClosed` enum in code
+- ✅ Include explicit `width` and `height` (defaults to 0!)
+- ✅ Call `normalizeEdges()` on **every** edge load operation
+- ✅ Regenerate markers from `edge.data.direction` property
+
+**Alternative Solution (If Issue Persists):**
+If React Flow 11 continues to have issues, consider:
+1. **Upgrade to React Flow 12+** (may have fixes)
+2. **Switch to XYFlow** (React Flow's new name/version)
+3. **Use a different canvas library** (Konva.js, Fabric.js, or plain SVG)
+
+**Known Limitation:**
+React Flow 11's marker serialization is fundamentally broken. This workaround regenerates markers on every load, which works but adds overhead. Monitor React Flow issues for official fixes.
 
 ## Future Vision
 
@@ -885,6 +1004,177 @@ PropertyPanel.tsx (orchestration, 150 lines)
 - C4 model hierarchy is the core concept - maintain separation of concerns between levels
 - AWS is first cloud provider, but architecture should be extensible
 - User workflow: Create Context → drill down to Container → drill down to Component
+
+### 🚨 CRITICAL: How to Diagnose and Fix Multi-Tab React Flow Issues
+
+When a user reports that **"arrows and background dots work in single tab but disappear when opening multiple tabs"**, follow this debugging protocol:
+
+#### Step 1: Identify the Pattern
+Ask the user to test this exact scenario:
+1. **Close all BAC4 tabs**
+2. **Open Context.bac4** - Does it work? (dots + arrows visible)
+3. **Open Container_1.bac4 in NEW tab** - Does the new tab work?
+4. **Check the FIRST tab again** - Does Context still work?
+
+**If the first tab STOPS working when you open the second tab** → This is an SVG ID conflict issue.
+
+#### Step 2: Understand React Flow's Background Component
+
+React Flow's `<Background>` component creates SVG patterns like this:
+```html
+<svg>
+  <defs>
+    <pattern id="pattern-dots" ...>
+      <!-- Dot pattern definition -->
+    </pattern>
+  </defs>
+</svg>
+```
+
+**The Problem:** If you don't provide an `id` prop, React Flow uses a **default ID** for all instances. When multiple React Flow instances exist on the same page (multiple Obsidian tabs), they all create `<pattern id="pattern-dots">`, and the **last one overwrites all previous ones**.
+
+#### Step 3: Verify the Fix is Applied
+
+Check `src/ui/canvas-view.tsx` - CanvasEditor component - the `<Background>` component should have a unique `id` prop:
+
+```typescript
+<ReactFlow ...>
+  <Background
+    id={filePath ? `bg-${filePath.replace(/[^a-zA-Z0-9]/g, '-')}` : 'bg-default'}
+    variant={BackgroundVariant.Dots}
+    gap={12}
+    size={1}
+  />
+  <Controls />
+  <MiniMap />
+</ReactFlow>
+```
+
+**If the `id` prop is missing or using a static value**, this is the bug.
+
+#### Step 4: Apply the Fix
+
+1. **Add unique `id` to Background component** based on file path or other unique identifier
+2. **Sanitize the ID** - HTML IDs can only contain alphanumeric characters and hyphens
+3. **Test with 2-3 tabs open simultaneously** to verify the fix
+
+**Example fix:**
+```typescript
+// BEFORE (BROKEN - no id prop, all tabs conflict)
+<Background variant={BackgroundVariant.Dots} gap={12} size={1} />
+
+// AFTER (FIXED - unique id per file)
+<Background
+  id={filePath ? `bg-${filePath.replace(/[^a-zA-Z0-9]/g, '-')}` : 'bg-default'}
+  variant={BackgroundVariant.Dots}
+  gap={12}
+  size={1}
+/>
+```
+
+#### Step 5: Common Mistakes to Avoid
+
+**❌ WRONG: Removing ReactFlowProvider**
+```typescript
+// This will cause "zustand provider not found" error!
+<CanvasEditor plugin={this.plugin} filePath={this.filePath} />
+```
+
+ReactFlowProvider is **REQUIRED** - React Flow uses Zustand for state management internally.
+
+**❌ WRONG: Using static ID**
+```typescript
+// All tabs will still conflict!
+<Background id="my-background" variant={BackgroundVariant.Dots} />
+```
+
+**❌ WRONG: Not sanitizing file path**
+```typescript
+// Invalid HTML ID - file path contains slashes, dots, etc.
+<Background id={filePath} variant={BackgroundVariant.Dots} />
+```
+
+**✅ CORRECT: Dynamic, sanitized ID**
+```typescript
+<Background
+  id={filePath ? `bg-${filePath.replace(/[^a-zA-Z0-9]/g, '-')}` : 'bg-default'}
+  variant={BackgroundVariant.Dots}
+  gap={12}
+  size={1}
+/>
+```
+
+#### Step 6: How to Test Properly
+
+**DO NOT** just test by:
+- Opening one diagram ❌
+- Looking at the console logs ❌
+- Checking if the code compiles ❌
+
+**ALWAYS test by:**
+1. ✅ Build the plugin: `npm run build`
+2. ✅ Copy to test vault: `cp main.js manifest.json /path/to/vault/.obsidian/plugins/bac4-plugin/`
+3. ✅ Reload Obsidian (Cmd+R or restart)
+4. ✅ Open 2-3 different diagram files in **separate tabs**
+5. ✅ Verify ALL tabs show dots and arrows simultaneously
+6. ✅ Switch between tabs to confirm none lose rendering
+
+**Test Checklist:**
+- [ ] Context.bac4 open → dots visible, arrows visible
+- [ ] Open Container_1.bac4 in new tab → dots visible, arrows visible
+- [ ] Switch back to Context tab → dots STILL visible, arrows STILL visible
+- [ ] Open Container_2.bac4 in third tab → all 3 tabs still work
+- [ ] Close middle tab → remaining tabs still work
+
+#### Step 7: Verify the Fix in Browser DevTools
+
+If you want to confirm the fix at the HTML level:
+
+1. Open browser DevTools (View → Developer → Toggle Developer Tools in Obsidian)
+2. Inspect the canvas area
+3. Look for `<svg>` elements with `<defs>` containing `<pattern>` tags
+4. Verify each pattern has a unique ID:
+   - Tab 1: `<pattern id="bg-BAC4-Context-bac4" ...>`
+   - Tab 2: `<pattern id="bg-BAC4-Container-1-bac4" ...>`
+   - Tab 3: `<pattern id="bg-BAC4-Container-2-bac4" ...>`
+
+If you see duplicate IDs or all tabs using the same ID, the fix is not applied correctly.
+
+#### Step 8: Update Documentation
+
+After fixing, update:
+1. **CLAUDE.md** - Add to troubleshooting section (already done above)
+2. **docs/DIAGRAM_OPENING_AUDIT.md** - Note the fix in "Current Status"
+3. **Git commit message** - Reference the issue clearly
+
+Example commit message:
+```
+Fix: Background dots/arrows conflict in multi-tab scenario
+
+Added unique id prop to Background component based on file path.
+React Flow SVG patterns were conflicting when multiple tabs open.
+
+- Each diagram now gets unique Background ID: bg-{sanitized-path}
+- Tested with 3 tabs open simultaneously
+- All tabs render independently
+
+Fixes issue where opening second tab caused first tab to lose rendering.
+```
+
+#### Reference Documentation
+
+- **React Flow Background API:** https://reactflow.dev/api-reference/components/background
+- **GitHub Issue (2021):** https://github.com/wbkd/react-flow/issues/1037
+- **HTML ID Spec:** IDs must start with letter, contain only [A-Za-z0-9_-]
+
+#### When This Issue Recurs
+
+This issue can happen whenever:
+- Adding multiple React Flow instances on the same page
+- Using Background, MiniMap, or Controls components without unique IDs
+- Any SVG-based React Flow component that uses pattern definitions
+
+**General Rule:** If React Flow component has an optional `id` prop and you have multiple instances, **always provide unique IDs**.
 
 ### Recent Changes (Phases 1-4 Complete)
 

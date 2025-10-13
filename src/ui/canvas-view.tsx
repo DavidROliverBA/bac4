@@ -281,6 +281,7 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath }) => {
           position: 'relative',
         }}
       >
+        {console.log('BAC4: Rendering ReactFlow with', nodes.length, 'nodes,', edges.length, 'edges, diagramType:', diagramType)}
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -309,7 +310,12 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath }) => {
           defaultViewport={{ x: 0, y: 0, zoom: 1 }}
           proOptions={{ hideAttribution: true }}
         >
-          <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
+          <Background
+            id={filePath ? `bg-${filePath.replace(/[^a-zA-Z0-9]/g, '-')}` : 'bg-default'}
+            variant={BackgroundVariant.Dots}
+            gap={12}
+            size={1}
+          />
           <Controls />
           <MiniMap />
 
@@ -461,12 +467,29 @@ export class BAC4CanvasView extends ItemView {
   }
 
   private renderCanvas(): void {
-    if (!this.root) return;
-
     console.log('BAC4CanvasView: Rendering canvas with filePath:', this.filePath);
+
+    // CRITICAL: Always unmount and remount React to ensure fresh React Flow instance
+    if (this.root) {
+      console.log('BAC4CanvasView: Unmounting existing React root for fresh start');
+      this.root.unmount();
+      this.root = null;
+    }
+
+    // Get container
+    const container = this.containerEl.children[1] as HTMLElement;
+    if (!container) {
+      console.error('BAC4CanvasView: Container not found!');
+      return;
+    }
+
+    // Create fresh React root
+    console.log('BAC4CanvasView: Creating fresh React root');
+    this.root = ReactDOM.createRoot(container);
+
     this.root.render(
       <React.StrictMode>
-        <ReactFlowProvider>
+        <ReactFlowProvider key={this.filePath || 'no-file'}>
           <CanvasEditor plugin={this.plugin} filePath={this.filePath} />
         </ReactFlowProvider>
       </React.StrictMode>
@@ -535,8 +558,7 @@ export class BAC4CanvasView extends ItemView {
     container.style.position = 'relative';
     container.style.overflow = 'hidden';
 
-    // Create React root and render
-    this.root = ReactDOM.createRoot(container);
+    // Render canvas (will create React root internally)
     this.renderCanvas();
   }
 

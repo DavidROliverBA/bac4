@@ -164,9 +164,9 @@ export const DIMENSIONS = {
  */
 export const NODE_DIMENSIONS = {
   /** Minimum node width */
-  minWidth: '150px',
+  minWidth: '75px',
   /** Maximum node width */
-  maxWidth: '250px',
+  maxWidth: '125px',
 } as const;
 
 /**

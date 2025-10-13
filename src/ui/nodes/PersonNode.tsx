@@ -35,8 +35,8 @@ export const PersonNode: React.FC<NodeProps<PersonNodeData>> = ({ data, selected
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        minWidth: '140px',
-        padding: SPACING.container,
+        minWidth: '70px',
+        padding: SPACING.large,
       }}
     >
       <Handle type="target" position={Position.Top} style={{ background: color, width: '12px', height: '12px' }} />
@@ -44,16 +44,16 @@ export const PersonNode: React.FC<NodeProps<PersonNodeData>> = ({ data, selected
       {/* Person icon */}
       <div
         style={{
-          width: '60px',
-          height: '60px',
+          width: '30px',
+          height: '30px',
           borderRadius: '50%',
           border: 'none',
           backgroundColor: hexToRgba(color, 0.3),
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          fontSize: '32px',
-          marginBottom: SPACING.extraLarge,
+          fontSize: '16px',
+          marginBottom: SPACING.medium,
           boxShadow: selected ? `0 0 0 3px ${UI_COLORS.interactiveAccent}` : '0 2px 4px rgba(0,0,0,0.15)',
         }}
       >
@@ -64,7 +64,7 @@ export const PersonNode: React.FC<NodeProps<PersonNodeData>> = ({ data, selected
       <div
         style={{
           fontFamily: UI_COLORS.fontInterface,
-          fontSize: FONT_SIZES.large,
+          fontSize: FONT_SIZES.small,
           fontWeight: 600,
           color: UI_COLORS.textNormal,
           textAlign: 'center',
@@ -78,7 +78,7 @@ export const PersonNode: React.FC<NodeProps<PersonNodeData>> = ({ data, selected
       {data.role && (
         <div
           style={{
-            fontSize: FONT_SIZES.medium,
+            fontSize: FONT_SIZES.extraSmall,
             color: UI_COLORS.textMuted,
             textAlign: 'center',
           }}

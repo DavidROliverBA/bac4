@@ -71,6 +71,11 @@ export function useCanvasState(props: UseCanvasStateProps): CanvasStateHandlers 
    */
   const onReactFlowInit = React.useCallback(
     (instance: ReactFlowInstance) => {
+      console.log('BAC4: React Flow initialized!', {
+        hasInstance: !!instance,
+        nodeCount: instance.getNodes().length,
+        edgeCount: instance.getEdges().length,
+      });
       setReactFlowInstance(instance);
     },
     [setReactFlowInstance]

@@ -33,22 +33,22 @@ export const SystemNode: React.FC<NodeProps<SystemNodeData>> = ({ data, selected
 
   const getNodeStyles = () => {
     return {
-      padding: '20px 24px',
-      borderRadius: '12px',
+      padding: '10px 12px',
+      borderRadius: '6px',
       border: 'none',
-      minWidth: '200px',
-      maxWidth: '300px',
+      minWidth: '100px',
+      maxWidth: '150px',
       textAlign: 'center' as const,
       backgroundColor: data.external ? 'rgba(128, 128, 128, 0.3)' : hexToRgba(color, 0.25),
       color: UI_COLORS.textNormal,
       fontFamily: UI_COLORS.fontInterface,
-      fontSize: FONT_SIZES.extraLarge,
+      fontSize: FONT_SIZES.small,
       fontWeight: 600,
       boxShadow: selected
         ? `0 0 0 3px ${UI_COLORS.interactiveAccent}`
         : data.hasChildDiagram
-        ? '0 6px 12px rgba(0,0,0,0.2)'
-        : '0 4px 8px rgba(0,0,0,0.15)',
+        ? '0 3px 6px rgba(0,0,0,0.2)'
+        : '0 2px 4px rgba(0,0,0,0.15)',
       position: 'relative' as const,
     };
   };
@@ -62,18 +62,18 @@ export const SystemNode: React.FC<NodeProps<SystemNodeData>> = ({ data, selected
         <div
           style={{
             position: 'absolute',
-            top: '-10px',
-            right: '-10px',
+            top: '-5px',
+            right: '-5px',
             background: UI_COLORS.interactiveAccent,
             borderRadius: '50%',
-            width: '28px',
-            height: '28px',
+            width: '14px',
+            height: '14px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: FONT_SIZES.large,
-            boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
-            border: `2px solid ${UI_COLORS.backgroundPrimary}`,
+            fontSize: FONT_SIZES.extraSmall,
+            boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+            border: `1px solid ${UI_COLORS.backgroundPrimary}`,
             cursor: 'pointer',
           }}
           title="This node has a child diagram (double-click or right-click to open)"
@@ -91,10 +91,10 @@ export const SystemNode: React.FC<NodeProps<SystemNodeData>> = ({ data, selected
       {data.description && (
         <div
           style={{
-            fontSize: FONT_SIZES.normal,
+            fontSize: FONT_SIZES.extraSmall,
             color: UI_COLORS.textMuted,
             fontWeight: 400,
-            marginTop: SPACING.large,
+            marginTop: SPACING.medium,
           }}
         >
           {data.description}
@@ -105,9 +105,9 @@ export const SystemNode: React.FC<NodeProps<SystemNodeData>> = ({ data, selected
       {data.external && (
         <div
           style={{
-            fontSize: FONT_SIZES.extraSmall,
+            fontSize: FONT_SIZES.tiny,
             color: UI_COLORS.textFaint,
-            marginTop: SPACING.large,
+            marginTop: SPACING.medium,
             fontStyle: 'italic',
           }}
         >

@@ -85,35 +85,9 @@ export default class BAC4Plugin extends Plugin {
       this.app.workspace.on('file-open', async (file) => {
         if (!file) return;
 
-        // Handle .bac4 files - prevent duplicate tabs
+        // Handle .bac4 files - log for debugging
         if (file.extension === 'bac4') {
           console.log('BAC4: file-open event for', file.path);
-
-          // Use setTimeout to ensure all leaves are fully loaded
-          setTimeout(() => {
-            // Check if this file is already open in another leaf
-            const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_CANVAS);
-            console.log('BAC4: Found', leaves.length, 'canvas leaves');
-
-            const leavesWithThisFile = leaves.filter((leaf) => {
-              const view = leaf.view as any;
-              console.log('BAC4: Checking leaf with file:', view.file?.path);
-              return view.file?.path === file.path;
-            });
-
-            console.log('BAC4: Found', leavesWithThisFile.length, 'leaves with file', file.path);
-
-            // If the file is open in more than one leaf, close duplicates
-            if (leavesWithThisFile.length > 1) {
-              console.log('BAC4: Detected duplicate tabs for', file.path, '- keeping only one');
-              // Keep the active one, close others
-              const activeLeaf = this.app.workspace.activeLeaf;
-              const duplicates = leavesWithThisFile.filter((leaf) => leaf !== activeLeaf);
-
-              console.log('BAC4: Closing', duplicates.length, 'duplicate tabs');
-              duplicates.forEach((leaf) => leaf.detach());
-            }
-          }, 50); // Wait 50ms for view to fully initialize
         }
 
         // Handle .md files - check for BAC4 diagram frontmatter
@@ -251,6 +225,71 @@ export default class BAC4Plugin extends Plugin {
   }
 
   /**
+   * Check if diagram is already open and activate it
+   *
+   * @param filePath - Path to check
+   * @returns true if found and activated, false if not found
+   * @private
+   */
+  private checkAndActivateExistingDiagram(filePath: string): boolean {
+    const existingLeaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_CANVAS);
+    const existingLeaf = existingLeaves.find((leaf) => {
+      const view = leaf.view as any;
+      return view.file?.path === filePath;
+    });
+
+    if (existingLeaf) {
+      console.log('BAC4: Diagram already open, activating existing tab:', filePath);
+      this.app.workspace.setActiveLeaf(existingLeaf, { focus: true });
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Open diagram file (unified method)
+   *
+   * Single source of truth for opening diagrams.
+   * Handles duplicate detection and tab management.
+   *
+   * @param filePath - Path to .bac4 file to open
+   * @param options - Opening options
+   * @returns Promise that resolves when diagram is opened
+   * @private
+   */
+  private async openDiagram(
+    filePath: string,
+    options: { newTab?: boolean } = {}
+  ): Promise<void> {
+    console.log('BAC4: Opening diagram:', filePath, 'newTab:', options.newTab);
+
+    // Check if already open
+    if (this.checkAndActivateExistingDiagram(filePath)) {
+      return; // Already open, activated it
+    }
+
+    // Get file
+    const file = this.app.vault.getAbstractFileByPath(filePath);
+    if (!file) {
+      console.error('BAC4: File not found:', filePath);
+      return;
+    }
+
+    // Get leaf (new tab or current)
+    const leaf = options.newTab
+      ? this.app.workspace.getLeaf('tab')
+      : this.app.workspace.getLeaf(false);
+
+    // Open file
+    await leaf.openFile(file as TFile);
+
+    // Activate
+    this.app.workspace.setActiveLeaf(leaf, { focus: true });
+    console.log('BAC4: Diagram opened successfully');
+  }
+
+  /**
    * Open canvas view in a NEW tab (for child diagram navigation)
    *
    * Used for drill-down navigation to keep parent diagram visible.
@@ -268,21 +307,7 @@ export default class BAC4Plugin extends Plugin {
    * ```
    */
   async openCanvasViewInNewTab(filePath: string): Promise<void> {
-    console.log('BAC4: Opening canvas in new tab:', filePath);
-
-    const file = this.app.vault.getAbstractFileByPath(filePath);
-    if (!file) {
-      console.error('BAC4: File not found:', filePath);
-      return;
-    }
-
-    // Force new tab
-    const leaf = this.app.workspace.getLeaf('tab');
-    await leaf.openFile(file as any);
-
-    // Activate the new tab
-    this.app.workspace.setActiveLeaf(leaf, { focus: true });
-    console.log('BAC4: Opened in new tab');
+    return this.openDiagram(filePath, { newTab: true });
   }
 
   /**
@@ -291,11 +316,10 @@ export default class BAC4Plugin extends Plugin {
    * Primary method for opening .bac4 diagrams in the canvas view.
    * Handles multiple scenarios:
    * - No path: Create new "Untitled" diagram
-   * - Path provided + already open: Activate existing tab
-   * - Path provided + not open: Open in current/new leaf
+   * - Path provided: Use unified openDiagram() method
    *
    * **Duplicate Prevention:**
-   * Checks if file is already open before creating new leaf.
+   * Uses unified duplicate detection via openDiagram()
    *
    * @param filePath - Optional path to .bac4 file. If omitted, creates new diagram.
    * @returns Promise that resolves when diagram is opened
@@ -348,26 +372,8 @@ export default class BAC4Plugin extends Plugin {
       return;
     }
 
-    // If filePath provided, check if it's already open
-    const file = this.app.vault.getAbstractFileByPath(filePath);
-    if (file) {
-      // Check if this file is already open in a canvas view
-      const existingLeaves = workspace.getLeavesOfType(VIEW_TYPE_CANVAS);
-      const existingLeaf = existingLeaves.find((leaf) => {
-        const view = leaf.view as any;
-        return view.file?.path === filePath;
-      });
-
-      if (existingLeaf) {
-        // File already open, activate that leaf
-        workspace.setActiveLeaf(existingLeaf, { focus: true });
-        return;
-      }
-
-      // File not open, create new leaf
-      const leaf = workspace.getLeaf(false);
-      await leaf.openFile(file as any);
-    }
+    // If filePath provided, use unified opening method
+    await this.openDiagram(filePath, { newTab: false });
   }
 
   /**
