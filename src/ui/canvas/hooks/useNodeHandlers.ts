@@ -76,6 +76,38 @@ export function useNodeHandlers(props: UseNodeHandlersProps): NodeHandlers {
   );
 
   /**
+   * Open the linked markdown file for a node
+   * CRITICAL: Must be declared BEFORE onNodeDoubleClick to avoid TDZ error
+   */
+  const openLinkedMarkdownFile = React.useCallback(
+    async (nodeId: string) => {
+      const node = nodes.find((n) => n.id === nodeId);
+      if (!node?.data.linkedMarkdownPath) {
+        console.error('BAC4: No linked markdown file for node:', nodeId);
+        return;
+      }
+
+      try {
+        console.log('BAC4: Opening linked markdown file', {
+          nodeId,
+          filePath: node.data.linkedMarkdownPath,
+        });
+        await MarkdownLinkService.openMarkdownFile(
+          plugin.app.workspace,
+          plugin.app.vault,
+          node.data.linkedMarkdownPath,
+          false
+        );
+        console.log('BAC4: ✅ Markdown file opened');
+      } catch (error) {
+        console.error('BAC4: Error opening markdown file:', error);
+        ErrorHandler.handleError(error, 'Failed to open markdown file. File may have been moved or deleted.');
+      }
+    },
+    [nodes, plugin]
+  );
+
+  /**
    * Create or open child diagram for a node
    */
   const handleCreateOrOpenChildDiagram = React.useCallback(
@@ -431,37 +463,6 @@ export function useNodeHandlers(props: UseNodeHandlersProps): NodeHandlers {
       }
     },
     [nodes, plugin, linkMarkdownFile]
-  );
-
-  /**
-   * Open the linked markdown file for a node
-   */
-  const openLinkedMarkdownFile = React.useCallback(
-    async (nodeId: string) => {
-      const node = nodes.find((n) => n.id === nodeId);
-      if (!node?.data.linkedMarkdownPath) {
-        console.error('BAC4: No linked markdown file for node:', nodeId);
-        return;
-      }
-
-      try {
-        console.log('BAC4: Opening linked markdown file', {
-          nodeId,
-          filePath: node.data.linkedMarkdownPath,
-        });
-        await MarkdownLinkService.openMarkdownFile(
-          plugin.app.workspace,
-          plugin.app.vault,
-          node.data.linkedMarkdownPath,
-          false
-        );
-        console.log('BAC4: ✅ Markdown file opened');
-      } catch (error) {
-        console.error('BAC4: Error opening markdown file:', error);
-        ErrorHandler.handleError(error, 'Failed to open markdown file. File may have been moved or deleted.');
-      }
-    },
-    [nodes, plugin]
   );
 
   return {
