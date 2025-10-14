@@ -30,7 +30,8 @@ The C4 model is a hierarchical approach to software architecture diagrams:
 - Drag & drop nodes from unified horizontal toolbar
 - Create edges by dragging from node handles
 - Double-click nodes to drill down to child diagrams
-- Property panel for editing node/edge properties (left side, bottom)
+- Moveable property panel for editing node/edge properties
+- Custom zoom controls (export-friendly, not captured in images)
 - Auto-save to `.bac4` JSON files (1-second debounce)
 - Export diagrams as PNG, JPEG, or SVG
 
@@ -67,7 +68,8 @@ All diagram controls consolidated in one horizontal bar:
 ### Cloud Component Library
 - AWS service library (Lambda, S3, DynamoDB, etc.)
 - Drag & drop cloud components onto Component diagrams
-- Component palette only shows for Component-level diagrams (top-right when active)
+- Moveable & resizable component palette (Component diagrams only)
+- Cloud component nodes display Type badge (left) and Provider badge (right)
 - Extensible to Azure and GCP
 
 ## Project Structure
@@ -89,8 +91,8 @@ bac4-plugin/
 │   │   │   ├── ContainerNode.tsx
 │   │   │   └── CloudComponentNode.tsx
 │   │   └── components/                  # UI components
-│   │       ├── ComponentPalette.tsx     # Cloud component palette (top-right)
-│   │       ├── PropertyPanel.tsx        # Node/edge properties + diagram linking (bottom-left)
+│   │       ├── ComponentPalette.tsx     # Moveable/resizable cloud component palette
+│   │       ├── PropertyPanel.tsx        # Moveable node/edge properties + diagram linking
 │   │       ├── UnifiedToolbar.tsx       # Main toolbar with all controls (top)
 │   │       ├── RenameModal.tsx          # Diagram rename dialog
 │   │       └── DiagramTypeSwitchModal.tsx # Type change warning
@@ -197,9 +199,34 @@ npm run typecheck    # TypeScript type checking
 
 ## Current Status
 
-### ✅ Completed Features (v0.2.0-dev - Latest)
+### ✅ Completed Features (v0.5.0 - Latest)
 
-**MCP Integration - Phase 1 Complete** 🎉
+**v0.5.0 - Enhanced UI Controls & Cloud Component Management** 🎉
+- **Moveable & Resizable Panels**
+  - Component Palette is draggable and resizable (Component diagrams only)
+  - Property Panel is draggable (all diagram types)
+  - Smooth drag experience with grab cursor
+- **Enhanced Cloud Component Nodes**
+  - Type badge on left (EC2, Lambda, Fargate, etc.)
+  - Provider badge on right (AWS, Azure, GCP, SaaS)
+  - Symmetrical badge layout with matching colors
+  - Read-only metadata fields (Type, Provider, Category)
+- **Larger Container Nodes**
+  - 75% size increase (160-240px width, from 90-130px)
+  - Better visibility for complex diagrams
+  - Folder badge removed for cleaner appearance
+- **Custom Zoom Controls**
+  - Export-friendly (not captured in PNG/JPEG/SVG)
+  - Bottom-right positioning
+  - Zoom In (+), Zoom Out (−), Fit View (⊡)
+- **Simplified Icon Selector**
+  - Single searchable list (48 icons)
+  - Category system removed
+- **Taller Property Panel**
+  - 800px height (doubled from 400px)
+  - See more properties without scrolling
+
+**v0.2.0 - MCP Integration Phase 1** ✅
 - **MCPService** class with AI-powered diagram generation interface
 - **Description Modal** for natural language architecture input
 - **Three generation commands:**
@@ -212,7 +239,7 @@ npm run typecheck    # TypeScript type checking
 - **Status:** UI & infrastructure ready, MCP communication stubbed
 - **Docs:** `docs/MCP_INTEGRATION_STATUS.md`, `docs/MCP_INTEGRATION_PLAN.md`
 
-### ✅ Completed Features (Sprint 1.2)
+### ✅ Completed Features (Sprint 1.2 - v0.1.0-v0.4.0)
 
 #### **Core Features**
 - **Canvas Editor**
@@ -1083,9 +1110,16 @@ Check `src/ui/canvas-view.tsx` - CanvasEditor component - the `<Background>` com
     gap={12}
     size={1}
   />
-  <Controls />
-  <MiniMap />
 </ReactFlow>
+
+{/* Custom zoom controls outside ReactFlow (v0.5.0+) */}
+{reactFlowInstance && (
+  <div style={{ position: 'absolute', right: '16px', bottom: '16px', ... }}>
+    <button onClick={() => reactFlowInstance.zoomIn()}>+</button>
+    <button onClick={() => reactFlowInstance.zoomOut()}>−</button>
+    <button onClick={() => reactFlowInstance.fitView({ padding: 0.2 })}>⊡</button>
+  </div>
+)}
 ```
 
 **If the `id` prop is missing or using a static value**, this is the bug.
@@ -1214,14 +1248,15 @@ This issue can happen whenever:
 
 **General Rule:** If React Flow component has an optional `id` prop and you have multiple instances, **always provide unique IDs**.
 
-### Recent Changes (Phases 1-4 Complete)
+### Recent Changes (v0.5.0 - Latest)
 
-**Phase 1-3 (Refactoring Foundation)**
-1. **Constants Extraction** - All magic numbers/strings moved to constants files
-2. **Error Handling Standardization** - ErrorHandler replaces all alert() calls
-3. **Component Decomposition** - Large files broken into focused components
-4. **Service Layer Architecture** - Business logic separated from UI
-5. **Pattern Standardization** - Consistent naming, TypeScript strict mode
+**v0.5.0 (2025-10-14) - Enhanced UI Controls & Cloud Component Management**
+1. **Moveable/Resizable Panels** - Component Palette and Property Panel are now draggable
+2. **Enhanced Cloud Nodes** - Type badge (left) and Provider badge (right) with read-only metadata
+3. **Larger Container Nodes** - 75% size increase, folder badge removed
+4. **Custom Zoom Controls** - Export-friendly controls outside ReactFlow canvas
+5. **Simplified Icon Selector** - Single searchable list, category system removed
+6. **Taller Property Panel** - 800px height for better visibility
 
 **Phase 4 (Advanced Improvements - COMPLETE 2025-10-12)**
 1. **Testing Infrastructure** - 104 tests, 29.65% coverage, 100% on critical utilities
@@ -1229,11 +1264,12 @@ This issue can happen whenever:
 3. **Accessibility** - WCAG 2.1 AA compliance documented, keyboard navigation verified
 4. **Documentation** - `performance-optimizations.md`, `accessibility.md`, `phase-4-completion-summary.md`
 
-**Sprint 1.2 (Feature Development)**
+**Sprint 1.2 (v0.1.0-v0.4.0 - Feature Development)**
 1. **Export Enhancement** - Added PNG/JPEG/SVG export with dropdown menu
 2. **Hierarchical Linking** - Property Panel dropdowns to link/create child diagrams
 3. **Toolbar Consolidation** - Moved all actions to unified horizontal toolbar
 4. **Central Relationships** - All diagram hierarchy in `diagram-relationships.json`
+5. **Refactoring Foundation** - Constants extraction, error handling, service layer architecture
 
 ### Current Priority: Phase 5 & 6
 
@@ -1255,26 +1291,26 @@ This issue can happen whenever:
   4. Final optimization pass
 - Why: Production-ready, maintainable codebase
 
-### UI Layout
+### UI Layout (v0.5.0)
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│ [Type] | [+ Node Buttons] | [Breadcrumbs] | [Actions] ←── │ Unified Toolbar
+│ [Type] | [+ Node Buttons] | [Breadcrumbs] | [Actions] ←── │ Unified Toolbar (fixed)
 ├─────────────────────────────────────────────────────────────┤
 │                                                    ┌────────┐│
 │                                                    │Component││ Component Palette
-│                                                    │Palette ││ (top-right, only for
+│                                                    │Palette ││ (moveable/resizable,
 │                                                    └────────┘│  Component diagrams)
 │                                                             │
 │                  CANVAS AREA                                │
 │          (React Flow with nodes and edges)                  │
 │                                                             │
-│ ┌──────────────────┐                                       │
-│ │ Node Properties  │                                       │
-│ ├──────────────────┤                                       │
-│ │ [− Parent][+ Child] ← Navigation Buttons                │
-│ │ ─────────────────│                                       │
+│ ┌──────────────────┐                          ┌─────┐      │
+│ │ Node Properties  │                          │ +   │      │ Custom Zoom Controls
+│ ├──────────────────┤                          │ −   │      │ (fixed bottom-right,
+│ │ [− Parent][+ Child] ← Navigation Buttons    │ ⊡   │      │  not in exports)
+│ │ ─────────────────│                          └─────┘      │
 │ │ Label: ...       │ ←─────────────────────────────────────│ Property Panel
-│ │ Color: [picker]  │                         (bottom-left) │
+│ │ Color: [picker]  │                          (moveable)   │
 │ │ ...              │                                       │
 │ └──────────────────┘                                       │
 └─────────────────────────────────────────────────────────────┘
