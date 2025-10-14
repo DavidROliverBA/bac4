@@ -12,15 +12,16 @@ import type { Node, Edge, NodeChange, EdgeChange, Connection } from 'reactflow';
 /**
  * Base node data interface
  * All custom node types should extend this
+ *
+ * v0.6.0: All node types support markdown linking
  */
 export interface BaseNodeData {
   label: string;
   type?: string;
   color?: string;
   description?: string;
-  hasChildDiagram?: boolean;
-  linkedDiagramPath?: string;
-  linkedMarkdownFile?: string; // Vault-relative path to linked markdown file
+  notes?: string;
+  linkedMarkdownPath?: string; // Vault-relative path to linked markdown file (v0.6.0)
 }
 
 /**
@@ -33,11 +34,11 @@ export interface C4NodeData extends BaseNodeData {
 
 /**
  * System node data (C4 Level 1 - Context)
+ * v0.6.0: Links to Container diagrams via linkedDiagramPath
  */
 export interface SystemNodeData extends BaseNodeData {
   external?: boolean;
-  hasChildDiagram?: boolean;
-  linkedDiagramPath?: string;
+  linkedDiagramPath?: string; // Path to child Container diagram (v0.6.0)
 }
 
 /**
@@ -50,12 +51,12 @@ export interface PersonNodeData extends BaseNodeData {
 /**
  * Container node data (C4 Level 2)
  * Schema v0.4.0: Replaced containerType enum with flexible icon field
+ * Schema v0.6.0: Links to Component diagrams via linkedDiagramPath
  */
 export interface ContainerNodeData extends BaseNodeData {
   icon: string; // Lucide icon ID (e.g., "cloud-cog", "database", "server")
   type?: string; // Optional type tag displayed in [brackets] (e.g., "REST API", "PostgreSQL")
-  hasChildDiagram?: boolean;
-  linkedDiagramPath?: string;
+  linkedDiagramPath?: string; // Path to child Component diagram (v0.6.0)
 }
 
 /**
@@ -159,9 +160,29 @@ export interface CanvasState {
 }
 
 /**
- * Diagram file format
+ * Diagram file format (legacy v0.5.0 and earlier)
  */
 export interface DiagramFile {
+  nodes: CanvasNode[];
+  edges: CanvasEdge[];
+}
+
+/**
+ * BAC4 File Format v0.6.0
+ * Self-contained diagram files with embedded relationships
+ *
+ * Breaking changes from v0.5.0:
+ * - Retired diagram-relationships.json (relationships embedded in nodes)
+ * - All nodes support linkedMarkdownPath
+ * - File includes version and metadata
+ */
+export interface BAC4FileV06 {
+  version: '0.6.0';
+  metadata: {
+    diagramType: 'context' | 'container' | 'component';
+    createdAt: string; // ISO 8601 timestamp
+    updatedAt: string; // ISO 8601 timestamp
+  };
   nodes: CanvasNode[];
   edges: CanvasEdge[];
 }
@@ -171,4 +192,49 @@ export interface DiagramFile {
  */
 export interface AutoNamingCounters {
   [key: string]: number;
+}
+
+/**
+ * Diagram Relationships Types (v0.6.0)
+ *
+ * These types support the central diagram-relationships.json file used for:
+ * - Breadcrumb navigation
+ * - Parent diagram lookup
+ * - Diagram registry
+ *
+ * Note: Individual .bac4 files also store linkedDiagramPath in node data.
+ * The relationships file provides a global index for faster navigation.
+ */
+
+/**
+ * Diagram node metadata in relationships file
+ */
+export interface DiagramNode {
+  id: string;
+  filePath: string;
+  displayName: string;
+  type: 'context' | 'container' | 'component';
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Parent-child relationship between diagrams
+ */
+export interface DiagramRelationship {
+  parentDiagramId: string;
+  childDiagramId: string;
+  parentNodeId: string;
+  parentNodeLabel: string;
+  createdAt: string;
+}
+
+/**
+ * Central relationships file structure
+ */
+export interface DiagramRelationshipsData {
+  version: string;
+  diagrams: DiagramNode[];
+  relationships: DiagramRelationship[];
+  updatedAt: string;
 }

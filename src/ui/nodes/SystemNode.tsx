@@ -1,19 +1,13 @@
 /**
  * System Node - For Context Diagrams (C4 Level 1)
  * Represents a software system in the system landscape
+ * v0.6.0: Supports linkedDiagramPath and linkedMarkdownPath
  */
 
 import * as React from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
 import { FONT_SIZES, SPACING, UI_COLORS, DEFAULT_NODE_COLOR } from '../../constants';
-
-export interface SystemNodeData {
-  label: string;
-  description?: string;
-  external?: boolean;
-  hasChildDiagram?: boolean;
-  color?: string;
-}
+import type { SystemNodeData } from '../../types/canvas-types';
 
 export const SystemNode: React.FC<NodeProps<SystemNodeData>> = ({ data, selected }) => {
   const color = data.color || DEFAULT_NODE_COLOR;
@@ -25,6 +19,11 @@ export const SystemNode: React.FC<NodeProps<SystemNodeData>> = ({ data, selected
     const b = parseInt(hex.slice(5, 7), 16);
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
   };
+
+  // Determine if node has linked files (v0.6.0)
+  const hasLinkedDiagram = !!data.linkedDiagramPath;
+  const hasLinkedMarkdown = !!data.linkedMarkdownPath;
+  const hasAnyLink = hasLinkedDiagram || hasLinkedMarkdown;
 
   const getNodeStyles = () => {
     return {
@@ -41,7 +40,7 @@ export const SystemNode: React.FC<NodeProps<SystemNodeData>> = ({ data, selected
       fontWeight: 600,
       boxShadow: selected
         ? `0 0 0 3px ${UI_COLORS.interactiveAccent}`
-        : data.hasChildDiagram
+        : hasAnyLink
           ? '0 3px 6px rgba(0,0,0,0.2)'
           : '0 2px 4px rgba(0,0,0,0.15)',
       position: 'relative' as const,
@@ -64,28 +63,33 @@ export const SystemNode: React.FC<NodeProps<SystemNodeData>> = ({ data, selected
         style={{ background: color, width: '14px', height: '14px' }}
       />
 
-      {/* Drill-down indicator - Enhanced badge */}
-      {data.hasChildDiagram && (
+      {/* Plus icon badge for linked files (v0.6.0) */}
+      {hasAnyLink && (
         <div
           style={{
             position: 'absolute',
-            top: '-5px',
-            right: '-5px',
-            background: UI_COLORS.interactiveAccent,
+            top: SPACING.tiny,
+            right: SPACING.tiny,
+            fontSize: '10px',
+            width: '16px',
+            height: '16px',
             borderRadius: '50%',
-            width: '14px',
-            height: '14px',
+            backgroundColor: color,
+            color: '#fff',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: FONT_SIZES.extraSmall,
-            boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
-            border: `1px solid ${UI_COLORS.backgroundPrimary}`,
-            cursor: 'pointer',
+            fontWeight: 700,
+            cursor: 'help',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
           }}
-          title="This node has a child diagram (double-click or right-click to open)"
+          title={
+            hasLinkedDiagram
+              ? `Linked to: ${data.linkedDiagramPath?.split('/').pop()}`
+              : `Documentation: ${data.linkedMarkdownPath?.split('/').pop()}`
+          }
         >
-          📂
+          +
         </div>
       )}
 

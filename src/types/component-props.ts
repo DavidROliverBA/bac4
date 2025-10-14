@@ -11,10 +11,20 @@ import type { TFile } from 'obsidian';
 import type BAC4Plugin from '../main';
 import type { CanvasNode, CanvasEdge } from './canvas-types';
 import type { ComponentDefinition } from '../../component-library/types';
-import type { BreadcrumbItem as BreadcrumbItemType } from './diagram-relationships';
 
-// Re-export BreadcrumbItem for backward compatibility
-export type { BreadcrumbItemType as BreadcrumbItem };
+/**
+ * Breadcrumb item for diagram navigation
+ * v0.6.0: Moved from diagram-relationships.ts (file deleted)
+ */
+export interface BreadcrumbItem {
+  label: string;
+  path: string;
+  type: 'context' | 'container' | 'component';
+  id: string;
+}
+
+// Backward compatibility alias
+export type BreadcrumbItemType = BreadcrumbItem;
 
 /**
  * Property Panel props

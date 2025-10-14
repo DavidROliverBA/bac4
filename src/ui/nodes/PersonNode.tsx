@@ -1,20 +1,19 @@
 /**
  * Person Node - For Context Diagrams (C4 Level 1)
  * Represents a human user or actor
+ * v0.6.0: Supports linkedMarkdownPath
  */
 
 import * as React from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
 import { FONT_SIZES, SPACING, UI_COLORS, DEFAULT_NODE_COLOR } from '../../constants';
-
-export interface PersonNodeData {
-  label: string;
-  role?: string;
-  color?: string;
-}
+import type { PersonNodeData } from '../../types/canvas-types';
 
 export const PersonNode: React.FC<NodeProps<PersonNodeData>> = ({ data, selected }) => {
   const color = data.color || DEFAULT_NODE_COLOR;
+
+  // Determine if node has linked markdown file (v0.6.0)
+  const hasLinkedMarkdown = !!data.linkedMarkdownPath;
 
   // Convert hex to rgba with alpha
   const hexToRgba = (hex: string, alpha: number) => {
@@ -32,6 +31,7 @@ export const PersonNode: React.FC<NodeProps<PersonNodeData>> = ({ data, selected
         alignItems: 'center',
         minWidth: '70px',
         padding: SPACING.large,
+        position: 'relative',
       }}
     >
       {/* Connection handles - all four sides */}
@@ -64,9 +64,36 @@ export const PersonNode: React.FC<NodeProps<PersonNodeData>> = ({ data, selected
           boxShadow: selected
             ? `0 0 0 3px ${UI_COLORS.interactiveAccent}`
             : '0 2px 4px rgba(0,0,0,0.15)',
+          position: 'relative',
         }}
       >
         👤
+
+        {/* Plus icon badge for linked markdown (v0.6.0) */}
+        {hasLinkedMarkdown && (
+          <div
+            style={{
+              position: 'absolute',
+              top: '-4px',
+              right: '-4px',
+              fontSize: '10px',
+              width: '14px',
+              height: '14px',
+              borderRadius: '50%',
+              backgroundColor: color,
+              color: '#fff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontWeight: 700,
+              cursor: 'help',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+            }}
+            title={`Documentation: ${data.linkedMarkdownPath?.split('/').pop()}`}
+          >
+            +
+          </div>
+        )}
       </div>
 
       {/* Label */}

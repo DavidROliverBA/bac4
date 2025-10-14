@@ -4,10 +4,8 @@ import * as ReactDOM from 'react-dom/client';
 import ReactFlow, {
   Node,
   Edge,
-  Controls,
   Background,
   BackgroundVariant,
-  MiniMap,
   ReactFlowProvider,
   NodeTypes,
   EdgeTypes,
@@ -31,7 +29,6 @@ import { UnifiedToolbar } from './components/UnifiedToolbar';
 import { ComponentLibraryService } from '../services/component-library-service';
 import { DiagramNavigationService } from '../services/diagram-navigation-service';
 import type { CanvasNodeData, ReactFlowInstance } from '../types/canvas-types';
-import type { BreadcrumbItem } from '../types/component-props';
 import { getNavigationIconVisibility } from '../utils/navigation-utils';
 
 // Import custom hooks
@@ -85,8 +82,6 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath }) => {
   const [diagramType, setDiagramType] = React.useState<'context' | 'container' | 'component'>(
     'context'
   );
-  const [breadcrumbs, setBreadcrumbs] = React.useState<BreadcrumbItem[]>([]);
-  const [breadcrumbRefreshTrigger, setBreadcrumbRefreshTrigger] = React.useState(0);
   const nodeCounterRef = React.useRef(0);
 
   // Services
@@ -136,13 +131,7 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath }) => {
           childDiagramType
         );
 
-        // Mark node as having child
-        setNodes((nds) =>
-          nds.map((n) =>
-            n.id === nodeId ? { ...n, data: { ...n.data, hasChildDiagram: true } } : n
-          )
-        );
-
+        // Note: linkedDiagramPath is set by createChildDiagram() in node.data
         console.log('BAC4: ✅ Auto-created child diagram for', nodeLabel);
       } catch (error) {
         console.error('BAC4: Error auto-creating child diagram:', error);
@@ -150,13 +139,6 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath }) => {
     },
     [filePath, diagramType, navigationService, setNodes]
   );
-
-  /**
-   * Handle breadcrumb refresh
-   */
-  const handleBreadcrumbRefresh = React.useCallback(() => {
-    setBreadcrumbRefreshTrigger((prev) => prev + 1);
-  }, []);
 
   /**
    * Handle node selection
@@ -192,7 +174,6 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath }) => {
     setEdges,
     navigationService,
     onNodeSelect: handleNodeSelect,
-    onBreadcrumbRefresh: handleBreadcrumbRefresh,
   });
 
   const edgeHandlers = useEdgeHandlers({
@@ -229,7 +210,7 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath }) => {
     onPaneClickCallback: handlePaneClickCallback,
   });
 
-  // File operations hook (manages loading, saving, breadcrumbs)
+  // File operations hook (manages loading, saving)
   useFileOperations({
     plugin,
     filePath,
@@ -239,9 +220,7 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath }) => {
     setNodes,
     setEdges,
     setDiagramType,
-    setBreadcrumbs,
     nodeCounterRef,
-    breadcrumbRefreshTrigger,
     navigationService,
   });
 
@@ -275,23 +254,27 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath }) => {
   }, [filePath, navigationService, diagramActions]);
 
   /**
-   * Calculate navigation icon visibility
+   * Calculate navigation icon visibility (v0.6.0: simplified without breadcrumbs)
    */
   const navigationIconVisibility = React.useMemo(() => {
     if (!selectedNode || !filePath) {
       return { showPlus: false, showMinus: false };
     }
 
-    // Check if diagram has parent
-    const hasParent = breadcrumbs.length > 1;
+    // v0.6.0: Determine hasParent by checking if navigationService can find parent
+    // For now, we'll use a simplified approach - only root (Context) diagrams have no parent
+    const hasParent = diagramType !== 'context';
+
+    // v0.6.0: Check linkedDiagramPath instead of hasChildDiagram
+    const hasChildDiagram = !!(selectedNode.data as any).linkedDiagramPath;
 
     return getNavigationIconVisibility(
       selectedNode.type,
       diagramType,
-      selectedNode.data.hasChildDiagram || false,
+      hasChildDiagram,
       hasParent
     );
-  }, [selectedNode, filePath, diagramType, breadcrumbs]);
+  }, [selectedNode, filePath, diagramType]);
 
   return (
     <div
@@ -307,9 +290,6 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath }) => {
         currentType={diagramType}
         onTypeChange={diagramActions.handleDiagramTypeChange}
         onAddNode={canvasState.addNodeGeneric}
-        breadcrumbs={breadcrumbs}
-        currentPath={filePath || ''}
-        onNavigate={diagramActions.handleBreadcrumbNavigate}
         selectedNode={selectedNode}
         onDeleteNode={() => selectedNode && nodeHandlers.handleDeleteNode(selectedNode.id)}
         onRenameDiagram={diagramActions.handleRenameDiagram}

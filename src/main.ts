@@ -124,6 +124,81 @@ export default class BAC4Plugin extends Plugin {
       })
     );
 
+    // Register file rename listener (v0.6.0: Auto-update linkedDiagramPath and linkedMarkdownPath)
+    this.registerEvent(
+      this.app.vault.on('rename', async (file, oldPath) => {
+        if (!(file instanceof TFile)) return;
+
+        // Only care about .bac4 and .md file renames
+        if (file.extension !== 'bac4' && file.extension !== 'md') return;
+
+        console.log('BAC4: File renamed from', oldPath, 'to', file.path);
+
+        // Find all .bac4 files in vault
+        const allBac4Files = this.app.vault.getFiles().filter((f) => f.extension === 'bac4');
+
+        console.log('BAC4: Checking', allBac4Files.length, '.bac4 files for references to renamed file');
+
+        let updatedCount = 0;
+
+        // Check each .bac4 file for references to the old path
+        for (const bac4File of allBac4Files) {
+          try {
+            const content = await this.app.vault.read(bac4File);
+            const data = JSON.parse(content);
+
+            if (!data.nodes || !Array.isArray(data.nodes)) continue;
+
+            let needsUpdate = false;
+
+            // Update linkedDiagramPath and linkedMarkdownPath in nodes
+            const updatedNodes = data.nodes.map((node: any) => {
+              const updatedNode = { ...node };
+
+              // Check linkedDiagramPath
+              if (updatedNode.data?.linkedDiagramPath === oldPath) {
+                console.log('BAC4: Updating linkedDiagramPath in', bac4File.path, 'node', node.id);
+                updatedNode.data.linkedDiagramPath = file.path;
+                needsUpdate = true;
+              }
+
+              // Check linkedMarkdownPath
+              if (updatedNode.data?.linkedMarkdownPath === oldPath) {
+                console.log('BAC4: Updating linkedMarkdownPath in', bac4File.path, 'node', node.id);
+                updatedNode.data.linkedMarkdownPath = file.path;
+                needsUpdate = true;
+              }
+
+              return updatedNode;
+            });
+
+            // Save updated file if changes were made
+            if (needsUpdate) {
+              data.nodes = updatedNodes;
+
+              // Update updatedAt timestamp if metadata exists (v0.6.0 format)
+              if (data.metadata) {
+                data.metadata.updatedAt = new Date().toISOString();
+              }
+
+              await this.app.vault.modify(bac4File, JSON.stringify(data, null, 2));
+              updatedCount++;
+              console.log('BAC4: ✅ Updated', bac4File.path);
+            }
+          } catch (error) {
+            console.error('BAC4: Error processing', bac4File.path, error);
+          }
+        }
+
+        if (updatedCount > 0) {
+          new Notice(`Updated ${updatedCount} diagram(s) with renamed file reference`);
+          console.log('BAC4: ✅ File rename complete:', updatedCount, 'diagrams updated');
+        } else {
+          console.log('BAC4: No diagrams needed updating for this rename');
+        }
+      })
+    );
+
     console.log('BAC4 Plugin loaded successfully');
   }
 

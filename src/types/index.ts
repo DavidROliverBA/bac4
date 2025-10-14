@@ -6,4 +6,4 @@
 
 export * from './canvas-types';
 export * from './component-props';
-export * from './diagram-relationships';
+// v0.6.0: diagram-relationships.ts deleted (relationships embedded in .bac4 files)

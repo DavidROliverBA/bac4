@@ -1,6 +1,7 @@
 /**
  * Cloud Component Node
  * Custom node for cloud service components (AWS, Azure, GCP, SaaS)
+ * v0.6.0: Supports linkedMarkdownPath for documentation
  */
 
 import * as React from 'react';
@@ -24,6 +25,9 @@ export const CloudComponentNode: React.FC<NodeProps<CloudComponentNodeData>> = (
   };
 
   const color = data.color || providerColors[data.provider || 'saas'] || '#7C3AED';
+
+  // Determine if node has linked markdown file (v0.6.0)
+  const hasLinkedMarkdown = !!data.linkedMarkdownPath;
 
   const getNodeStyles = () => {
     // Convert hex to rgba with alpha
@@ -93,6 +97,32 @@ export const CloudComponentNode: React.FC<NodeProps<CloudComponentNodeData>> = (
 
       {/* Provider badge (right side) */}
       <div style={providerBadgeStyles}>{data.provider || 'CLOUD'}</div>
+
+      {/* Plus icon badge for linked markdown (v0.6.0) - positioned below provider badge to avoid overlap */}
+      {hasLinkedMarkdown && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '24px', // Below the provider badge
+            right: SPACING.tiny,
+            fontSize: '9px',
+            width: '14px',
+            height: '14px',
+            borderRadius: '50%',
+            backgroundColor: color,
+            color: '#fff',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontWeight: 700,
+            cursor: 'help',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+          }}
+          title={`Documentation: ${data.linkedMarkdownPath?.split('/').pop()}`}
+        >
+          +
+        </div>
+      )}
 
       {/* Component name */}
       <div

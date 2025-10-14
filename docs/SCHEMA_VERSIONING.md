@@ -14,18 +14,117 @@ BAC4 diagram files (`.bac4`) are JSON documents that evolve over time. This docu
 
 ## Current Schema Version
 
-**Version:** `0.4.0` (Planned)
-**Status:** In Development
-**Release Date:** TBD
+**Version:** `0.6.0`
+**Status:** Production-Ready ✅
+**Release Date:** 2025-10-14
 
 ---
 
 ## Version History
 
-### v0.4.0 - Container Node Icon Flexibility (Planned)
+### v0.6.0 - Self-Contained Diagrams (BREAKING)
 
-**Release Date:** TBD
-**Breaking Changes:** YES - Container node data structure changed
+**Release Date:** 2025-10-14
+**Breaking Changes:** YES - Complete file format overhaul
+
+#### Changes
+
+**File Format - Before (v0.5.0 and earlier):**
+```json
+{
+  "nodes": [...],
+  "edges": [...]
+}
+```
+
+**File Format - After (v0.6.0):**
+```json
+{
+  "version": "0.6.0",
+  "metadata": {
+    "diagramType": "context",
+    "createdAt": "2025-10-14T10:30:00.000Z",
+    "updatedAt": "2025-10-14T12:45:00.000Z"
+  },
+  "nodes": [
+    {
+      "id": "node-1",
+      "type": "system",
+      "position": { "x": 100, "y": 100 },
+      "data": {
+        "label": "Payment System",
+        "linkedDiagramPath": "diagrams/Payment System.bac4",
+        "linkedMarkdownPath": "docs/Payment System.md",
+        "color": "#4A90E2",
+        "description": "..."
+      }
+    }
+  ],
+  "edges": [...]
+}
+```
+
+#### Key Changes
+
+1. **Version Field:** Explicit `version: "0.6.0"` at root level
+2. **Metadata Object:** Contains `diagramType`, `createdAt`, `updatedAt`
+3. **Embedded Links:**
+   - `linkedDiagramPath` in node.data (replaces external relationships)
+   - `linkedMarkdownPath` for documentation
+4. **Auto-Update:** vault.on('rename') listener updates all references
+5. **Validation:** Broken links automatically cleaned on load
+
+#### Migration Path
+
+**⚠️ BREAKING CHANGE - No Migration Code Provided**
+
+**For Users:**
+1. **Backup vault** (Git commit recommended)
+2. **Delete all .bac4 files:** `find . -name "*.bac4" -delete`
+3. **Delete diagram-relationships.json** (if exists)
+4. **Upgrade plugin** to v0.6.0
+5. **Reload Obsidian** (Cmd+R / Ctrl+R)
+6. **Recreate diagrams** with new format
+
+**Why No Migration?**
+- Architectural changes too significant
+- Node data structure incompatible (hasChildDiagram → linkedDiagramPath)
+- Fresh start ensures consistency
+- Git history preserves old diagrams if needed
+
+#### Rationale
+
+1. **Self-Contained Files:** All metadata embedded, no external dependencies
+2. **Version Tracking:** Future migrations will be automated
+3. **Auto-Update:** File renames tracked automatically
+4. **Better Reliability:** Broken links auto-cleaned
+5. **Simpler Navigation:** Use Obsidian's native back/forward (breadcrumbs removed)
+
+---
+
+### v0.5.0 - UI Enhancements
+
+**Release Date:** 2025-10-14
+**Breaking Changes:** NO
+
+#### Changes
+- Moveable/resizable panels
+- Enhanced cloud component nodes
+- Custom zoom controls
+- Larger container nodes
+
+---
+
+### v0.4.0 - Stability & Polish
+
+**Release Date:** 2025-10-14
+**Breaking Changes:** NO
+
+#### Changes
+- Multi-tab rendering fixes
+- Performance optimizations (React.memo)
+- Accessibility improvements
+- Test coverage: 29.65%
 
 #### Changes
 
@@ -331,9 +430,10 @@ A: No. All diagrams in a vault should use the same schema version.
 |------|--------|--------|
 | 2025-10-14 | Created schema versioning document | Claude Code |
 | 2025-10-14 | Documented v0.4.0 Container Node changes | Claude Code |
+| 2025-10-14 | Documented v0.6.0 self-contained diagrams (BREAKING) | Claude Code |
 
 ---
 
 **Last Updated:** 2025-10-14
-**Document Version:** 1.0
-**BAC4 Version:** 0.4.0 (planned)
+**Document Version:** 2.0
+**BAC4 Version:** 0.6.0 ✅

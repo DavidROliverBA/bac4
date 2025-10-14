@@ -31,7 +31,6 @@ export interface UseNodeHandlersProps {
   setEdges: React.Dispatch<React.SetStateAction<any[]>>;
   navigationService: DiagramNavigationService;
   onNodeSelect: (node: Node<CanvasNodeData> | null) => void;
-  onBreadcrumbRefresh: () => void;
 }
 
 export interface NodeHandlers {
@@ -64,7 +63,6 @@ export function useNodeHandlers(props: UseNodeHandlersProps): NodeHandlers {
     setEdges,
     navigationService,
     onNodeSelect,
-    onBreadcrumbRefresh,
   } = props;
 
   /**
@@ -136,12 +134,8 @@ export function useNodeHandlers(props: UseNodeHandlersProps): NodeHandlers {
 
           console.log('BAC4: ✅ Child diagram created:', childPath);
 
-          // Mark node as having child
-          setNodes((nds) =>
-            nds.map((n) =>
-              n.id === node.id ? { ...n, data: { ...n.data, hasChildDiagram: true } } : n
-            )
-          );
+          // v0.6.0: linkedDiagramPath is stored in node.data by createChildDiagram()
+          // No need to manually update hasChildDiagram flag anymore
         } else {
           console.log('BAC4: ✅ Opening existing child diagram:', childPath);
         }
@@ -166,13 +160,56 @@ export function useNodeHandlers(props: UseNodeHandlersProps): NodeHandlers {
   );
 
   /**
-   * Handle node double-click (drill-down)
+   * Handle node double-click (v0.6.0: Unified navigation)
+   *
+   * Priority order:
+   * 1. linkedDiagramPath exists → Open child diagram (Context/Container drill-down)
+   * 2. linkedMarkdownPath exists → Open markdown documentation
+   * 3. Neither exists → Try to create/open child diagram (if node type allows)
+   * 4. Nothing available → Show info message
    */
   const onNodeDoubleClick = React.useCallback(
     async (_event: React.MouseEvent, node: Node<CanvasNodeData>) => {
-      await handleCreateOrOpenChildDiagram(node);
+      console.log('=== BAC4 DOUBLE-CLICK START ===');
+      console.log('Node:', { id: node.id, type: node.type, label: node.data.label });
+
+      // Priority 1: Check if node has linkedDiagramPath (embedded in node data)
+      if ('linkedDiagramPath' in node.data && node.data.linkedDiagramPath) {
+        console.log('BAC4: Node has linkedDiagramPath, opening diagram:', node.data.linkedDiagramPath);
+        try {
+          await plugin.openCanvasViewInNewTab(node.data.linkedDiagramPath);
+          console.log('BAC4: ✅ Opened linked diagram');
+          console.log('=== BAC4 DOUBLE-CLICK END ===');
+          return;
+        } catch (error) {
+          console.error('BAC4: Error opening linked diagram:', error);
+          ErrorHandler.handleError(error, 'Failed to open linked diagram');
+          return;
+        }
+      }
+
+      // Priority 2: Check if node has linkedMarkdownPath
+      if (node.data.linkedMarkdownPath) {
+        console.log('BAC4: Node has linkedMarkdownPath, opening markdown:', node.data.linkedMarkdownPath);
+        await openLinkedMarkdownFile(node.id);
+        console.log('=== BAC4 DOUBLE-CLICK END ===');
+        return;
+      }
+
+      // Priority 3: Try drill-down (only for System/Container nodes in Context/Container diagrams)
+      if (canDrillDown(node.type || '', diagramType)) {
+        console.log('BAC4: No linked files, attempting drill-down...');
+        await handleCreateOrOpenChildDiagram(node);
+        console.log('=== BAC4 DOUBLE-CLICK END ===');
+        return;
+      }
+
+      // Priority 4: Nothing available
+      console.log('BAC4: No action available for double-click');
+      ErrorHandler.showInfo('No linked diagram or documentation. Use Property Panel to link files.');
+      console.log('=== BAC4 DOUBLE-CLICK END ===');
     },
-    [handleCreateOrOpenChildDiagram]
+    [handleCreateOrOpenChildDiagram, openLinkedMarkdownFile, plugin, diagramType]
   );
 
   /**
@@ -256,13 +293,18 @@ export function useNodeHandlers(props: UseNodeHandlersProps): NodeHandlers {
         return updated;
       });
 
-      // If node has a child diagram, rename the child diagram file
-      if (filePath && node.data.hasChildDiagram) {
+      // v0.6.0: Check if node has a child diagram by querying navigation service
+      if (filePath) {
         try {
-          console.log('BAC4: Node has child diagram, renaming child file...');
-
           // Find child diagram
           const childPath = await navigationService.findChildDiagram(filePath, nodeId);
+
+          if (!childPath) {
+            console.log('BAC4: Node has no child diagram, skipping rename');
+            return;
+          }
+
+          console.log('BAC4: Node has child diagram, renaming child file...');
 
           if (childPath) {
             console.log('BAC4: Found child diagram at:', childPath);
@@ -274,17 +316,13 @@ export function useNodeHandlers(props: UseNodeHandlersProps): NodeHandlers {
             // Update relationship with new parent node label
             await navigationService.updateParentNodeLabel(filePath, nodeId, newLabel);
             console.log('BAC4: ✅ Updated relationship with new label');
-
-            // Trigger breadcrumb refresh
-            onBreadcrumbRefresh();
-            console.log('BAC4: ✅ Triggered breadcrumb refresh');
           }
         } catch (error) {
           console.error('BAC4: Error renaming child diagram:', error);
         }
       }
     },
-    [setNodes, nodes, filePath, navigationService, onBreadcrumbRefresh]
+    [setNodes, nodes, filePath, navigationService]
   );
 
   /**
@@ -328,7 +366,7 @@ export function useNodeHandlers(props: UseNodeHandlersProps): NodeHandlers {
       setNodes((nds) =>
         nds.map((node) =>
           node.id === nodeId
-            ? { ...node, data: { ...node.data, linkedMarkdownFile: filePath } }
+            ? { ...node, data: { ...node.data, linkedMarkdownPath: filePath } }
             : node
         )
       );
@@ -345,7 +383,7 @@ export function useNodeHandlers(props: UseNodeHandlersProps): NodeHandlers {
       setNodes((nds) =>
         nds.map((node) =>
           node.id === nodeId
-            ? { ...node, data: { ...node.data, linkedMarkdownFile: undefined } }
+            ? { ...node, data: { ...node.data, linkedMarkdownPath: undefined } }
             : node
         )
       );
@@ -401,7 +439,7 @@ export function useNodeHandlers(props: UseNodeHandlersProps): NodeHandlers {
   const openLinkedMarkdownFile = React.useCallback(
     async (nodeId: string) => {
       const node = nodes.find((n) => n.id === nodeId);
-      if (!node?.data.linkedMarkdownFile) {
+      if (!node?.data.linkedMarkdownPath) {
         console.error('BAC4: No linked markdown file for node:', nodeId);
         return;
       }
@@ -409,12 +447,12 @@ export function useNodeHandlers(props: UseNodeHandlersProps): NodeHandlers {
       try {
         console.log('BAC4: Opening linked markdown file', {
           nodeId,
-          filePath: node.data.linkedMarkdownFile,
+          filePath: node.data.linkedMarkdownPath,
         });
         await MarkdownLinkService.openMarkdownFile(
           plugin.app.workspace,
           plugin.app.vault,
-          node.data.linkedMarkdownFile,
+          node.data.linkedMarkdownPath,
           false
         );
         console.log('BAC4: ✅ Markdown file opened');

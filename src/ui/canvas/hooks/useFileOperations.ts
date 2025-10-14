@@ -2,10 +2,10 @@
  * File Operations Hook
  *
  * Custom React hook that manages file I/O operations:
- * - Loading diagram data from .bac4 or .md files
+ * - Loading diagram data from .bac4 files
  * - Auto-saving diagram changes with debounce
- * - Breadcrumb loading based on node selection
  * - Node counter initialization
+ * - Linked file validation (v0.6.0)
  *
  * @module useFileOperations
  */
@@ -15,12 +15,7 @@ import type { Node, Edge } from 'reactflow';
 import type BAC4Plugin from '../../../main';
 import type { CanvasNodeData } from '../../../types/canvas-types';
 import type { DiagramNavigationService } from '../../../services/diagram-navigation-service';
-import type { BreadcrumbItem } from '../../../types/component-props';
-import {
-  parseFrontmatter,
-  extractDiagramData,
-  buildMarkdownWithFrontmatter,
-} from '../../../utils/frontmatter-parser';
+// v0.6.0: Removed frontmatter imports (markdown format deprecated)
 import { AUTO_SAVE_DEBOUNCE_MS } from '../../../constants';
 import { normalizeEdges } from '../utils/canvas-utils';
 import { initializeNodeCounter } from '../utils/auto-naming';
@@ -34,16 +29,14 @@ export interface UseFileOperationsProps {
   setNodes: React.Dispatch<React.SetStateAction<Node<CanvasNodeData>[]>>;
   setEdges: React.Dispatch<React.SetStateAction<Edge[]>>;
   setDiagramType: (type: 'context' | 'container' | 'component') => void;
-  setBreadcrumbs: React.Dispatch<React.SetStateAction<BreadcrumbItem[]>>;
   nodeCounterRef: React.MutableRefObject<number>;
-  breadcrumbRefreshTrigger: number;
   navigationService: DiagramNavigationService;
 }
 
 /**
  * Custom hook for file operations
  *
- * Manages file loading, auto-saving, and breadcrumb updates.
+ * Manages file loading and auto-saving (v0.6.0: breadcrumbs removed).
  *
  * @param props - Configuration options
  */
@@ -57,14 +50,12 @@ export function useFileOperations(props: UseFileOperationsProps): void {
     setNodes,
     setEdges,
     setDiagramType,
-    setBreadcrumbs,
     nodeCounterRef,
-    breadcrumbRefreshTrigger,
     navigationService,
   } = props;
 
   /**
-   * Auto-save diagram data to file
+   * Auto-save diagram data to file (v0.6.0 format)
    */
   React.useEffect(() => {
     console.log('BAC4: Auto-save effect triggered', {
@@ -82,51 +73,41 @@ export function useFileOperations(props: UseFileOperationsProps): void {
       try {
         console.log('BAC4: Starting auto-save to', filePath);
 
-        // Prepare diagram data
+        // Read existing file to get createdAt timestamp if it exists
+        let createdAt = new Date().toISOString();
+        try {
+          const existingContent = await plugin.app.vault.adapter.read(filePath);
+          const existingData = JSON.parse(existingContent);
+          if (existingData.metadata?.createdAt) {
+            createdAt = existingData.metadata.createdAt;
+          }
+        } catch {
+          // File doesn't exist or is invalid, use current timestamp
+        }
+
+        // Prepare v0.6.0 diagram data
         const diagramData = {
+          version: '0.6.0',
+          metadata: {
+            diagramType,
+            createdAt,
+            updatedAt: new Date().toISOString(),
+          },
           nodes,
           edges,
         };
 
-        console.log('BAC4: Saving data', {
+        console.log('BAC4: Saving v0.6.0 data', {
+          version: diagramData.version,
+          diagramType: diagramData.metadata.diagramType,
           nodeCount: nodes.length,
           edgeCount: edges.length,
-          firstNodePosition: nodes[0]?.position,
         });
 
-        // Save based on file format
-        if (filePath.endsWith('.md')) {
-          console.log('BAC4: Saving as markdown with frontmatter');
-
-          // Read existing file to preserve markdown body
-          let existingBody = '';
-          try {
-            const existingContent = await plugin.app.vault.adapter.read(filePath);
-            const { body } = parseFrontmatter(existingContent);
-            existingBody = body;
-          } catch (error) {
-            // File doesn't exist yet, use empty body
-            console.log('BAC4: No existing markdown body, starting fresh');
-          }
-
-          // Build frontmatter
-          const frontmatter = {
-            bac4_diagram: true,
-            bac4_type: diagramType,
-            bac4_updated: new Date().toISOString(),
-            bac4_data: JSON.stringify(diagramData, null, 2),
-          };
-
-          // Combine frontmatter and body
-          const content = buildMarkdownWithFrontmatter(frontmatter, existingBody);
-          await plugin.app.vault.adapter.write(filePath, content);
-          console.log('BAC4: ✅ Auto-saved markdown diagram successfully');
-        } else {
-          // Save as pure JSON (.bac4 file)
-          console.log('BAC4: Saving as JSON (.bac4 file)');
-          await plugin.app.vault.adapter.write(filePath, JSON.stringify(diagramData, null, 2));
-          console.log('BAC4: ✅ Auto-saved JSON diagram successfully');
-        }
+        // Save as pure JSON (.bac4 file) - v0.6.0 only supports .bac4 format
+        console.log('BAC4: Saving as JSON (.bac4 file)');
+        await plugin.app.vault.adapter.write(filePath, JSON.stringify(diagramData, null, 2));
+        console.log('BAC4: ✅ Auto-saved v0.6.0 diagram successfully');
       } catch (error) {
         console.error('BAC4: ❌ Error auto-saving', error);
       }
@@ -139,43 +120,57 @@ export function useFileOperations(props: UseFileOperationsProps): void {
   }, [nodes, edges, filePath, plugin, diagramType]);
 
   /**
-   * Load breadcrumbs for current diagram's hierarchy
-   *
-   * Simplified: Always shows current diagram's parent chain, not child diagrams.
-   * Triggered on filePath change and breadcrumbRefreshTrigger.
+   * Validate linked files and cleanup broken references (v0.6.0)
    */
-  React.useEffect(() => {
-    if (!filePath) {
-      setBreadcrumbs([]);
-      return;
-    }
+  const validateLinkedFiles = React.useCallback(
+    async (loadedNodes: Node<CanvasNodeData>[]): Promise<Node<CanvasNodeData>[]> => {
+      let needsSave = false;
+      const vault = plugin.app.vault;
 
-    let cancelled = false;
+      const cleanedNodes = await Promise.all(
+        loadedNodes.map(async (node) => {
+          const data = { ...node.data };
+          let updated = false;
 
-    console.log('BAC4: Loading breadcrumbs for current diagram:', filePath);
+          // Check linkedDiagramPath (only SystemNodeData and ContainerNodeData have this)
+          if ('linkedDiagramPath' in data && data.linkedDiagramPath) {
+            const file = vault.getAbstractFileByPath(data.linkedDiagramPath);
+            if (!file) {
+              console.warn(`BAC4: Broken link removed: ${node.id} → ${data.linkedDiagramPath}`);
+              delete (data as any).linkedDiagramPath;
+              updated = true;
+            }
+          }
 
-    navigationService
-      .buildBreadcrumbs(filePath)
-      .then((breadcrumbs) => {
-        if (cancelled) return;
+          // Check linkedMarkdownPath
+          if (data.linkedMarkdownPath) {
+            const file = vault.getAbstractFileByPath(data.linkedMarkdownPath);
+            if (!file) {
+              console.warn(`BAC4: Broken link removed: ${node.id} → ${data.linkedMarkdownPath}`);
+              delete data.linkedMarkdownPath;
+              updated = true;
+            }
+          }
 
-        console.log('BAC4: Loaded breadcrumbs:', breadcrumbs.length, 'items');
-        setBreadcrumbs(breadcrumbs);
-      })
-      .catch((error) => {
-        if (!cancelled) {
-          console.error('BAC4: Error loading breadcrumbs:', error);
-          setBreadcrumbs([]);
-        }
-      });
+          if (updated) {
+            needsSave = true;
+            return { ...node, data };
+          }
+          return node;
+        })
+      );
 
-    return () => {
-      cancelled = true;
-    };
-  }, [filePath, navigationService, breadcrumbRefreshTrigger, setBreadcrumbs]);
+      if (needsSave) {
+        console.log('BAC4: Broken references cleaned, file will be re-saved');
+      }
+
+      return cleanedNodes;
+    },
+    [plugin]
+  );
 
   /**
-   * Load canvas data when filePath changes
+   * Load canvas data when filePath changes (v0.6.0 format)
    */
   React.useEffect(() => {
     console.log('BAC4: Initializing canvas with filePath:', filePath);
@@ -184,58 +179,48 @@ export function useFileOperations(props: UseFileOperationsProps): void {
     if (filePath) {
       console.log('BAC4: Loading diagram from file:', filePath);
 
-      // Load diagram type from relationships file
-      navigationService.getDiagramByPath(filePath).then((diagram) => {
-        if (diagram) {
-          console.log('BAC4: Setting diagram type from relationships:', diagram.type);
-          setDiagramType(diagram.type);
-        }
-      });
-
-      // Load nodes and edges from file (.bac4 or .md)
+      // Load nodes and edges from file (.bac4 only - v0.6.0)
       plugin.app.vault.adapter
         .read(filePath)
-        .then((content) => {
-          console.log('BAC4: File content loaded, parsing...');
+        .then(async (content) => {
+          console.log('BAC4: File content loaded, parsing v0.6.0 format...');
 
-          let data: { nodes?: Node<CanvasNodeData>[]; edges?: Edge[] } = {};
-
-          // Detect file format
-          if (filePath.endsWith('.md')) {
-            console.log('BAC4: Detected markdown file, parsing frontmatter...');
-            const diagramData = extractDiagramData(content);
-            if (diagramData) {
-              data = diagramData;
-              console.log('BAC4: Extracted diagram data from frontmatter');
-            } else {
-              console.warn('BAC4: No diagram data found in frontmatter');
-              data = { nodes: [], edges: [] };
-            }
-          } else {
-            // Parse as JSON (.bac4 file)
-            console.log('BAC4: Parsing as JSON (.bac4 file)');
-            data = JSON.parse(content);
-          }
+          // Parse as JSON (.bac4 file)
+          const data = JSON.parse(content);
 
           console.log('BAC4: Parsed data:', {
+            version: data.version,
+            diagramType: data.metadata?.diagramType,
             hasNodes: !!data.nodes,
             nodeCount: data.nodes?.length,
             hasEdges: !!data.edges,
             edgeCount: data.edges?.length,
           });
 
+          // Set diagram type from metadata (v0.6.0)
+          if (data.metadata?.diagramType) {
+            console.log('BAC4: Setting diagram type from metadata:', data.metadata.diagramType);
+            setDiagramType(data.metadata.diagramType);
+          }
+
+          // Validate and cleanup linked files
+          let validatedNodes = data.nodes || [];
+          if (validatedNodes.length > 0) {
+            validatedNodes = await validateLinkedFiles(validatedNodes);
+          }
+
           // Always load from file if data structure exists, even if empty
-          if (data.nodes !== undefined) {
+          if (validatedNodes !== undefined) {
             console.log(
               'BAC4: Loading nodes from file:',
-              data.nodes.length,
+              validatedNodes.length,
               'first node position:',
-              data.nodes[0]?.position
+              validatedNodes[0]?.position
             );
-            setNodes(data.nodes);
+            setNodes(validatedNodes);
 
             // Initialize node counter based on existing nodes
-            nodeCounterRef.current = initializeNodeCounter(data.nodes);
+            nodeCounterRef.current = initializeNodeCounter(validatedNodes);
             console.log('BAC4: Initialized node counter to', nodeCounterRef.current);
           } else {
             console.log('BAC4: No nodes array in file, starting with empty canvas');
@@ -265,5 +250,5 @@ export function useFileOperations(props: UseFileOperationsProps): void {
       setEdges([]);
       nodeCounterRef.current = 0;
     }
-  }, [filePath, plugin, navigationService, setNodes, setEdges, setDiagramType, nodeCounterRef]);
+  }, [filePath, plugin, setNodes, setEdges, setDiagramType, nodeCounterRef, validateLinkedFiles]);
 }

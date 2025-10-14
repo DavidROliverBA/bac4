@@ -22,9 +22,9 @@ import type {
   SystemNodeData,
   PersonNodeData,
   ContainerNodeData,
+  DiagramNode,
 } from '../../types/canvas-types';
 import { DiagramNavigationService } from '../../services/diagram-navigation-service';
-import { DiagramNode } from '../../types/diagram-relationships';
 import BAC4Plugin from '../../main';
 import {
   FONT_SIZES,
@@ -179,14 +179,14 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
 
   // Check if linked markdown file exists
   React.useEffect(() => {
-    if (node?.data.linkedMarkdownFile && vault) {
-      MarkdownLinkService.fileExists(vault, node.data.linkedMarkdownFile).then(
+    if (node?.data.linkedMarkdownPath && vault) {
+      MarkdownLinkService.fileExists(vault, node.data.linkedMarkdownPath).then(
         setMarkdownFileExists
       );
     } else {
       setMarkdownFileExists(false);
     }
-  }, [node?.data.linkedMarkdownFile, vault]);
+  }, [node?.data.linkedMarkdownPath, vault]);
 
   const handleLabelChange = (value: string) => {
     if (node) onUpdateLabel(node.id, value);
@@ -302,8 +302,8 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
   };
 
   const handleCreateMarkdownFile = async () => {
-    if (!node || !node.data.linkedMarkdownFile) return;
-    await onCreateAndLinkMarkdownFile?.(node.id, node.data.linkedMarkdownFile);
+    if (!node || !node.data.linkedMarkdownPath) return;
+    await onCreateAndLinkMarkdownFile?.(node.id, node.data.linkedMarkdownPath);
   };
 
   // Dragging handlers
@@ -333,6 +333,8 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
         document.removeEventListener('mouseup', handleMouseUp);
       };
     }
+    // Explicit return for when isDragging is false
+    return undefined;
   }, [isDragging, dragStart]);
 
   return (
@@ -578,12 +580,14 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
                   </select>
                 </FormSection>
 
-                <FormField
-                  label="Technology"
-                  value={node.data.technology || ''}
-                  onChange={(value) => handlePropertyChange('technology', value)}
-                  placeholder="e.g., Node.js, React"
-                />
+                {'technology' in node.data && (
+                  <FormField
+                    label="Technology"
+                    value={node.data.technology || ''}
+                    onChange={(value) => handlePropertyChange('technology', value)}
+                    placeholder="e.g., Node.js, React"
+                  />
+                )}
 
                 <FormField
                   label="Description"
@@ -632,7 +636,7 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
                   node.data.properties &&
                   Object.keys(node.data.properties).length > 0 && (
                     <FormSection label="Properties">
-                      {Object.entries(node.data.properties).map(([key, value]) => (
+                      {Object.entries(node.data.properties as Record<string, unknown>).map(([key, value]) => (
                         <div key={key} style={{ marginBottom: SPACING.large }}>
                           <label
                             style={{
@@ -783,7 +787,7 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
             {/* Linked Markdown Documentation */}
             {app && vault && workspace && (
               <FormSection label="Linked Documentation">
-                {!node.data.linkedMarkdownFile ? (
+                {!node.data.linkedMarkdownPath ? (
                   // No file linked
                   <button
                     onClick={handleLinkMarkdownFile}
@@ -826,7 +830,7 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
                           whiteSpace: 'nowrap',
                         }}
                       >
-                        {MarkdownLinkService.getFileName(node.data.linkedMarkdownFile)}
+                        {MarkdownLinkService.getFileName(node.data.linkedMarkdownPath)}
                       </span>
                     </div>
                     <div style={{ display: 'flex', gap: SPACING.small }}>
@@ -884,7 +888,7 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
                           flex: 1,
                         }}
                       >
-                        {MarkdownLinkService.getFileName(node.data.linkedMarkdownFile)} (not found)
+                        {MarkdownLinkService.getFileName(node.data.linkedMarkdownPath)} (not found)
                       </span>
                     </div>
                     <div style={{ display: 'flex', gap: SPACING.small }}>

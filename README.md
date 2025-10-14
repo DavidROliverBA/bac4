@@ -1,9 +1,11 @@
 # BAC4 - AI-Native Cloud Architecture Management for Obsidian
 
-**Version:** 0.3.0 🎉
+**Version:** 0.6.0 🎉
 **Status:** Production-Ready ✅
 
 An Obsidian plugin that transforms your vault into a comprehensive enterprise architecture management platform. Extends the C4 model with cloud-specific component mappings and provides **THREE WAYS** to create diagrams: manual, AI API, or natural conversation with Claude Desktop via MCP.
+
+> **⚠️ BREAKING CHANGE in v0.6.0:** New self-contained file format. **Delete all existing .bac4 files** before upgrading. See [Migration Guide](#-migration-from-v05x-to-v060) below.
 
 ---
 
@@ -23,7 +25,7 @@ An Obsidian plugin that transforms your vault into a comprehensive enterprise ar
 ### Method 2: Manual Installation from GitHub Release
 
 1. **Download the latest release** from [GitHub Releases](https://github.com/DavidROliverBA/bac4-plugin/releases)
-   - Download `bac4-plugin-v0.3.0.zip`
+   - Download `bac4-plugin-v0.6.0.zip`
 
 2. **Extract the files** to your vault's plugins folder:
    ```bash
@@ -34,7 +36,7 @@ An Obsidian plugin that transforms your vault into a comprehensive enterprise ar
    mkdir bac4-plugin
 
    # Extract the zip contents into the directory
-   unzip ~/Downloads/bac4-plugin-v0.3.0.zip -d bac4-plugin/
+   unzip ~/Downloads/bac4-plugin-v0.6.0.zip -d bac4-plugin/
    ```
 
 3. **Enable the plugin** in Obsidian:
@@ -113,11 +115,13 @@ Drag and drop nodes, connect with edges, customize everything.
 - ✅ Auto-save with 1-second debounce
 - ✅ Export to PNG, JPEG, SVG
 
-### **Hierarchical Navigation**
+### **Hierarchical Navigation** (v0.6.0 Enhanced)
 - ✅ Drill-down: Double-click nodes to open child diagrams
-- ✅ Breadcrumb navigation back up the hierarchy
 - ✅ Property panel linking: Connect diagrams via dropdowns
 - ✅ Auto-create child diagrams with "[+ Create New...]"
+- ✅ **NEW:** Self-contained links embedded in nodes (linkedDiagramPath, linkedMarkdownPath)
+- ✅ **NEW:** Auto-update references when files are renamed
+- ✅ **NEW:** Use Obsidian's native back/forward navigation (breadcrumbs removed)
 - ✅ Central relationship tracking in `diagram-relationships.json`
 
 ### **Cloud Component Library**
@@ -145,8 +149,11 @@ Drag and drop nodes, connect with edges, customize everything.
 
 **See:** [AI Integration Guide](docs/AI_INTEGRATION_COMPLETE.md)
 
-### **File Management**
-- ✅ `.bac4` file format (pure JSON)
+### **File Management** (v0.6.0 Format)
+- ✅ `.bac4` file format (self-contained JSON with metadata)
+- ✅ **NEW:** Version tracking (0.6.0)
+- ✅ **NEW:** Embedded diagram type, createdAt, updatedAt timestamps
+- ✅ **NEW:** Broken link validation and cleanup on load
 - ✅ Auto-naming (Generated_context_[timestamp].bac4)
 - ✅ Duplicate tab prevention
 - ✅ Multi-tab support (each tab independent)
@@ -321,25 +328,31 @@ BAC4 follows a layered plugin architecture:
 
 ---
 
-## 🎨 UI Layout
+## 🎨 UI Layout (v0.6.0)
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│ [Type] | [+ Node Buttons] | [Breadcrumbs] | [Actions] ←──  │ Unified Toolbar
+│ [Type] | [+ Node Buttons] | [Actions] ←─────────────────── │ Unified Toolbar (no breadcrumbs)
 ├─────────────────────────────────────────────────────────────┤
 │                                                    ┌────────┐│
 │                                                    │Cloud   ││ Component Palette
-│                                                    │Library ││ (top-right)
+│                                                    │Library ││ (moveable/resizable)
 │                                                    └────────┘│
 │                  CANVAS AREA                                │
 │          (React Flow with nodes and edges)                  │
 │                                                             │
-│ ┌──────────────┐                                           │
-│ │ Property     │                                           │
-│ │ Panel        │ ←─────────────────────────────────────────│ Property Panel
-│ └──────────────┘                            (bottom-left)  │
+│ ┌──────────────┐                            ┌─────┐        │
+│ │ Property     │                            │ +   │        │ Custom Zoom Controls
+│ │ Panel        │ ←──────────────────────────│ −   │        │ (bottom-right)
+│ └──────────────┘           (moveable)       │ ⊡   │        │
+│                                             └─────┘        │
 └─────────────────────────────────────────────────────────────┘
 ```
+
+**v0.6.0 Changes:**
+- ✅ Breadcrumbs removed - use Obsidian's native back/forward navigation
+- ✅ Moveable/resizable panels for better customization
+- ✅ Export-friendly zoom controls (not captured in exports)
 
 ---
 
@@ -384,14 +397,29 @@ BAC4 follows a layered plugin architecture:
 - ✅ GitHub release automation
 - ✅ Verified multi-tab stability
 
-### **v0.4.0 - Advanced AI Features** (Planned)
+### **v0.4.0-v0.5.0 - UI Enhancements** ✅ **COMPLETE**
+- ✅ Moveable/resizable panels
+- ✅ Enhanced cloud component nodes
+- ✅ Custom zoom controls
+- ✅ Simplified icon selector
+- ✅ Larger container nodes
+
+### **v0.6.0 - Self-Contained Diagrams** ✅ **COMPLETE**
+- ✅ New file format with version metadata
+- ✅ Embedded links in node.data
+- ✅ Auto-update references on file rename
+- ✅ Unified navigation priority system
+- ✅ Breadcrumbs removed (use Obsidian's native navigation)
+- ✅ Broken link validation and cleanup
+
+### **v0.7.0 - Advanced AI Features** (Planned)
 - ⏳ Real-time diagram validation
 - ⏳ AI suggestions while editing
 - ⏳ Diagram improvement command
 - ⏳ Documentation generation
 - ⏳ Semantic search across diagrams
 
-### **v0.4.0 - Multi-Cloud** (Planned)
+### **v0.8.0 - Multi-Cloud** (Planned)
 - ⏳ Azure component library
 - ⏳ GCP component library
 - ⏳ Multi-cloud architecture patterns
@@ -452,42 +480,119 @@ MIT License - see [LICENSE](LICENSE) file for details
 
 ---
 
-## 🎉 What's New in v0.3.0
+## 🎉 What's New in v0.6.0
 
-### **Major Improvements:**
+> **⚠️ BREAKING CHANGE:** This release introduces a new file format. **You must delete all existing .bac4 files** before upgrading. See [Migration Guide](#-migration-from-v05x-to-v060) below.
 
-📦 **Enhanced Installation Experience**
-- Comprehensive installation documentation
-- Support for BRAT plugin (beta testing)
-- Three installation methods documented
-- Step-by-step verification guide
-- Clear instructions for manual installation from GitHub releases
+### **Major Features:**
 
-🔧 **Stability & Polish**
-- Verified multi-tab rendering stability
-- Improved documentation structure
-- Better onboarding for new users
-- GitHub release automation
-- Production-ready for wider distribution
+📦 **Self-Contained Diagram Files**
+- Version metadata embedded in every .bac4 file
+- Diagram type, createdAt, and updatedAt timestamps
+- No external dependencies for basic diagram data
+- Cleaner, more maintainable file structure
 
-📚 **Documentation Enhancements**
-- Dedicated installation section in README
-- Clear verification steps
-- Multiple installation paths (Community Plugins, Manual, BRAT)
-- Updated roadmap with v0.3.0 features
+🔗 **Embedded Link System**
+- `linkedDiagramPath` stored directly in node.data (replaces external relationships)
+- `linkedMarkdownPath` for documentation links
+- Auto-validation and cleanup of broken links on load
+- Self-healing diagrams - broken references automatically removed
+
+🔄 **Auto-Updating References**
+- File rename listener tracks all file operations
+- All .bac4 files automatically updated when linked files are renamed
+- Metadata timestamps refreshed on updates
+- User notification shows count of updated diagrams
+
+🧭 **Unified Navigation**
+- Priority-based double-click: linkedDiagramPath → linkedMarkdownPath → drill-down → info
+- Simplified navigation logic
+- Better user experience
+
+🎨 **UI Simplification**
+- Breadcrumbs removed - use Obsidian's native back/forward navigation
+- Cleaner toolbar
+- Better integration with Obsidian's built-in features
+- Reduced visual clutter
 
 ### **Technical Updates:**
 
-- ✅ Updated to version 0.3.0 across all manifests
-- ✅ Improved README structure and clarity
-- ✅ Added BRAT plugin support instructions
-- ✅ Enhanced installation verification steps
+- ✅ Updated to version 0.6.0 across all manifests
+- ✅ New file format: `{ version: "0.6.0", metadata: {...}, nodes: [...], edges: [...] }`
+- ✅ vault.on('rename') event listener for auto-updating
+- ✅ Removed all breadcrumb-related code
 - ✅ Maintained stability: 104 tests passing, 0 TypeScript errors
-- ✅ Bundle size: 533.7kb (optimized)
+- ✅ Bundle size: 565.4kb (optimized)
+
+---
+
+## 🔄 Migration from v0.5.x to v0.6.0
+
+**⚠️ IMPORTANT:** v0.6.0 introduces a **breaking change** in the file format. Follow these steps:
+
+### **Before Upgrading:**
+
+1. **Backup your vault** (recommended)
+2. **Export important diagrams** as PNG/SVG if needed
+3. **Note your architecture** - you'll recreate diagrams from scratch
+
+### **Upgrade Steps:**
+
+1. **Delete all existing .bac4 files:**
+   ```bash
+   # Navigate to your vault
+   cd /path/to/your-vault
+
+   # Find and delete all .bac4 files
+   find . -name "*.bac4" -delete
+
+   # Also delete diagram-relationships.json if it exists
+   rm diagram-relationships.json
+   ```
+
+2. **Update the plugin:**
+   - Method 1: Wait for Community Plugins update
+   - Method 2: Download v0.6.0 from GitHub Releases
+   - Method 3: Update via BRAT
+
+3. **Reload Obsidian:**
+   - Press Cmd+R (Mac) or Ctrl+R (Windows/Linux)
+
+4. **Start fresh:**
+   - Create new diagrams using the new v0.6.0 format
+   - Enjoy improved navigation and auto-updating references!
+
+### **Why This Breaking Change?**
+
+The new format provides:
+- ✅ **Self-contained files** - All metadata embedded
+- ✅ **Auto-updating** - File renames tracked automatically
+- ✅ **Better reliability** - Broken links auto-cleaned
+- ✅ **Simpler navigation** - Use Obsidian's native back/forward
+- ✅ **Future-proof** - Version tracking for future migrations
+
+**Note:** No migration code was implemented because the architectural changes were too significant. Starting fresh ensures a clean, consistent experience.
 
 ---
 
 ## 📜 Previous Releases
+
+### v0.5.0 - UI Enhancements (2025-10-14)
+- 🎨 Moveable/resizable panels
+- ☁️ Enhanced cloud component nodes
+- 🔍 Custom zoom controls
+- 📏 Larger container nodes
+
+### v0.4.0 - Stability & Polish (2025-10-14)
+- 🔧 Multi-tab rendering fixes
+- 📊 Performance optimizations
+- ♿ Accessibility improvements
+- 🧪 Test coverage: 29.65%
+
+### v0.3.0 - Installation & Docs (2025-10-13)
+- 📦 Enhanced installation documentation
+- 🔌 BRAT plugin support
+- 📚 Improved onboarding
 
 ### v0.2.0 - AI Integration (2025-10-13)
 - 🎨 AI-Powered diagram generation (API + MCP)
@@ -505,5 +610,5 @@ MIT License - see [LICENSE](LICENSE) file for details
 
 🤖 **Powered by AI, built for humans!**
 
-*Last updated: 2025-10-13*
+*Last updated: 2025-10-14 (v0.6.0)*
 

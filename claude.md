@@ -39,24 +39,25 @@ The C4 model is a hierarchical approach to software architecture diagrams:
 All diagram controls consolidated in one horizontal bar:
 - **Diagram Type Selector** - Switch between Context/Container/Component
 - **Node Creation Buttons** - Add nodes appropriate for current diagram type
-- **Breadcrumb Navigation** - Show hierarchy and navigate parent/child diagrams
 - **Diagram Actions** - Rename, Export (PNG/JPEG/SVG), Delete node
 - Responsive layout with automatic wrapping
+- **v0.6.0:** Breadcrumbs removed - use Obsidian's native back/forward navigation
 
-### Hierarchical Navigation & Linking
+### Hierarchical Navigation & Linking (v0.6.0)
 - **Drill-down:** Double-click System → Container diagram, Container → Component diagram
 - **Navigation Buttons:** Property Panel displays **− Parent** and **+ Child** buttons at the top
   - **− Parent** button: Navigate to parent diagram (Container/Component diagrams only)
   - **+ Child** button: Open child diagram (System/Container nodes with children only)
   - Buttons auto-show/hide based on hierarchy and node type
 - **Property Panel Linking:** Select existing diagrams or create new ones from dropdown
-  - System nodes → Link to Container diagrams
-  - Container nodes → Link to Component diagrams
+  - System nodes → Link to Container diagrams (stored in `linkedDiagramPath`)
+  - Container nodes → Link to Component diagrams (stored in `linkedDiagramPath`)
   - "[+ Create New...]" option auto-creates and links child diagrams
 - **Warning Dialogs:** Prevent accidental link changes
 - **Open Linked Diagram:** Direct navigation button in Property Panel dropdown
-- **Breadcrumbs:** Navigate back up the hierarchy (top toolbar)
-- **Relationships File:** `diagram-relationships.json` tracks all parent-child links
+- **Embedded Links:** `linkedDiagramPath` and `linkedMarkdownPath` stored in node.data (v0.6.0)
+- **Auto-Update:** File rename listener updates all references automatically (v0.6.0)
+- **Navigation:** Use Obsidian's back/forward buttons - breadcrumbs removed (v0.6.0)
 
 ### Node Types
 - `SystemNode` - For Context diagrams (systems, can link to Container diagrams)
@@ -118,17 +119,54 @@ bac4-plugin/
 
 ## Key Technical Details
 
-### File Format
+### File Format (v0.6.0)
 
-**Diagram Files** - Stored as `.bac4` JSON files (pure data, no metadata):
+**Diagram Files** - Stored as `.bac4` JSON files with embedded metadata:
 ```json
 {
-  "nodes": [...],
-  "edges": [...]
+  "version": "0.6.0",
+  "metadata": {
+    "diagramType": "context",
+    "createdAt": "2025-10-14T10:30:00.000Z",
+    "updatedAt": "2025-10-14T12:45:00.000Z"
+  },
+  "nodes": [
+    {
+      "id": "node-1",
+      "type": "system",
+      "position": { "x": 100, "y": 100 },
+      "data": {
+        "label": "Payment System",
+        "linkedDiagramPath": "diagrams/Payment System.bac4",  // v0.6.0: Embedded child link
+        "linkedMarkdownPath": "docs/Payment System.md",       // v0.6.0: Embedded doc link
+        "color": "#4A90E2",
+        "description": "..."
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-1",
+      "source": "node-1",
+      "target": "node-2",
+      "type": "directional",
+      "data": {
+        "label": "uses",
+        "direction": "right"
+      }
+    }
+  ]
 }
 ```
 
-**Relationships File** - `diagram-relationships.json` in vault root (central registry):
+**Key v0.6.0 Changes:**
+- ✅ **Self-contained diagrams** - Version, metadata, and links embedded in .bac4 files
+- ✅ **Node-level linking** - `linkedDiagramPath` and `linkedMarkdownPath` stored in node.data
+- ✅ **Auto-updating references** - File rename listener updates all references automatically
+- ✅ **Unified navigation** - Double-click priority: linkedDiagramPath → linkedMarkdownPath → drill-down
+- ⚠️ **Breadcrumbs removed** - Use Obsidian's native back/forward navigation instead
+
+**Relationships File** - `diagram-relationships.json` in vault root (legacy support for hierarchy queries):
 ```json
 {
   "version": "1.0.0",
@@ -154,6 +192,7 @@ bac4-plugin/
   "updatedAt": "..."
 }
 ```
+**Note:** diagram-relationships.json provides global hierarchy view for navigation service queries, but primary links are now embedded in .bac4 files via `linkedDiagramPath`.
 
 ### React Flow Integration
 - Uses `ReactFlowProvider` wrapper (required for Zustand state management)
@@ -199,7 +238,28 @@ npm run typecheck    # TypeScript type checking
 
 ## Current Status
 
-### ✅ Completed Features (v0.5.0 - Latest)
+### ✅ Completed Features (v0.6.0 - Latest)
+
+**v0.6.0 - Self-Contained Diagrams & File Format Overhaul** 🎉
+- **New File Format**
+  - Version metadata embedded in .bac4 files
+  - Self-contained diagram files with createdAt/updatedAt timestamps
+  - Diagram type stored in metadata
+- **Embedded Linking**
+  - linkedDiagramPath stored in node.data (replaces external relationships for nodes)
+  - linkedMarkdownPath for documentation links
+  - Auto-validation and cleanup of broken links on load
+- **Auto-Updating References**
+  - vault.on('rename') listener tracks file renames
+  - All .bac4 files automatically updated when linked files are renamed
+  - Metadata updatedAt timestamp refreshed on reference updates
+- **Unified Navigation**
+  - Priority-based double-click: linkedDiagramPath → linkedMarkdownPath → drill-down → info
+  - Simplified navigation logic
+- **Breadcrumbs Removed**
+  - Use Obsidian's native back/forward navigation instead
+  - Reduced UI clutter
+  - Better integration with Obsidian's built-in navigation
 
 **v0.5.0 - Enhanced UI Controls & Cloud Component Management** 🎉
 - **Moveable & Resizable Panels**
@@ -252,7 +312,7 @@ npm run typecheck    # TypeScript type checking
   - Consolidated all controls in one horizontal bar
   - Diagram type selector (Context/Container/Component)
   - Node creation buttons (context-aware for each diagram type)
-  - Breadcrumb navigation
+  - Breadcrumb navigation (removed in v0.6.0 - use Obsidian's native back/forward)
   - Rename diagram button
   - Export menu (PNG, JPEG, SVG)
   - Delete node button (context-aware, only enabled when node selected)
@@ -263,8 +323,9 @@ npm run typecheck    # TypeScript type checking
   - "[+ Create New...]" option to auto-create and link child diagrams
   - Warning dialogs before overwriting links
   - "Open Linked Diagram" button in Property Panel
-  - Breadcrumb navigation showing full hierarchy
+  - Breadcrumb navigation showing full hierarchy (removed in v0.6.0)
   - `diagram-relationships.json` central registry
+  - **v0.6.0:** Links embedded in node.data via linkedDiagramPath/linkedMarkdownPath
 
 - **Property Panel**
   - **Navigation buttons** at top: **− Parent** and **+ Child** for quick hierarchy navigation
@@ -1248,7 +1309,21 @@ This issue can happen whenever:
 
 **General Rule:** If React Flow component has an optional `id` prop and you have multiple instances, **always provide unique IDs**.
 
-### Recent Changes (v0.5.0 - Latest)
+### Recent Changes (v0.6.0 - Latest)
+
+**v0.6.0 (2025-10-14) - Self-Contained Diagrams & File Format Overhaul** 🎉
+- **Breaking Change:** New .bac4 file format with version and metadata
+- **Self-Contained Files:** All links embedded in node.data (linkedDiagramPath, linkedMarkdownPath)
+- **Auto-Updating References:** vault.on('rename') listener updates all .bac4 files when files are renamed
+- **Unified Navigation:** Double-click priority - linkedDiagramPath → linkedMarkdownPath → drill-down → info
+- **Breadcrumbs Removed:** Use Obsidian's native back/forward navigation instead
+- **File Validation:** Broken links automatically cleaned on diagram load
+- **Build:** 565.4kb (stable, optimized)
+
+**Migration Notes:**
+- **Fresh Start Required:** v0.6.0 uses new file format incompatible with v0.5.0
+- **User confirmed clean slate:** "yes, its ok to implement breaking changes at this stage, I will delete all old files ready"
+- **No migration code needed:** Users will recreate diagrams from scratch
 
 **v0.5.0 (2025-10-14) - Enhanced UI Controls & Cloud Component Management**
 1. **Moveable/Resizable Panels** - Component Palette and Property Panel are now draggable
@@ -1291,10 +1366,10 @@ This issue can happen whenever:
   4. Final optimization pass
 - Why: Production-ready, maintainable codebase
 
-### UI Layout (v0.5.0)
+### UI Layout (v0.6.0)
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│ [Type] | [+ Node Buttons] | [Breadcrumbs] | [Actions] ←── │ Unified Toolbar (fixed)
+│ [Type] | [+ Node Buttons] | [Actions] ←───────────────────│ Unified Toolbar (fixed, no breadcrumbs)
 ├─────────────────────────────────────────────────────────────┤
 │                                                    ┌────────┐│
 │                                                    │Component││ Component Palette

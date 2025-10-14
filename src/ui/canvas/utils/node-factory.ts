@@ -103,7 +103,7 @@ export function createSystemNode(
     data: {
       label,
       external,
-      hasChildDiagram: false,
+      // v0.6.0: hasChildDiagram removed, use linkedDiagramPath instead
     },
   };
 }
@@ -160,7 +160,7 @@ export function createContainerNode(
       label,
       icon,
       type,
-      hasChildDiagram: false,
+      // v0.6.0: hasChildDiagram removed, use linkedDiagramPath instead
     },
   };
 }

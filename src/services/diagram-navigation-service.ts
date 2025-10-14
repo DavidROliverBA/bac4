@@ -4,8 +4,8 @@ import type {
   DiagramRelationshipsData,
   DiagramNode,
   DiagramRelationship,
-  BreadcrumbItem,
-} from '../types';
+} from '../types/canvas-types';
+import type { BreadcrumbItem } from '../types/component-props';
 
 /** Path to the central relationships file */
 const RELATIONSHIPS_FILE = 'diagram-relationships.json';

@@ -2,23 +2,15 @@
  * Container Node - For Container Diagrams (C4 Level 2)
  * Represents applications, data stores, microservices within a system
  *
- * Schema Version: 0.4.0
- * Breaking Change: Replaced containerType enum with flexible icon field
+ * Schema Version: 0.4.0 - Replaced containerType enum with flexible icon field
+ * Schema Version: 0.6.0 - Supports linkedDiagramPath and linkedMarkdownPath
  */
 
 import * as React from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
 import { setIcon } from 'obsidian';
 import { FONT_SIZES, SPACING, UI_COLORS, BORDER_RADIUS } from '../../constants';
-
-export interface ContainerNodeData {
-  label: string;
-  icon: string;  // Lucide icon ID (e.g., "cloud-cog", "database", "server")
-  type?: string; // Optional type tag displayed in [brackets] (e.g., "REST API", "PostgreSQL")
-  description?: string;
-  hasChildDiagram?: boolean;
-  color?: string;
-}
+import type { ContainerNodeData } from '../../types/canvas-types';
 
 // Default values
 const DEFAULT_ICON = 'box';
@@ -27,6 +19,11 @@ const DEFAULT_COLOR = '#4A90E2';
 export const ContainerNode: React.FC<NodeProps<ContainerNodeData>> = ({ data, selected }) => {
   const color = data.color || DEFAULT_COLOR;
   const iconRef = React.useRef<HTMLSpanElement>(null);
+
+  // Determine if node has linked files (v0.6.0)
+  const hasLinkedDiagram = !!data.linkedDiagramPath;
+  const hasLinkedMarkdown = !!data.linkedMarkdownPath;
+  const hasAnyLink = hasLinkedDiagram || hasLinkedMarkdown;
 
   // Render Lucide icon using Obsidian API
   React.useEffect(() => {
@@ -59,7 +56,7 @@ export const ContainerNode: React.FC<NodeProps<ContainerNodeData>> = ({ data, se
         fontSize: FONT_SIZES.small,
         boxShadow: selected
           ? `0 0 0 3px ${UI_COLORS.interactiveAccent}`
-          : data.hasChildDiagram
+          : hasAnyLink
             ? '0 2.5px 5px rgba(0,0,0,0.18)'
             : '0 1.5px 3px rgba(0,0,0,0.12)',
         position: 'relative',
@@ -78,6 +75,36 @@ export const ContainerNode: React.FC<NodeProps<ContainerNodeData>> = ({ data, se
         id="left"
         style={{ background: color, width: '12px', height: '12px' }}
       />
+
+      {/* Plus icon badge for linked files (v0.6.0) */}
+      {hasAnyLink && (
+        <div
+          style={{
+            position: 'absolute',
+            top: SPACING.tiny,
+            right: SPACING.tiny,
+            fontSize: '10px',
+            width: '16px',
+            height: '16px',
+            borderRadius: '50%',
+            backgroundColor: color,
+            color: '#fff',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontWeight: 700,
+            cursor: 'help',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+          }}
+          title={
+            hasLinkedDiagram
+              ? `Linked to: ${data.linkedDiagramPath?.split('/').pop()}`
+              : `Documentation: ${data.linkedMarkdownPath?.split('/').pop()}`
+          }
+        >
+          +
+        </div>
+      )}
 
       {/* Icon and Label */}
       <div
