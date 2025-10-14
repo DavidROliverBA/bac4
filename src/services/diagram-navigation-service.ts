@@ -11,37 +11,34 @@ import type { BreadcrumbItem } from '../types/component-props';
 const RELATIONSHIPS_FILE = 'diagram-relationships.json';
 
 /**
- * Diagram Navigation Service
+ * Diagram Navigation Service (v0.6.0: Simplified for self-contained diagrams)
  *
- * Manages C4 Model diagram hierarchy and navigation using a centralized relationships file.
- * This service handles the parent-child relationships between diagrams, enabling drill-down
- * navigation and breadcrumb trails across Context → Container → Component diagrams.
+ * Manages C4 Model diagram hierarchy and navigation using embedded links.
+ * In v0.6.0, diagrams are self-contained with linkedDiagramPath stored in node data.
  *
- * **Architecture:**
- * - Single source of truth: `diagram-relationships.json` at vault root
- * - Diagrams are registered with unique IDs, file paths, and types
- * - Relationships link parent nodes to child diagrams
- * - Supports auto-registration and orphan detection
+ * **v0.6.0 Architecture:**
+ * - Self-contained .bac4 files with embedded metadata
+ * - Links stored in node.data.linkedDiagramPath (NOT external file)
+ * - NO diagram-relationships.json dependency
+ * - File-rename listener auto-updates all linked paths
  *
- * **Responsibilities:**
- * - Register/unregister diagrams in the central file
- * - Create and manage parent-child relationships
- * - Navigate up/down the diagram hierarchy
- * - Build breadcrumb trails
- * - Link/unlink nodes to child diagrams
+ * **Core Responsibilities:**
+ * - Create child diagrams (drill-down)
+ * - Find child diagrams (read from node data)
+ * - Rename diagram files
+ * - Sanitize filenames
+ *
+ * **Deprecated/Refactoring Needed:**
+ * - updateDiagramType() - should update diagram file metadata
+ * - getDiagramsByType() - should scan vault for .bac4 files
+ * - linkToExistingDiagram() - should update node data
+ * - unlinkNode() - should update node data
+ * - navigateToParent() - needs parent tracking redesign
  *
  * @example
  * ```ts
  * // Initialize service
  * const navService = new DiagramNavigationService(plugin);
- * await navService.ensureRelationshipsFile();
- *
- * // Register a diagram
- * const diagramId = await navService.registerDiagram(
- *   'MySystem.bac4',
- *   'My System',
- *   'context'
- * );
  *
  * // Create child diagram (drill-down)
  * const childPath = await navService.createChildDiagram(
@@ -51,18 +48,16 @@ const RELATIONSHIPS_FILE = 'diagram-relationships.json';
  *   'context',
  *   'container'
  * );
+ * // Component updates node.data.linkedDiagramPath in React state
+ * // Auto-save persists to disk
  *
- * // Build breadcrumbs for current diagram
- * const breadcrumbs = await navService.buildBreadcrumbs('API_Gateway.bac4');
- * // Returns: [{ label: 'My System', path: 'MySystem.bac4', ... }, { label: 'API Gateway', ... }]
+ * // Find child diagram
+ * const childPath = await navService.findChildDiagram('MySystem.bac4', 'node-123');
+ * // Reads from node.data.linkedDiagramPath in diagram file
  * ```
- *
- * @see {@link DiagramRelationshipsData} for data structure
- * @see {@link DiagramNode} for diagram metadata
- * @see {@link DiagramRelationship} for parent-child relationships
  */
 export class DiagramNavigationService {
-  /** Path to the central relationships file */
+  /** Path to the deprecated relationships file (v0.6.0: no longer used) */
   public readonly relationshipsPath = RELATIONSHIPS_FILE;
 
   /**
@@ -107,82 +102,9 @@ export class DiagramNavigationService {
     }
   }
 
-  /**
-   * Save relationships data to file
-   */
-  private async saveRelationshipsData(data: DiagramRelationshipsData): Promise<void> {
-    data.updatedAt = new Date().toISOString();
-    await this.plugin.app.vault.adapter.write(RELATIONSHIPS_FILE, JSON.stringify(data, null, 2));
-  }
-
-  /**
-   * Register a new diagram in the relationships file
-   *
-   * Adds a diagram to the central registry with a unique ID. If the diagram
-   * is already registered, returns the existing ID.
-   *
-   * @param filePath - Path to the .bac4 file (relative to vault root)
-   * @param displayName - Human-readable name for the diagram
-   * @param type - C4 diagram type: 'context', 'container', or 'component'
-   * @returns The diagram's unique ID (existing or newly created)
-   *
-   * @example
-   * ```ts
-   * const id = await navService.registerDiagram(
-   *   'architecture/MySystem.bac4',
-   *   'My System',
-   *   'context'
-   * );
-   * // Returns: 'diagram-1699564823-abc123xyz'
-   * ```
-   */
-  async registerDiagram(
-    filePath: string,
-    displayName: string,
-    type: 'context' | 'container' | 'component'
-  ): Promise<string> {
-    const data = await this.getRelationshipsData();
-
-    // Check if diagram already exists
-    const existing = data.diagrams.find((d) => d.filePath === filePath);
-    if (existing) {
-      console.log('BAC4: Diagram already registered:', filePath);
-      return existing.id;
-    }
-
-    // Generate unique ID
-    const id = `diagram-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-
-    const diagram: DiagramNode = {
-      id,
-      filePath,
-      displayName,
-      type,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    data.diagrams.push(diagram);
-    await this.saveRelationshipsData(data);
-
-    console.log('BAC4: Registered diagram:', diagram);
-    return id;
-  }
-
-  /**
-   * Update diagram display name
-   */
-  async updateDiagramName(filePath: string, newDisplayName: string): Promise<void> {
-    const data = await this.getRelationshipsData();
-    const diagram = data.diagrams.find((d) => d.filePath === filePath);
-
-    if (diagram) {
-      diagram.displayName = newDisplayName;
-      diagram.updatedAt = new Date().toISOString();
-      await this.saveRelationshipsData(data);
-      console.log('BAC4: Updated diagram name:', filePath, '->', newDisplayName);
-    }
-  }
+  // v0.6.0: saveRelationshipsData() removed - no longer needed
+  // v0.6.0: registerDiagram() removed - diagrams are self-contained
+  // v0.6.0: updateDiagramName() removed - names stored in diagram file metadata
 
   /**
    * Update diagram type
@@ -373,189 +295,29 @@ export class DiagramNavigationService {
     }
   }
 
+  // v0.6.0: buildBreadcrumbs() removed - not used in v0.6.0 UI
+  // v0.6.0: getParentDiagram() removed - parent tracking via embedded links
+  // v0.6.0: navigateToParent() - TODO: Needs refactoring for v0.6.0
   /**
-   * Build breadcrumb trail for a diagram
+   * Navigate to parent diagram (DEPRECATED - needs v0.6.0 refactoring)
    *
-   * Walks up the parent chain to construct a breadcrumb path from root to
-   * current diagram. Used for navigation UI to show diagram hierarchy.
-   *
-   * **Algorithm:**
-   * - Starts at current diagram
-   * - Follows parent relationships upward
-   * - Auto-registers unregistered diagrams
-   * - Detects cycles (prevents infinite loops)
-   *
-   * @param currentPath - Path to the current .bac4 file
-   * @returns Array of breadcrumb items from root to current
-   *
-   * @example
-   * ```ts
-   * const breadcrumbs = await navService.buildBreadcrumbs('API_Gateway.bac4');
-   * // Returns: [
-   * //   { label: 'My System', path: 'MySystem.bac4', type: 'context', ... },
-   * //   { label: 'API Gateway', path: 'API_Gateway.bac4', type: 'container', ... }
-   * // ]
-   * ```
-   */
-  async buildBreadcrumbs(currentPath: string): Promise<BreadcrumbItem[]> {
-    const breadcrumbs: BreadcrumbItem[] = [];
-    const data = await this.getRelationshipsData();
-
-    console.log('BAC4 NavService: Building breadcrumbs for', currentPath);
-
-    let currentDiagram = data.diagrams.find((d) => d.filePath === currentPath);
-
-    // If diagram not registered, auto-register it
-    if (!currentDiagram) {
-      console.log('BAC4 NavService: Diagram not registered, auto-registering');
-      const file = this.plugin.app.vault.getAbstractFileByPath(currentPath);
-      if (file instanceof TFile) {
-        await this.registerDiagram(currentPath, file.basename, 'context');
-        const registered = await this.getDiagramByPath(currentPath);
-        if (registered) {
-          currentDiagram = registered;
-        }
-      }
-    }
-
-    if (!currentDiagram) {
-      console.log('BAC4 NavService: Could not find or register diagram');
-      return [];
-    }
-
-    // Walk up the parent chain
-    const visited = new Set<string>();
-    let current = currentDiagram;
-
-    while (current && !visited.has(current.id)) {
-      visited.add(current.id);
-
-      breadcrumbs.unshift({
-        label: current.displayName,
-        path: current.filePath,
-        type: current.type,
-        id: current.id,
-      });
-
-      // Find parent relationship
-      const parentRel = data.relationships.find((r) => r.childDiagramId === current.id);
-
-      if (!parentRel) {
-        // Root diagram
-        break;
-      }
-
-      // Get parent diagram
-      const parent = data.diagrams.find((d) => d.id === parentRel.parentDiagramId);
-      if (!parent) {
-        console.warn('BAC4 NavService: Parent diagram not found for relationship');
-        break;
-      }
-
-      current = parent;
-    }
-
-    console.log('BAC4 NavService: Final breadcrumbs:', breadcrumbs);
-    return breadcrumbs;
-  }
-
-  /**
-   * Get parent diagram for a given diagram
-   *
-   * Looks up the parent diagram in the relationships graph. Returns null
-   * if the diagram is at the root level (no parent).
-   *
-   * @param currentPath - Path to the current .bac4 file
-   * @returns Parent DiagramNode or null if at root
-   *
-   * @example
-   * ```ts
-   * const parent = await navService.getParentDiagram('API_Gateway.bac4');
-   * if (parent) {
-   *   console.log('Parent:', parent.displayName, parent.filePath);
-   * } else {
-   *   console.log('This is a root diagram');
-   * }
-   * ```
-   */
-  async getParentDiagram(currentPath: string): Promise<DiagramNode | null> {
-    const data = await this.getRelationshipsData();
-    const currentDiagram = data.diagrams.find((d) => d.filePath === currentPath);
-
-    if (!currentDiagram) {
-      return null;
-    }
-
-    // Find parent relationship
-    const parentRel = data.relationships.find((r) => r.childDiagramId === currentDiagram.id);
-    if (!parentRel) {
-      return null;
-    }
-
-    // Get parent diagram
-    const parent = data.diagrams.find((d) => d.id === parentRel.parentDiagramId);
-    return parent || null;
-  }
-
-  /**
-   * Navigate to parent diagram
+   * @deprecated This method uses relationships file. In v0.6.0, parent navigation
+   * needs to be redesigned to walk the file tree or track parent path in metadata.
    */
   async navigateToParent(currentPath: string): Promise<string | null> {
-    const parent = await this.getParentDiagram(currentPath);
-    return parent?.filePath || null;
+    // v0.6.0 TODO: Refactor to read parent from diagram metadata or file tree
+    console.log('BAC4: navigateToParent() called (v0.6.0: needs refactoring)');
+    return null; // Temporarily disabled
   }
 
-  /**
-   * Remove diagram from relationships (when file is deleted)
-   */
-  async unregisterDiagram(filePath: string): Promise<void> {
-    const data = await this.getRelationshipsData();
-    const diagram = data.diagrams.find((d) => d.filePath === filePath);
-
-    if (!diagram) {
-      return;
-    }
-
-    // Remove diagram
-    data.diagrams = data.diagrams.filter((d) => d.id !== diagram.id);
-
-    // Remove all relationships involving this diagram
-    data.relationships = data.relationships.filter(
-      (r) => r.parentDiagramId !== diagram.id && r.childDiagramId !== diagram.id
-    );
-
-    await this.saveRelationshipsData(data);
-    console.log('BAC4: Unregistered diagram:', filePath);
-  }
+  // v0.6.0: unregisterDiagram() removed - no registry to maintain
+  // v0.6.0: getChildDiagrams() removed - not used
 
   /**
-   * Get all child diagrams of a parent
-   */
-  async getChildDiagrams(parentPath: string): Promise<DiagramNode[]> {
-    const data = await this.getRelationshipsData();
-    const parentDiagram = data.diagrams.find((d) => d.filePath === parentPath);
-
-    if (!parentDiagram) {
-      return [];
-    }
-
-    // Find all child relationships
-    const childRels = data.relationships.filter((r) => r.parentDiagramId === parentDiagram.id);
-
-    // Get child diagrams
-    const children: DiagramNode[] = [];
-    for (const rel of childRels) {
-      const child = data.diagrams.find((d) => d.id === rel.childDiagramId);
-      if (child) {
-        children.push(child);
-      }
-    }
-
-    return children;
-  }
-
-  /**
-   * Rename a diagram file and update relationships
+   * Rename a diagram file (v0.6.0: simplified, no relationships file)
+   *
+   * Renames the .bac4 file in the vault. The main.ts file-rename listener
+   * will automatically update any linkedDiagramPath references in other diagrams.
    */
   async renameDiagram(oldPath: string, newName: string): Promise<string> {
     console.log('BAC4: Renaming diagram from', oldPath, 'to', newName);
@@ -580,75 +342,29 @@ export class DiagramNavigationService {
     }
 
     // Rename the file in vault
+    // v0.6.0: The file-rename listener in main.ts will update any linkedDiagramPath references
     await this.plugin.app.fileManager.renameFile(file as TFile, newPath);
 
-    // Update relationships.json with new path and displayName
-    const data = await this.getRelationshipsData();
-    const diagram = data.diagrams.find((d) => d.filePath === oldPath);
-
-    if (diagram) {
-      const newDisplayName = fileName.replace('.bac4', '');
-      diagram.filePath = newPath;
-      diagram.displayName = newDisplayName;
-      diagram.updatedAt = new Date().toISOString();
-
-      // CRITICAL FIX: Update parentNodeLabel in all relationships pointing to this diagram
-      const relationshipsAsChild = data.relationships.filter(
-        (r) => r.childDiagramId === diagram.id
-      );
-
-      for (const rel of relationshipsAsChild) {
-        console.log(
-          'BAC4: Updating parentNodeLabel in relationship from',
-          rel.parentNodeLabel,
-          'to',
-          newDisplayName
-        );
-        rel.parentNodeLabel = newDisplayName;
-      }
-
-      await this.saveRelationshipsData(data);
-      console.log('BAC4: Updated diagram path and related parentNodeLabels in relationships');
-    }
-
-    console.log('BAC4: Rename complete:', newPath);
+    console.log('BAC4: ✅ Rename complete:', newPath);
     return newPath;
   }
 
   /**
-   * Update parent node label in relationship
+   * Update parent node label in relationship (DEPRECATED in v0.6.0)
+   *
+   * @deprecated No longer needed - labels are stored in nodes, not relationships
    */
   async updateParentNodeLabel(
     parentPath: string,
     parentNodeId: string,
     newLabel: string
   ): Promise<void> {
-    console.log('BAC4: Updating parent node label in relationships', {
+    // v0.6.0: No-op - labels stored in node data, not relationships file
+    console.log('BAC4: updateParentNodeLabel() called (v0.6.0: deprecated, no-op)', {
       parentPath,
       parentNodeId,
       newLabel,
     });
-
-    const data = await this.getRelationshipsData();
-    const parentDiagram = data.diagrams.find((d) => d.filePath === parentPath);
-
-    if (!parentDiagram) {
-      console.warn('BAC4: Parent diagram not found in relationships');
-      return;
-    }
-
-    // Find and update the relationship
-    const relationship = data.relationships.find(
-      (r) => r.parentDiagramId === parentDiagram.id && r.parentNodeId === parentNodeId
-    );
-
-    if (relationship) {
-      relationship.parentNodeLabel = newLabel;
-      await this.saveRelationshipsData(data);
-      console.log('BAC4: ✅ Updated parent node label in relationship');
-    } else {
-      console.warn('BAC4: Relationship not found for node:', parentNodeId);
-    }
   }
 
   /**
