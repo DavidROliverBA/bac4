@@ -25,7 +25,7 @@ export const ComponentPalette: React.FC<ComponentPaletteProps> = ({
 
   // Position and size state
   const [position, setPosition] = React.useState({ x: 16, y: 16 });
-  const [size, setSize] = React.useState({ width: 280, height: 600 });
+  const [size, setSize] = React.useState({ width: 240, height: 500 });
   const [isDragging, setIsDragging] = React.useState(false);
   const [isResizing, setIsResizing] = React.useState(false);
   const [dragStart, setDragStart] = React.useState({ x: 0, y: 0 });

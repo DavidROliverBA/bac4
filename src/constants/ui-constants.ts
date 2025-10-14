@@ -154,9 +154,9 @@ export const DIMENSIONS = {
   /** Maximum button width */
   buttonMaxWidth: '160px',
   /** Property panel width */
-  propertyPanelWidth: '300px',
+  propertyPanelWidth: '260px',
   /** Property panel max height */
-  propertyPanelMaxHeight: '800px',
+  propertyPanelMaxHeight: '550px',
 } as const;
 
 /**

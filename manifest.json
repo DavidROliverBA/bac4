@@ -1,7 +1,7 @@
 {
 	"id": "bac4-plugin",
 	"name": "BAC4 - Cloud Architecture Management",
-	"version": "0.6.5",
+	"version": "0.6.6",
 	"minAppVersion": "1.0.0",
 	"description": "AI-native cloud architecture management with C4 model diagrams. Self-contained .bac4 files with embedded links. Create diagrams manually, via AI API, or chat with Claude Desktop via MCP. AWS/Azure/GCP component libraries included.",
 	"author": "David Oliver",
