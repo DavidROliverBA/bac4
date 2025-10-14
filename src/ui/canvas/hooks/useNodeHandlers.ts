@@ -166,8 +166,16 @@ export function useNodeHandlers(props: UseNodeHandlersProps): NodeHandlers {
 
           console.log('BAC4: ✅ Child diagram created:', childPath);
 
-          // v0.6.0: linkedDiagramPath is stored in node.data by createChildDiagram()
-          // No need to manually update hasChildDiagram flag anymore
+          // v0.6.0: Update node's linkedDiagramPath in React state
+          // Auto-save will persist to disk after 1 second debounce
+          setNodes((nds) =>
+            nds.map((n) =>
+              n.id === node.id
+                ? { ...n, data: { ...n.data, linkedDiagramPath: childPath } }
+                : n
+            )
+          );
+          console.log('BAC4: ✅ Updated node with linkedDiagramPath in React state');
         } else {
           console.log('BAC4: ✅ Opening existing child diagram:', childPath);
         }

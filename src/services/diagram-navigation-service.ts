@@ -293,11 +293,7 @@ export class DiagramNavigationService {
     const existingFile = this.plugin.app.vault.getAbstractFileByPath(childPath);
     if (existingFile) {
       console.log('BAC4: Child diagram file already exists at', childPath);
-      console.log('BAC4: Updating parent node link to existing child');
-
-      // Update parent diagram to link to existing child
-      await this.updateParentNodeLink(parentPath, parentNodeId, childPath);
-
+      console.log('BAC4: Returning existing child path (component will update linkedDiagramPath)');
       return childPath;
     }
 
@@ -320,53 +316,10 @@ export class DiagramNavigationService {
     await this.plugin.app.vault.create(childPath, JSON.stringify(initialData, null, 2));
     console.log('BAC4: ✅ Created child diagram file:', childPath);
 
-    // Update parent diagram to link to child (v0.6.0 embedded link)
-    await this.updateParentNodeLink(parentPath, parentNodeId, childPath);
-
-    console.log('BAC4: ✅ Child diagram created and linked (v0.6.0)');
+    // v0.6.0: Return child path - let the calling component update parent node's linkedDiagramPath
+    // The component will update React state, and auto-save will persist to disk
+    console.log('BAC4: ✅ Child diagram created (v0.6.0)');
     return childPath;
-  }
-
-  /**
-   * Update parent diagram node to link to child diagram (v0.6.0)
-   *
-   * Reads parent diagram file, finds the node, sets linkedDiagramPath, saves.
-   *
-   * @param parentPath - Path to parent .bac4 file
-   * @param parentNodeId - ID of node to update
-   * @param childPath - Path to child diagram
-   */
-  private async updateParentNodeLink(
-    parentPath: string,
-    parentNodeId: string,
-    childPath: string
-  ): Promise<void> {
-    console.log('BAC4: Updating parent node link', { parentPath, parentNodeId, childPath });
-
-    // Read parent diagram file
-    const parentContent = await this.plugin.app.vault.adapter.read(parentPath);
-    const parentData = JSON.parse(parentContent);
-
-    // Find the node
-    const nodeIndex = parentData.nodes.findIndex((n: any) => n.id === parentNodeId);
-    if (nodeIndex === -1) {
-      throw new Error(`Node not found in parent diagram: ${parentNodeId}`);
-    }
-
-    // Update node data with linkedDiagramPath
-    if (!parentData.nodes[nodeIndex].data) {
-      parentData.nodes[nodeIndex].data = {};
-    }
-    parentData.nodes[nodeIndex].data.linkedDiagramPath = childPath;
-
-    // Update metadata timestamp
-    if (parentData.metadata) {
-      parentData.metadata.updatedAt = new Date().toISOString();
-    }
-
-    // Save parent diagram
-    await this.plugin.app.vault.adapter.write(parentPath, JSON.stringify(parentData, null, 2));
-    console.log('BAC4: ✅ Updated parent node with linkedDiagramPath:', childPath);
   }
 
   /**
