@@ -20,11 +20,6 @@ export const ContainerNode: React.FC<NodeProps<ContainerNodeData>> = ({ data, se
   const color = data.color || DEFAULT_COLOR;
   const iconRef = React.useRef<HTMLSpanElement>(null);
 
-  // Determine if node has linked files (v0.6.0)
-  const hasLinkedDiagram = !!data.linkedDiagramPath;
-  const hasLinkedMarkdown = !!data.linkedMarkdownPath;
-  const hasAnyLink = hasLinkedDiagram || hasLinkedMarkdown;
-
   // Render Lucide icon using Obsidian API
   React.useEffect(() => {
     if (iconRef.current) {
@@ -56,9 +51,7 @@ export const ContainerNode: React.FC<NodeProps<ContainerNodeData>> = ({ data, se
         fontSize: FONT_SIZES.small,
         boxShadow: selected
           ? `0 0 0 3px ${UI_COLORS.interactiveAccent}`
-          : hasAnyLink
-            ? '0 2.5px 5px rgba(0,0,0,0.18)'
-            : '0 1.5px 3px rgba(0,0,0,0.12)',
+          : '0 1.5px 3px rgba(0,0,0,0.12)',
         position: 'relative',
       }}
     >
@@ -75,36 +68,6 @@ export const ContainerNode: React.FC<NodeProps<ContainerNodeData>> = ({ data, se
         id="left"
         style={{ background: color, width: '12px', height: '12px' }}
       />
-
-      {/* Plus icon badge for linked files (v0.6.0) */}
-      {hasAnyLink && (
-        <div
-          style={{
-            position: 'absolute',
-            top: SPACING.tiny,
-            right: SPACING.tiny,
-            fontSize: '10px',
-            width: '16px',
-            height: '16px',
-            borderRadius: '50%',
-            backgroundColor: color,
-            color: '#fff',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontWeight: 700,
-            cursor: 'help',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
-          }}
-          title={
-            hasLinkedDiagram
-              ? `Linked to: ${data.linkedDiagramPath?.split('/').pop()}`
-              : `Documentation: ${data.linkedMarkdownPath?.split('/').pop()}`
-          }
-        >
-          +
-        </div>
-      )}
 
       {/* Icon and Label */}
       <div

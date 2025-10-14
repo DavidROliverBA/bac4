@@ -20,11 +20,6 @@ export const SystemNode: React.FC<NodeProps<SystemNodeData>> = ({ data, selected
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
   };
 
-  // Determine if node has linked files (v0.6.0)
-  const hasLinkedDiagram = !!data.linkedDiagramPath;
-  const hasLinkedMarkdown = !!data.linkedMarkdownPath;
-  const hasAnyLink = hasLinkedDiagram || hasLinkedMarkdown;
-
   const getNodeStyles = () => {
     return {
       padding: '10px 12px',
@@ -40,9 +35,7 @@ export const SystemNode: React.FC<NodeProps<SystemNodeData>> = ({ data, selected
       fontWeight: 600,
       boxShadow: selected
         ? `0 0 0 3px ${UI_COLORS.interactiveAccent}`
-        : hasAnyLink
-          ? '0 3px 6px rgba(0,0,0,0.2)'
-          : '0 2px 4px rgba(0,0,0,0.15)',
+        : '0 2px 4px rgba(0,0,0,0.15)',
       position: 'relative' as const,
     };
   };
@@ -62,36 +55,6 @@ export const SystemNode: React.FC<NodeProps<SystemNodeData>> = ({ data, selected
         id="left"
         style={{ background: color, width: '14px', height: '14px' }}
       />
-
-      {/* Plus icon badge for linked files (v0.6.0) */}
-      {hasAnyLink && (
-        <div
-          style={{
-            position: 'absolute',
-            top: SPACING.tiny,
-            right: SPACING.tiny,
-            fontSize: '10px',
-            width: '16px',
-            height: '16px',
-            borderRadius: '50%',
-            backgroundColor: color,
-            color: '#fff',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontWeight: 700,
-            cursor: 'help',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
-          }}
-          title={
-            hasLinkedDiagram
-              ? `Linked to: ${data.linkedDiagramPath?.split('/').pop()}`
-              : `Documentation: ${data.linkedMarkdownPath?.split('/').pop()}`
-          }
-        >
-          +
-        </div>
-      )}
 
       {/* Label */}
       <div style={{ marginBottom: data.description ? SPACING.large : '0' }}>{data.label}</div>
