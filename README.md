@@ -1,11 +1,11 @@
 # BAC4 - AI-Native Cloud Architecture Management for Obsidian
 
-**Version:** 0.6.0 🎉
+**Version:** 0.7.0 🎉
 **Status:** Production-Ready ✅
 
 An Obsidian plugin that transforms your vault into a comprehensive enterprise architecture management platform. Extends the C4 model with cloud-specific component mappings and provides **THREE WAYS** to create diagrams: manual, AI API, or natural conversation with Claude Desktop via MCP.
 
-> **⚠️ BREAKING CHANGE in v0.6.0:** New self-contained file format. **Delete all existing .bac4 files** before upgrading. See [Migration Guide](#-migration-from-v05x-to-v060) below.
+> **✅ v0.7.0:** Complete v0.6.0 migration - all methods now use self-contained files with embedded links!
 
 ---
 
@@ -25,7 +25,7 @@ An Obsidian plugin that transforms your vault into a comprehensive enterprise ar
 ### Method 2: Manual Installation from GitHub Release
 
 1. **Download the latest release** from [GitHub Releases](https://github.com/DavidROliverBA/bac4-plugin/releases)
-   - Download `bac4-plugin-v0.6.0.zip`
+   - Download `bac4-plugin-v0.7.0.zip`
 
 2. **Extract the files** to your vault's plugins folder:
    ```bash
@@ -36,7 +36,7 @@ An Obsidian plugin that transforms your vault into a comprehensive enterprise ar
    mkdir bac4-plugin
 
    # Extract the zip contents into the directory
-   unzip ~/Downloads/bac4-plugin-v0.6.0.zip -d bac4-plugin/
+   unzip ~/Downloads/bac4-plugin-v0.7.0.zip -d bac4-plugin/
    ```
 
 3. **Enable the plugin** in Obsidian:
@@ -412,17 +412,25 @@ BAC4 follows a layered plugin architecture:
 - ✅ Breadcrumbs removed (use Obsidian's native navigation)
 - ✅ Broken link validation and cleanup
 
-### **v0.7.0 - Advanced AI Features** (Planned)
+### **v0.7.0 - Complete Migration** ✅ **COMPLETE**
+- ✅ All methods migrated to v0.6.0 architecture
+- ✅ PropertyPanel linking fully functional
+- ✅ Dropdown shows available diagrams
+- ✅ Link/unlink to existing diagrams works
+- ✅ Cloud component auto-linking to markdown
+- ✅ No diagram-relationships.json dependency
+
+### **v0.8.0 - Multi-Cloud Expansion** (Planned)
+- ⏳ Azure component library
+- ⏳ GCP component library
+- ⏳ Multi-cloud architecture patterns
+
+### **v0.9.0 - Advanced AI Features** (Planned)
 - ⏳ Real-time diagram validation
 - ⏳ AI suggestions while editing
 - ⏳ Diagram improvement command
 - ⏳ Documentation generation
 - ⏳ Semantic search across diagrams
-
-### **v0.8.0 - Multi-Cloud** (Planned)
-- ⏳ Azure component library
-- ⏳ GCP component library
-- ⏳ Multi-cloud architecture patterns
 
 ### **v1.0.0 - Enterprise Features** (Planned)
 - ⏳ Planned vs. Actual tracking
@@ -480,9 +488,47 @@ MIT License - see [LICENSE](LICENSE) file for details
 
 ---
 
+## 🎉 What's New in v0.7.0
+
+### **Complete v0.6.0 Migration** ✅
+
+All service methods now use the self-contained .bac4 file format with embedded links. No dependencies on the deprecated `diagram-relationships.json` file.
+
+### **Fixed Methods:**
+
+**linkToExistingDiagram()** - Updates `node.data.linkedDiagramPath` directly in parent diagram file
+- PropertyPanel dropdown linking now works correctly
+- Select existing diagrams from dropdown to link
+
+**unlinkNode()** - Removes `linkedDiagramPath` from node data
+- Select "[NONE]" from dropdown to unlink diagrams
+- Clean removal of links without external file updates
+
+**getDiagramsByType()** - Scans vault for .bac4 files by type (v0.6.9)
+- PropertyPanel dropdowns now populated correctly
+- Shows all available Container/Component diagrams
+
+**updateDiagramType()** - Updates file metadata directly (v0.6.9)
+- Diagram type changes persist across reloads
+- Metadata timestamps updated automatically
+
+**Cloud Component Auto-linking** (v0.6.8)
+- Cloud components automatically create and link markdown files
+- Documentation files created in `docs/` folder
+- No manual linking required
+
+### **PropertyPanel Now Fully Functional:**
+- ✅ Dropdown shows available diagrams
+- ✅ Displays current linked diagram name
+- ✅ Link to existing diagrams works
+- ✅ Unlink diagrams works
+- ✅ Diagram type changes persist
+
+---
+
 ## 🎉 What's New in v0.6.0
 
-> **⚠️ BREAKING CHANGE:** This release introduces a new file format. **You must delete all existing .bac4 files** before upgrading. See [Migration Guide](#-migration-from-v05x-to-v060) below.
+> **⚠️ BREAKING CHANGE:** v0.6.0 introduced a new file format. If upgrading from v0.5.x, see [Migration Guide](#-migration-from-v05x-to-v060) below.
 
 ### **Major Features:**
 
@@ -577,6 +623,18 @@ The new format provides:
 
 ## 📜 Previous Releases
 
+### v0.7.0 - Complete Migration (2025-10-14)
+- ✅ All methods migrated to v0.6.0 architecture
+- ✅ PropertyPanel linking fully functional
+- ✅ Cloud component auto-linking
+- ✅ No diagram-relationships.json dependency
+
+### v0.6.0 - Self-Contained Diagrams (2025-10-14)
+- 🔄 New file format with embedded metadata
+- 🔗 Embedded links in node.data
+- 🔄 Auto-update references on file rename
+- ⚠️ Breaking change: Required deletion of old .bac4 files
+
 ### v0.5.0 - UI Enhancements (2025-10-14)
 - 🎨 Moveable/resizable panels
 - ☁️ Enhanced cloud component nodes
@@ -610,5 +668,5 @@ The new format provides:
 
 🤖 **Powered by AI, built for humans!**
 
-*Last updated: 2025-10-14 (v0.6.0)*
+*Last updated: 2025-10-14 (v0.7.0)*
 
