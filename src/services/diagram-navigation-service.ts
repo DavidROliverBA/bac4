@@ -127,11 +127,48 @@ export class DiagramNavigationService {
   }
 
   /**
-   * Get diagram by file path
+   * Get diagram by file path (v0.6.0: reads from .bac4 file metadata)
+   *
+   * Reads the diagram file directly and extracts metadata to create DiagramNode.
+   * No longer depends on diagram-relationships.json.
+   *
+   * @param filePath - Path to .bac4 diagram file
+   * @returns DiagramNode with metadata or null if file doesn't exist
    */
   async getDiagramByPath(filePath: string): Promise<DiagramNode | null> {
-    const data = await this.getRelationshipsData();
-    return data.diagrams.find((d) => d.filePath === filePath) || null;
+    try {
+      // Check if file exists
+      const fileExists = await this.plugin.app.vault.adapter.exists(filePath);
+      if (!fileExists) {
+        console.log('BAC4 NavService: Diagram file not found:', filePath);
+        return null;
+      }
+
+      // Read diagram file
+      const content = await this.plugin.app.vault.adapter.read(filePath);
+      const data = JSON.parse(content);
+
+      // Extract metadata (v0.6.0 format)
+      const diagramType = data.metadata?.diagramType || 'context';
+      const createdAt = data.metadata?.createdAt || new Date().toISOString();
+      const updatedAt = data.metadata?.updatedAt || new Date().toISOString();
+
+      // Create DiagramNode from file data
+      const fileName = filePath.split('/').pop() || filePath;
+      const displayName = fileName.replace('.bac4', '');
+
+      return {
+        id: `diagram-${Date.now()}`, // Generate ID (not used for v0.6.0 matching)
+        filePath,
+        displayName,
+        type: diagramType as 'context' | 'container' | 'component',
+        createdAt,
+        updatedAt,
+      };
+    } catch (error) {
+      console.error('BAC4 NavService: Error reading diagram file:', filePath, error);
+      return null;
+    }
   }
 
   /**
