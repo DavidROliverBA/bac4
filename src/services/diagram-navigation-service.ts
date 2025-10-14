@@ -72,39 +72,38 @@ export class DiagramNavigationService {
   constructor(private plugin: BAC4Plugin) {}
 
   /**
-   * Ensure relationships file exists (public method for initialization)
+   * Ensure relationships file exists (DEPRECATED in v0.6.0)
    *
-   * Creates `diagram-relationships.json` at vault root if it doesn't exist.
-   * Should be called during plugin initialization.
+   * v0.6.0: This method is deprecated and does nothing. Relationships file
+   * is no longer used - diagrams are self-contained with embedded links.
    *
-   * @returns Promise that resolves when file is confirmed to exist
-   * @example
-   * ```ts
-   * await navService.ensureRelationshipsFile();
-   * // Now diagram-relationships.json exists with default structure
-   * ```
+   * @deprecated Use v0.6.0 architecture with embedded linkedDiagramPath
+   * @returns Promise that resolves immediately
    */
   async ensureRelationshipsFile(): Promise<void> {
-    await this.getRelationshipsData(); // This will create file if it doesn't exist
+    // v0.6.0: No-op - relationships file is deprecated
+    console.log('BAC4: ensureRelationshipsFile() called (v0.6.0: deprecated, no-op)');
   }
 
   /**
-   * Get or create the relationships data file
+   * Get relationships data file (v0.6.0: Return empty if doesn't exist, don't create)
+   *
+   * In v0.6.0, this file is deprecated. Methods that use it should handle
+   * empty results gracefully. We no longer auto-create this file.
    */
   private async getRelationshipsData(): Promise<DiagramRelationshipsData> {
     try {
       const content = await this.plugin.app.vault.adapter.read(RELATIONSHIPS_FILE);
       return JSON.parse(content);
     } catch (error) {
-      // File doesn't exist, create default structure
-      const defaultData: DiagramRelationshipsData = {
+      // v0.6.0: File doesn't exist, return empty structure (don't create file)
+      console.log('BAC4: diagram-relationships.json not found (v0.6.0: this is expected)');
+      return {
         version: '1.0.0',
         diagrams: [],
         relationships: [],
         updatedAt: new Date().toISOString(),
       };
-      await this.saveRelationshipsData(defaultData);
-      return defaultData;
     }
   }
 
