@@ -136,20 +136,21 @@ export function createPersonNode(
 
 /**
  * Create a container node
+ * Schema v0.4.0: Uses flexible icon field instead of containerType enum
  *
  * @param id - Unique node ID
  * @param position - Node position on canvas
  * @param label - Node label
- * @param containerType - Type of container (webapp, api, database, etc.)
- * @param technology - Technology stack (optional)
+ * @param icon - Lucide icon ID (default: 'box')
+ * @param type - Optional type tag (e.g., "REST API", "PostgreSQL")
  * @returns Configured container node
  */
 export function createContainerNode(
   id: string,
   position: { x: number; y: number },
   label: string,
-  containerType?: 'webapp' | 'mobileapp' | 'api' | 'database' | 'queue',
-  technology?: string
+  icon: string = 'box',
+  type?: string
 ): Node<ContainerNodeData> {
   return {
     id,
@@ -157,8 +158,8 @@ export function createContainerNode(
     position,
     data: {
       label,
-      containerType,
-      technology,
+      icon,
+      type,
       hasChildDiagram: false,
     },
   };
@@ -186,6 +187,7 @@ export function createCloudComponentNode(
     data: {
       label,
       componentId: component.id,
+      componentType: component.name, // Store component type (e.g., "EC2", "Lambda", "Fargate")
       provider: component.provider as 'aws' | 'azure' | 'gcp' | 'saas',
       category: component.category,
       icon: component.icon,

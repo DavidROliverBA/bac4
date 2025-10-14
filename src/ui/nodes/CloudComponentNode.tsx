@@ -67,13 +67,31 @@ export const CloudComponentNode: React.FC<NodeProps<CloudComponentNodeData>> = (
     textTransform: 'uppercase' as const,
   };
 
+  const componentTypeBadgeStyles = {
+    position: 'absolute' as const,
+    top: SPACING.tiny,
+    left: SPACING.tiny,
+    fontSize: '7px',
+    padding: '2px 4px',
+    borderRadius: BORDER_RADIUS.small,
+    backgroundColor: color,
+    color: '#fff',
+    fontWeight: 600,
+    textTransform: 'uppercase' as const,
+  };
+
   return (
     <div style={getNodeStyles()}>
       {/* Connection handles - all four sides */}
       <Handle type="target" position={Position.Top} id="top" style={{ background: color }} />
       <Handle type="target" position={Position.Left} id="left" style={{ background: color }} />
 
-      {/* Provider badge */}
+      {/* Component Type badge (left side) */}
+      {data.componentType && (
+        <div style={componentTypeBadgeStyles}>{data.componentType}</div>
+      )}
+
+      {/* Provider badge (right side) */}
       <div style={providerBadgeStyles}>{data.provider || 'CLOUD'}</div>
 
       {/* Component name */}

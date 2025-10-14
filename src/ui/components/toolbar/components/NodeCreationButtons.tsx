@@ -50,28 +50,8 @@ function getTools(diagramType: 'context' | 'container' | 'component'): NodeTool[
       return [
         {
           type: 'container',
-          label: '🌐 Web',
-          data: { label: 'Web Application', containerType: 'webapp' },
-        },
-        {
-          type: 'container',
-          label: '📱 Mobile',
-          data: { label: 'Mobile App', containerType: 'mobileapp' },
-        },
-        {
-          type: 'container',
-          label: '🔌 API',
-          data: { label: 'API Service', containerType: 'api' },
-        },
-        {
-          type: 'container',
-          label: '🗄️ DB',
-          data: { label: 'Database', containerType: 'database' },
-        },
-        {
-          type: 'container',
-          label: '📮 Queue',
-          data: { label: 'Message Queue', containerType: 'queue' },
+          label: '+ Container',
+          data: { label: 'New Container', icon: 'box', type: '' },
         },
       ];
     case 'component':

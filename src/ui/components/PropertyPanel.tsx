@@ -46,6 +46,7 @@ import { FormSection } from './form/FormSection';
 import { ColorPicker } from './form/ColorPicker';
 import { EdgeDirectionSelector } from './edges/EdgeDirectionSelector';
 import { DiagramLinking } from './diagram/DiagramLinking';
+import { IconSelector } from './form/IconSelector';
 
 type CanvasNodeData =
   | C4NodeData
@@ -126,6 +127,11 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
 
   // State for markdown linking
   const [markdownFileExists, setMarkdownFileExists] = React.useState(false);
+
+  // State for dragging
+  const [position, setPosition] = React.useState({ x: 16, y: window.innerHeight - 816 });
+  const [isDragging, setIsDragging] = React.useState(false);
+  const [dragStart, setDragStart] = React.useState({ x: 0, y: 0 });
 
   // Determine if this node can have child diagrams
   const canHaveChildren =
@@ -300,12 +306,41 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
     await onCreateAndLinkMarkdownFile?.(node.id, node.data.linkedMarkdownFile);
   };
 
+  // Dragging handlers
+  const handleDragMouseDown = React.useCallback((e: React.MouseEvent) => {
+    setIsDragging(true);
+    setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y });
+    e.preventDefault();
+  }, [position]);
+
+  // Global mouse move and up handlers
+  React.useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (isDragging) {
+        setPosition({ x: e.clientX - dragStart.x, y: e.clientY - dragStart.y });
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+    }
+  }, [isDragging, dragStart]);
+
   return (
     <div
       style={{
         position: 'absolute',
-        left: SPACING.container,
-        bottom: SPACING.container,
+        left: `${position.x}px`,
+        top: `${position.y}px`,
         width: DIMENSIONS.propertyPanelWidth,
         maxHeight: DIMENSIONS.propertyPanelMaxHeight,
         background: UI_COLORS.backgroundPrimary,
@@ -315,16 +350,20 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
         display: 'flex',
         flexDirection: 'column',
         zIndex: Z_INDEX.panel,
+        cursor: isDragging ? 'grabbing' : 'default',
       }}
     >
-      {/* Header */}
+      {/* Header - Draggable */}
       <div
+        onMouseDown={handleDragMouseDown}
         style={{
           padding: SPACING.padding.panel,
           borderBottom: `1px solid ${UI_COLORS.backgroundModifierBorder}`,
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
+          cursor: 'grab',
+          userSelect: 'none',
         }}
       >
         <h3 style={{ margin: 0, fontSize: FONT_SIZES.large, fontWeight: 600 }}>
@@ -332,6 +371,7 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
         </h3>
         <button
           onClick={onClose}
+          onMouseDown={(e) => e.stopPropagation()}
           style={{
             background: 'none',
             border: 'none',
@@ -559,7 +599,7 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
             {/* Cloud Component specific properties */}
             {isCloudNode && 'provider' in node.data && (
               <>
-                <FormSection label="Provider & Category">
+                <FormSection label="Provider & Category (Read-only)">
                   <div
                     style={{
                       padding: SPACING.padding.input,
@@ -570,6 +610,21 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
                     }}
                   >
                     {node.data.provider?.toUpperCase()} - {node.data.category || 'Component'}
+                  </div>
+                </FormSection>
+
+                {/* Component Type - Shows EC2, Lambda, Fargate, etc. - Read-only */}
+                <FormSection label="Type (Read-only)">
+                  <div
+                    style={{
+                      padding: SPACING.padding.input,
+                      background: UI_COLORS.backgroundSecondary,
+                      borderRadius: BORDER_RADIUS.normal,
+                      fontSize: FONT_SIZES.normal,
+                      color: UI_COLORS.textMuted,
+                    }}
+                  >
+                    {'componentType' in node.data ? (node.data.componentType || 'Not specified') : 'Not specified'}
                   </div>
                 </FormSection>
 
@@ -685,34 +740,20 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
             {/* Container Node specific properties */}
             {isContainerNode && (
               <>
-                <FormSection label="Container Type">
-                  <select
-                    value={'containerType' in node.data ? node.data.containerType : 'service'}
-                    onChange={(e) => handlePropertyChange('containerType', e.target.value as any)}
-                    style={{
-                      width: '100%',
-                      padding: SPACING.padding.input,
-                      background: UI_COLORS.backgroundSecondary,
-                      border: `1px solid ${UI_COLORS.backgroundModifierBorder}`,
-                      borderRadius: BORDER_RADIUS.normal,
-                      color: UI_COLORS.textNormal,
-                      fontSize: FONT_SIZES.normal,
-                    }}
-                  >
-                    <option value="webapp">Web App 🌐</option>
-                    <option value="mobileapp">Mobile App 📱</option>
-                    <option value="api">API 🔌</option>
-                    <option value="database">Database 🗄️</option>
-                    <option value="queue">Message Queue 📮</option>
-                    <option value="service">Service ⚙️</option>
-                  </select>
-                </FormSection>
+                {/* Icon Selector - Schema v0.4.0 */}
+                <IconSelector
+                  label="Icon"
+                  value={'icon' in node.data ? (node.data.icon || 'box') : 'box'}
+                  onChange={(iconId) => handlePropertyChange('icon', iconId)}
+                  placeholder="Search icons (cloud, database, server...)"
+                />
 
+                {/* Type field (renamed from Technology) - Schema v0.4.0 */}
                 <FormField
-                  label="Technology"
-                  value={'technology' in node.data ? node.data.technology || '' : ''}
-                  onChange={(value) => handlePropertyChange('technology', value)}
-                  placeholder="e.g., Node.js, PostgreSQL"
+                  label="Type"
+                  value={'type' in node.data ? node.data.type || '' : ''}
+                  onChange={(value) => handlePropertyChange('type', value)}
+                  placeholder="e.g., REST API, PostgreSQL, Redis Cache"
                 />
 
                 <FormField

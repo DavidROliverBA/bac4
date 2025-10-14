@@ -49,10 +49,11 @@ export interface PersonNodeData extends BaseNodeData {
 
 /**
  * Container node data (C4 Level 2)
+ * Schema v0.4.0: Replaced containerType enum with flexible icon field
  */
 export interface ContainerNodeData extends BaseNodeData {
-  containerType?: 'webapp' | 'mobileapp' | 'api' | 'database' | 'queue';
-  technology?: string;
+  icon: string; // Lucide icon ID (e.g., "cloud-cog", "database", "server")
+  type?: string; // Optional type tag displayed in [brackets] (e.g., "REST API", "PostgreSQL")
   hasChildDiagram?: boolean;
   linkedDiagramPath?: string;
 }
@@ -63,6 +64,7 @@ export interface ContainerNodeData extends BaseNodeData {
 export interface CloudComponentNodeData extends BaseNodeData {
   provider?: 'aws' | 'azure' | 'gcp' | 'saas';
   componentId?: string;
+  componentType?: string; // Component type (e.g., "EC2", "Lambda", "Fargate")
   category?: string;
   icon?: string;
 }

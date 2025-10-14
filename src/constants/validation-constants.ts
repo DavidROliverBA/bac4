@@ -144,22 +144,10 @@ export const COMMON_RELATIONSHIPS = [
 
 // <AI_MODIFIABLE>
 /**
- * Container types
- * Add new container types here (must also add icons and colors in ContainerNode.tsx)
+ * Container types - REMOVED in Schema v0.4.0
+ * Container nodes now use flexible icon field instead of fixed enum
+ * See: ContainerNode.tsx and IconSelector.tsx
  */
-export const CONTAINER_TYPES = [
-  'webapp',
-  'mobileapp',
-  'api',
-  'database',
-  'queue',
-  'service',
-] as const;
-
-/**
- * Container type union (auto-generated)
- */
-export type ContainerType = (typeof CONTAINER_TYPES)[number];
 // </AI_MODIFIABLE>
 
 /**

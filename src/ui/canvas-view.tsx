@@ -13,7 +13,6 @@ import ReactFlow, {
   EdgeTypes,
   useNodesState,
   useEdgesState,
-  Panel,
   ConnectionMode,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
@@ -361,20 +360,94 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath }) => {
             gap={12}
             size={1}
           />
-          <Controls position="bottom-right" />
-          <MiniMap />
-
-          {/* Right Side Panel - Component Palette */}
-          {diagramType === 'component' && (
-            <Panel position="top-right">
-              <ComponentPalette
-                service={componentService}
-                onDragStart={canvasState.onComponentDragStart}
-                onAddComponent={canvasState.addCloudComponent}
-              />
-            </Panel>
-          )}
         </ReactFlow>
+
+        {/* Canvas Controls - Outside ReactFlow so not exported */}
+        {reactFlowInstance && (
+          <div
+            style={{
+              position: 'absolute',
+              right: '16px',
+              bottom: '16px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '8px',
+              background: 'var(--background-primary)',
+              border: '1px solid var(--background-modifier-border)',
+              borderRadius: '8px',
+              padding: '8px',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+              zIndex: 10,
+            }}
+          >
+            <button
+              onClick={() => reactFlowInstance.zoomIn()}
+              style={{
+                background: 'var(--background-secondary)',
+                border: '1px solid var(--background-modifier-border)',
+                borderRadius: '4px',
+                width: '32px',
+                height: '32px',
+                cursor: 'pointer',
+                fontSize: '16px',
+                color: 'var(--text-normal)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+              title="Zoom in"
+            >
+              +
+            </button>
+            <button
+              onClick={() => reactFlowInstance.zoomOut()}
+              style={{
+                background: 'var(--background-secondary)',
+                border: '1px solid var(--background-modifier-border)',
+                borderRadius: '4px',
+                width: '32px',
+                height: '32px',
+                cursor: 'pointer',
+                fontSize: '16px',
+                color: 'var(--text-normal)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+              title="Zoom out"
+            >
+              −
+            </button>
+            <button
+              onClick={() => reactFlowInstance.fitView({ padding: 0.2 })}
+              style={{
+                background: 'var(--background-secondary)',
+                border: '1px solid var(--background-modifier-border)',
+                borderRadius: '4px',
+                width: '32px',
+                height: '32px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                color: 'var(--text-normal)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+              title="Fit view"
+            >
+              ⊡
+            </button>
+          </div>
+        )}
+
+        {/* Component Palette - Outside ReactFlow for custom positioning */}
+        {diagramType === 'component' && (
+          <ComponentPalette
+            service={componentService}
+            onDragStart={canvasState.onComponentDragStart}
+            onAddComponent={canvasState.addCloudComponent}
+          />
+        )}
 
         {/* Property Panel */}
         <PropertyPanel

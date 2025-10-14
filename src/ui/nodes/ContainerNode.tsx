@@ -1,47 +1,40 @@
 /**
  * Container Node - For Container Diagrams (C4 Level 2)
  * Represents applications, data stores, microservices within a system
+ *
+ * Schema Version: 0.4.0
+ * Breaking Change: Replaced containerType enum with flexible icon field
  */
 
 import * as React from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
+import { setIcon } from 'obsidian';
 import { FONT_SIZES, SPACING, UI_COLORS, BORDER_RADIUS } from '../../constants';
 
 export interface ContainerNodeData {
   label: string;
-  containerType: 'webapp' | 'mobileapp' | 'api' | 'database' | 'queue' | 'service';
-  technology?: string;
+  icon: string;  // Lucide icon ID (e.g., "cloud-cog", "database", "server")
+  type?: string; // Optional type tag displayed in [brackets] (e.g., "REST API", "PostgreSQL")
   description?: string;
   hasChildDiagram?: boolean;
   color?: string;
 }
 
-// <AI_MODIFIABLE>
-// Container type icons - Add new container types here
-const containerIcons = {
-  webapp: '🌐',
-  mobileapp: '📱',
-  api: '🔌',
-  database: '🗄️',
-  queue: '📮',
-  service: '⚙️',
-};
-
-// Container type colors - Add matching colors for new container types
-const containerColors = {
-  webapp: '#4A90E2',
-  mobileapp: '#9B59B6',
-  api: '#E67E22',
-  database: '#16A085',
-  queue: '#F39C12',
-  service: '#34495E',
-};
-// </AI_MODIFIABLE>
+// Default values
+const DEFAULT_ICON = 'box';
+const DEFAULT_COLOR = '#4A90E2';
 
 export const ContainerNode: React.FC<NodeProps<ContainerNodeData>> = ({ data, selected }) => {
-  const defaultColor = containerColors[data.containerType];
-  const color = data.color || defaultColor;
-  const icon = containerIcons[data.containerType];
+  const color = data.color || DEFAULT_COLOR;
+  const iconRef = React.useRef<HTMLSpanElement>(null);
+
+  // Render Lucide icon using Obsidian API
+  React.useEffect(() => {
+    if (iconRef.current) {
+      iconRef.current.innerHTML = '';  // Clear existing
+      setIcon(iconRef.current, data.icon || DEFAULT_ICON);
+    }
+  }, [data.icon]);
 
   // Convert hex to rgba with alpha
   const hexToRgba = (hex: string, alpha: number) => {
@@ -54,11 +47,11 @@ export const ContainerNode: React.FC<NodeProps<ContainerNodeData>> = ({ data, se
   return (
     <div
       style={{
-        padding: '8px 10px',
+        padding: '12px 16px',
         borderRadius: BORDER_RADIUS.normal,
         border: 'none',
-        minWidth: '90px',
-        maxWidth: '130px',
+        minWidth: '160px',
+        maxWidth: '240px',
         textAlign: 'center',
         backgroundColor: hexToRgba(color, 0.2),
         color: UI_COLORS.textNormal,
@@ -86,31 +79,6 @@ export const ContainerNode: React.FC<NodeProps<ContainerNodeData>> = ({ data, se
         style={{ background: color, width: '12px', height: '12px' }}
       />
 
-      {/* Drill-down indicator - Enhanced badge */}
-      {data.hasChildDiagram && (
-        <div
-          style={{
-            position: 'absolute',
-            top: '-5px',
-            right: '-5px',
-            background: UI_COLORS.interactiveAccent,
-            borderRadius: '50%',
-            width: '12px',
-            height: '12px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: FONT_SIZES.extraSmall,
-            boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
-            border: `1px solid ${UI_COLORS.backgroundPrimary}`,
-            cursor: 'pointer',
-          }}
-          title="This container has a child diagram (double-click or right-click to open)"
-        >
-          📂
-        </div>
-      )}
-
       {/* Icon and Label */}
       <div
         style={{
@@ -121,12 +89,20 @@ export const ContainerNode: React.FC<NodeProps<ContainerNodeData>> = ({ data, se
           marginBottom: SPACING.small,
         }}
       >
-        <span style={{ fontSize: FONT_SIZES.small }}>{icon}</span>
+        {/* Lucide Icon */}
+        <span
+          ref={iconRef}
+          style={{
+            fontSize: FONT_SIZES.small,
+            display: 'inline-flex',
+            alignItems: 'center',
+          }}
+        />
         <span style={{ fontWeight: 600, fontSize: FONT_SIZES.small }}>{data.label}</span>
       </div>
 
-      {/* Technology */}
-      {data.technology && (
+      {/* Type (formerly Technology) */}
+      {data.type && (
         <div
           style={{
             fontSize: FONT_SIZES.tiny,
@@ -134,7 +110,7 @@ export const ContainerNode: React.FC<NodeProps<ContainerNodeData>> = ({ data, se
             marginBottom: SPACING.tiny,
           }}
         >
-          [{data.technology}]
+          [{data.type}]
         </div>
       )}
 

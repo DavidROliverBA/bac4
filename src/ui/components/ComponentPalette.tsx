@@ -23,6 +23,13 @@ export const ComponentPalette: React.FC<ComponentPaletteProps> = ({
   const [searchQuery, setSearchQuery] = React.useState('');
   const [isCollapsed, setIsCollapsed] = React.useState(false);
 
+  // Position and size state
+  const [position, setPosition] = React.useState({ x: 16, y: 16 });
+  const [size, setSize] = React.useState({ width: 280, height: 600 });
+  const [isDragging, setIsDragging] = React.useState(false);
+  const [isResizing, setIsResizing] = React.useState(false);
+  const [dragStart, setDragStart] = React.useState({ x: 0, y: 0 });
+
   const providers = service.getProviders();
 
   const filteredComponents = React.useMemo(() => {
@@ -51,13 +58,54 @@ export const ComponentPalette: React.FC<ComponentPaletteProps> = ({
     return groups;
   }, [filteredComponents]);
 
+  // Dragging handlers
+  const handleDragMouseDown = React.useCallback((e: React.MouseEvent) => {
+    setIsDragging(true);
+    setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y });
+    e.preventDefault();
+  }, [position]);
+
+  const handleResizeMouseDown = React.useCallback((e: React.MouseEvent) => {
+    setIsResizing(true);
+    setDragStart({ x: e.clientX - size.width, y: e.clientY - size.height });
+    e.preventDefault();
+    e.stopPropagation();
+  }, [size]);
+
+  // Global mouse move and up handlers
+  React.useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (isDragging) {
+        setPosition({ x: e.clientX - dragStart.x, y: e.clientY - dragStart.y });
+      } else if (isResizing) {
+        const newWidth = Math.max(200, e.clientX - dragStart.x);
+        const newHeight = Math.max(300, e.clientY - dragStart.y);
+        setSize({ width: newWidth, height: newHeight });
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+      setIsResizing(false);
+    };
+
+    if (isDragging || isResizing) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+    }
+  }, [isDragging, isResizing, dragStart]);
+
   if (isCollapsed) {
     return (
       <div
         style={{
           position: 'absolute',
-          right: SPACING.container,
-          top: SPACING.container,
+          left: `${position.x}px`,
+          top: `${position.y}px`,
           zIndex: Z_INDEX.panel,
         }}
       >
@@ -83,10 +131,10 @@ export const ComponentPalette: React.FC<ComponentPaletteProps> = ({
     <div
       style={{
         position: 'absolute',
-        right: SPACING.container,
-        top: SPACING.container,
-        width: '280px',
-        maxHeight: 'calc(100vh - 100px)',
+        left: `${position.x}px`,
+        top: `${position.y}px`,
+        width: `${size.width}px`,
+        height: `${size.height}px`,
         background: UI_COLORS.backgroundPrimary,
         border: `1px solid ${UI_COLORS.backgroundModifierBorder}`,
         borderRadius: BORDER_RADIUS.large,
@@ -94,21 +142,28 @@ export const ComponentPalette: React.FC<ComponentPaletteProps> = ({
         display: 'flex',
         flexDirection: 'column',
         zIndex: Z_INDEX.panel,
+        cursor: isDragging ? 'grabbing' : 'default',
       }}
     >
-      {/* Header */}
+      {/* Header - Draggable */}
       <div
+        onMouseDown={handleDragMouseDown}
         style={{
           padding: SPACING.padding.panel,
           borderBottom: `1px solid ${UI_COLORS.backgroundModifierBorder}`,
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
+          cursor: 'grab',
+          userSelect: 'none',
         }}
       >
-        <h3 style={{ margin: 0, fontSize: FONT_SIZES.large, fontWeight: 600 }}>Components</h3>
+        <h3 style={{ margin: 0, fontSize: FONT_SIZES.large, fontWeight: 600 }}>
+          Components
+        </h3>
         <button
           onClick={() => setIsCollapsed(true)}
+          onMouseDown={(e) => e.stopPropagation()}
           style={{
             background: 'none',
             border: 'none',
@@ -256,6 +311,29 @@ export const ComponentPalette: React.FC<ComponentPaletteProps> = ({
             </div>
           </div>
         ))}
+      </div>
+
+      {/* Resize Handle */}
+      <div
+        onMouseDown={handleResizeMouseDown}
+        style={{
+          position: 'absolute',
+          bottom: '0',
+          right: '0',
+          width: '20px',
+          height: '20px',
+          cursor: 'nwse-resize',
+          borderBottomRightRadius: BORDER_RADIUS.large,
+          display: 'flex',
+          alignItems: 'flex-end',
+          justifyContent: 'flex-end',
+          padding: '2px',
+          color: UI_COLORS.textFaint,
+          fontSize: FONT_SIZES.small,
+        }}
+        title="Drag to resize"
+      >
+        ⌟
       </div>
     </div>
   );

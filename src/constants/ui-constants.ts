@@ -156,7 +156,7 @@ export const DIMENSIONS = {
   /** Property panel width */
   propertyPanelWidth: '300px',
   /** Property panel max height */
-  propertyPanelMaxHeight: '400px',
+  propertyPanelMaxHeight: '800px',
 } as const;
 
 /**
