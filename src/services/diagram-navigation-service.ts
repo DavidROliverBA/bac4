@@ -214,17 +214,22 @@ export class DiagramNavigationService {
   }
 
   /**
-   * Create a child diagram for a node (drill-down functionality)
+   * Create a child diagram for a node (drill-down functionality) - v0.6.0
    *
-   * Creates a new .bac4 file, registers it, and establishes a parent-child
-   * relationship. This enables drill-down navigation from Context → Container
-   * or Container → Component diagrams.
+   * Creates a new .bac4 file and links it to the parent node using embedded
+   * linkedDiagramPath in the parent diagram file. This enables drill-down
+   * navigation from Context → Container or Container → Component diagrams.
+   *
+   * **v0.6.0 Architecture:**
+   * - Self-contained diagrams with embedded metadata
+   * - Links stored in node.data.linkedDiagramPath (NOT external file)
+   * - NO diagram-relationships.json dependency
+   * - Parent diagram file is updated to set node.data.linkedDiagramPath
    *
    * **Behavior:**
-   * - Auto-registers parent if not already registered
    * - Sanitizes parent node label for filename (spaces → underscores)
    * - Creates file in same directory as parent
-   * - If file exists, creates/updates relationship only
+   * - If file exists, updates parent node link only
    *
    * @param parentPath - Path to the parent .bac4 file
    * @param parentNodeId - ID of the node in parent diagram
@@ -245,7 +250,7 @@ export class DiagramNavigationService {
    *   'container'
    * );
    * // Creates: API_Gateway.bac4
-   * // Relationship: MySystem.bac4 (node-api-123) → API_Gateway.bac4
+   * // Updates: MySystem.bac4 → node-api-123.data.linkedDiagramPath = 'API_Gateway.bac4'
    * ```
    */
   async createChildDiagram(
@@ -256,23 +261,19 @@ export class DiagramNavigationService {
     childDiagramType: 'container' | 'component',
     suggestedFileName?: string
   ): Promise<string> {
-    // Get or register parent diagram
-    let parentDiagram = await this.getDiagramByPath(parentPath);
-    if (!parentDiagram) {
-      // Auto-register parent if not already registered
-      const parentFile = this.plugin.app.vault.getAbstractFileByPath(parentPath);
-      const parentDisplayName = parentFile instanceof TFile ? parentFile.basename : 'Diagram';
-      await this.registerDiagram(parentPath, parentDisplayName, parentDiagramType);
-      parentDiagram = await this.getDiagramByPath(parentPath);
-    }
-
-    if (!parentDiagram) {
-      throw new Error('Failed to register parent diagram');
-    }
+    console.log('BAC4: createChildDiagram (v0.6.0)', {
+      parentPath,
+      parentNodeId,
+      parentNodeLabel,
+      childDiagramType,
+    });
 
     // Generate child filename
     const parentFile = this.plugin.app.vault.getAbstractFileByPath(parentPath);
-    const parentDir = parentFile?.parent || this.plugin.app.vault.getRoot();
+    if (!parentFile) {
+      throw new Error(`Parent file not found: ${parentPath}`);
+    }
+    const parentDir = parentFile.parent || this.plugin.app.vault.getRoot();
 
     // Use suggested name or generate from parent node label
     let childFileName: string;
@@ -292,43 +293,16 @@ export class DiagramNavigationService {
     const existingFile = this.plugin.app.vault.getAbstractFileByPath(childPath);
     if (existingFile) {
       console.log('BAC4: Child diagram file already exists at', childPath);
+      console.log('BAC4: Updating parent node link to existing child');
 
-      // Check if diagram is registered
-      let existingChild = await this.getDiagramByPath(childPath);
-
-      // If not registered, register it now
-      if (!existingChild) {
-        console.log('BAC4: Registering existing child diagram');
-        await this.registerDiagram(childPath, parentNodeLabel, childDiagramType);
-        existingChild = await this.getDiagramByPath(childPath);
-      }
-
-      // Check if relationship exists
-      const data = await this.getRelationshipsData();
-      const relationshipExists = data.relationships.find(
-        (r) => r.parentDiagramId === parentDiagram.id && r.parentNodeId === parentNodeId
-      );
-
-      // Create relationship if it doesn't exist
-      if (!relationshipExists && existingChild) {
-        console.log('BAC4: Creating relationship for existing file');
-        const relationship: DiagramRelationship = {
-          parentDiagramId: parentDiagram.id,
-          childDiagramId: existingChild.id,
-          parentNodeId,
-          parentNodeLabel,
-          createdAt: new Date().toISOString(),
-        };
-        data.relationships.push(relationship);
-        await this.saveRelationshipsData(data);
-        console.log('BAC4: Created relationship:', relationship);
-      }
+      // Update parent diagram to link to existing child
+      await this.updateParentNodeLink(parentPath, parentNodeId, childPath);
 
       return childPath;
     }
 
     // File doesn't exist, create it
-    console.log('BAC4: Creating new child diagram file');
+    console.log('BAC4: Creating new child diagram file with type:', childDiagramType);
 
     // Create initial diagram data (v0.6.0 format with metadata)
     const initialData = {
@@ -342,29 +316,57 @@ export class DiagramNavigationService {
       edges: [],
     };
 
-    console.log('BAC4: Creating child diagram with type:', childDiagramType);
-
-    // Write file
+    // Write child file
     await this.plugin.app.vault.create(childPath, JSON.stringify(initialData, null, 2));
+    console.log('BAC4: ✅ Created child diagram file:', childPath);
 
-    // Register child diagram
-    const childId = await this.registerDiagram(childPath, parentNodeLabel, childDiagramType);
+    // Update parent diagram to link to child (v0.6.0 embedded link)
+    await this.updateParentNodeLink(parentPath, parentNodeId, childPath);
 
-    // Create relationship
-    const data = await this.getRelationshipsData();
-    const relationship: DiagramRelationship = {
-      parentDiagramId: parentDiagram.id,
-      childDiagramId: childId,
-      parentNodeId,
-      parentNodeLabel,
-      createdAt: new Date().toISOString(),
-    };
-    data.relationships.push(relationship);
-    await this.saveRelationshipsData(data);
-
-    console.log('BAC4: Created child diagram:', childPath);
-    console.log('BAC4: Created relationship:', relationship);
+    console.log('BAC4: ✅ Child diagram created and linked (v0.6.0)');
     return childPath;
+  }
+
+  /**
+   * Update parent diagram node to link to child diagram (v0.6.0)
+   *
+   * Reads parent diagram file, finds the node, sets linkedDiagramPath, saves.
+   *
+   * @param parentPath - Path to parent .bac4 file
+   * @param parentNodeId - ID of node to update
+   * @param childPath - Path to child diagram
+   */
+  private async updateParentNodeLink(
+    parentPath: string,
+    parentNodeId: string,
+    childPath: string
+  ): Promise<void> {
+    console.log('BAC4: Updating parent node link', { parentPath, parentNodeId, childPath });
+
+    // Read parent diagram file
+    const parentContent = await this.plugin.app.vault.adapter.read(parentPath);
+    const parentData = JSON.parse(parentContent);
+
+    // Find the node
+    const nodeIndex = parentData.nodes.findIndex((n: any) => n.id === parentNodeId);
+    if (nodeIndex === -1) {
+      throw new Error(`Node not found in parent diagram: ${parentNodeId}`);
+    }
+
+    // Update node data with linkedDiagramPath
+    if (!parentData.nodes[nodeIndex].data) {
+      parentData.nodes[nodeIndex].data = {};
+    }
+    parentData.nodes[nodeIndex].data.linkedDiagramPath = childPath;
+
+    // Update metadata timestamp
+    if (parentData.metadata) {
+      parentData.metadata.updatedAt = new Date().toISOString();
+    }
+
+    // Save parent diagram
+    await this.plugin.app.vault.adapter.write(parentPath, JSON.stringify(parentData, null, 2));
+    console.log('BAC4: ✅ Updated parent node with linkedDiagramPath:', childPath);
   }
 
   /**
@@ -380,38 +382,43 @@ export class DiagramNavigationService {
   }
 
   /**
-   * Find child diagram for a specific parent node
+   * Find child diagram for a specific parent node (v0.6.0)
+   *
+   * Reads the parent diagram file and checks if the node has a linkedDiagramPath.
+   * No external relationships file needed - link is embedded in node data.
+   *
+   * @param parentPath - Path to parent .bac4 file
+   * @param parentNodeId - ID of node to check
+   * @returns Path to child diagram or null if not linked
    */
   async findChildDiagram(parentPath: string, parentNodeId: string): Promise<string | null> {
     console.log('BAC4 NavService: Finding child for parent:', parentPath, 'nodeId:', parentNodeId);
 
-    const data = await this.getRelationshipsData();
-    const parentDiagram = data.diagrams.find((d) => d.filePath === parentPath);
+    try {
+      // Read parent diagram file
+      const parentContent = await this.plugin.app.vault.adapter.read(parentPath);
+      const parentData = JSON.parse(parentContent);
 
-    if (!parentDiagram) {
-      console.log('BAC4 NavService: Parent diagram not found in relationships');
+      // Find the node
+      const node = parentData.nodes.find((n: any) => n.id === parentNodeId);
+      if (!node) {
+        console.log('BAC4 NavService: Node not found:', parentNodeId);
+        return null;
+      }
+
+      // Check if node has linkedDiagramPath (v0.6.0)
+      const linkedPath = node.data?.linkedDiagramPath;
+      if (!linkedPath) {
+        console.log('BAC4 NavService: Node has no linkedDiagramPath');
+        return null;
+      }
+
+      console.log('BAC4 NavService: Found child diagram (v0.6.0):', linkedPath);
+      return linkedPath;
+    } catch (error) {
+      console.error('BAC4 NavService: Error reading parent diagram:', error);
       return null;
     }
-
-    // Find relationship
-    const relationship = data.relationships.find(
-      (r) => r.parentDiagramId === parentDiagram.id && r.parentNodeId === parentNodeId
-    );
-
-    if (!relationship) {
-      console.log('BAC4 NavService: No relationship found for node:', parentNodeId);
-      return null;
-    }
-
-    // Get child diagram
-    const childDiagram = data.diagrams.find((d) => d.id === relationship.childDiagramId);
-    if (!childDiagram) {
-      console.log('BAC4 NavService: Child diagram not found in registry');
-      return null;
-    }
-
-    console.log('BAC4 NavService: Found child diagram:', childDiagram.filePath);
-    return childDiagram.filePath;
   }
 
   /**

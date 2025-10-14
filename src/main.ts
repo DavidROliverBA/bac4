@@ -293,17 +293,7 @@ export default class BAC4Plugin extends Plugin {
       console.log('BAC4: Created empty Context diagram with v0.6.0 format');
     }
 
-    // Initialize relationships file
-    const { DiagramNavigationService } = await import('./services/diagram-navigation-service');
-    const navService = new DiagramNavigationService(this);
-    await navService.ensureRelationshipsFile();
-    console.log('BAC4: Ensured relationships file exists');
-
-    // Register Context diagram in relationships (if not already registered)
-    await navService.registerDiagram(contextPath, 'Context', 'context');
-    console.log('BAC4: Registered Context diagram');
-
-    // Open Context diagram
+    // Open Context diagram (v0.6.0: No registration needed, self-contained diagrams)
     await this.openCanvasView(contextPath);
     console.log('BAC4: Dashboard opened successfully');
   }
@@ -448,12 +438,7 @@ export default class BAC4Plugin extends Plugin {
 
       const file = await this.app.vault.create(fileName, JSON.stringify(initialData, null, 2));
 
-      // Auto-register in relationships file
-      const { DiagramNavigationService } = await import('./services/diagram-navigation-service');
-      const navService = new DiagramNavigationService(this);
-      await navService.registerDiagram(file.path, file.basename, 'context');
-
-      // Open the file directly - this triggers onLoadFile
+      // Open the file directly (v0.6.0: No registration needed, self-contained diagrams)
       const leaf = workspace.getLeaf(false);
       await leaf.openFile(file);
       return;
@@ -627,12 +612,7 @@ export default class BAC4Plugin extends Plugin {
               JSON.stringify(diagramData, null, 2)
             );
 
-            // Register in relationships
-            const { DiagramNavigationService } = await import('./services/diagram-navigation-service');
-            const navService = new DiagramNavigationService(this);
-            await navService.registerDiagram(filePath, file.basename, diagramType);
-
-            // Open the diagram
+            // Open the diagram (v0.6.0: No registration needed, self-contained diagrams)
             await this.openCanvasView(filePath);
 
             new Notice(`Created ${fileName}`);
@@ -668,12 +648,7 @@ export default class BAC4Plugin extends Plugin {
               JSON.stringify(emptyDiagram, null, 2)
             );
 
-            // Register in relationships
-            const { DiagramNavigationService } = await import('./services/diagram-navigation-service');
-            const navService = new DiagramNavigationService(this);
-            await navService.registerDiagram(filePath, file.basename, diagramType);
-
-            // Open the diagram
+            // Open the diagram (v0.6.0: No registration needed, self-contained diagrams)
             await this.openCanvasView(filePath);
 
             new Notice(`Created empty ${fileName}. MCP integration coming soon!`);
@@ -737,13 +712,7 @@ export default class BAC4Plugin extends Plugin {
       }
     }
 
-    // Register in relationships
-    const { DiagramNavigationService } = await import('./services/diagram-navigation-service');
-    const navService = new DiagramNavigationService(this);
-    await navService.ensureRelationshipsFile();
-    await navService.registerDiagram(mostRecent.path, mostRecent.basename, diagramType);
-
-    // Open the diagram
+    // Open the diagram (v0.6.0: No registration needed, self-contained diagrams)
     await this.openCanvasView(mostRecent.path);
 
     new Notice(`Imported ${mostRecent.basename}`);
