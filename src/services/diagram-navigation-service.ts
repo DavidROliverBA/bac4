@@ -107,22 +107,38 @@ export class DiagramNavigationService {
   // v0.6.0: updateDiagramName() removed - names stored in diagram file metadata
 
   /**
-   * Update diagram type
+   * Update diagram type (v0.6.0: Updates file metadata directly)
+   *
+   * Updates the metadata.diagramType field in the diagram file.
+   * No longer depends on diagram-relationships.json.
+   *
+   * @param filePath - Path to .bac4 diagram file
+   * @param newType - New diagram type ('context', 'container', or 'component')
    */
   async updateDiagramType(
     filePath: string,
     newType: 'context' | 'container' | 'component'
   ): Promise<void> {
-    const data = await this.getRelationshipsData();
-    const diagram = data.diagrams.find((d) => d.filePath === filePath);
+    console.log('BAC4: Updating diagram type (v0.6.0):', filePath, '->', newType);
 
-    if (diagram) {
-      diagram.type = newType;
-      diagram.updatedAt = new Date().toISOString();
-      await this.saveRelationshipsData(data);
-      console.log('BAC4: Updated diagram type:', filePath, '->', newType);
-    } else {
-      console.warn('BAC4: Diagram not found in relationships:', filePath);
+    try {
+      // Read diagram file
+      const content = await this.plugin.app.vault.adapter.read(filePath);
+      const data = JSON.parse(content);
+
+      // Update metadata
+      if (!data.metadata) {
+        data.metadata = {};
+      }
+      data.metadata.diagramType = newType;
+      data.metadata.updatedAt = new Date().toISOString();
+
+      // Write back
+      await this.plugin.app.vault.adapter.write(filePath, JSON.stringify(data, null, 2));
+      console.log('BAC4: ✅ Updated diagram type in file metadata');
+    } catch (error) {
+      console.error('BAC4: Error updating diagram type:', error);
+      throw error;
     }
   }
 
@@ -444,11 +460,55 @@ export class DiagramNavigationService {
   }
 
   /**
-   * Get all diagrams of a specific type
+   * Get all diagrams of a specific type (v0.6.0: Scans vault for .bac4 files)
+   *
+   * Scans all .bac4 files in the vault and returns those matching the specified type.
+   * No longer depends on diagram-relationships.json.
+   *
+   * @param type - Diagram type to filter by ('context', 'container', or 'component')
+   * @returns Array of DiagramNode objects matching the type
    */
   async getDiagramsByType(type: 'context' | 'container' | 'component'): Promise<DiagramNode[]> {
-    const data = await this.getRelationshipsData();
-    return data.diagrams.filter((d) => d.type === type);
+    console.log('BAC4 NavService: Getting diagrams of type:', type);
+
+    try {
+      // Get all .bac4 files in vault
+      const allFiles = this.plugin.app.vault.getFiles().filter((f) => f.extension === 'bac4');
+      const diagrams: DiagramNode[] = [];
+
+      // Read each file and check its type
+      for (const file of allFiles) {
+        try {
+          const content = await this.plugin.app.vault.adapter.read(file.path);
+          const data = JSON.parse(content);
+
+          // Get diagram type from metadata
+          const diagramType = data.metadata?.diagramType || 'context';
+
+          // If it matches the requested type, create DiagramNode
+          if (diagramType === type) {
+            diagrams.push({
+              id: `diagram-${Date.now()}-${file.path}`,
+              filePath: file.path,
+              displayName: file.basename,
+              type: diagramType as 'context' | 'container' | 'component',
+              createdAt: data.metadata?.createdAt || new Date().toISOString(),
+              updatedAt: data.metadata?.updatedAt || new Date().toISOString(),
+            });
+          }
+        } catch (error) {
+          // Skip files that can't be read or parsed
+          console.warn('BAC4: Could not read diagram file:', file.path, error);
+          continue;
+        }
+      }
+
+      console.log(`BAC4 NavService: Found ${diagrams.length} diagrams of type ${type}`);
+      return diagrams;
+    } catch (error) {
+      console.error('BAC4 NavService: Error getting diagrams by type:', error);
+      return [];
+    }
   }
 
   /**
@@ -482,51 +542,42 @@ export class DiagramNavigationService {
     parentNodeLabel: string,
     childDiagramPath: string
   ): Promise<void> {
-    console.log('BAC4: Linking node to existing diagram', {
+    console.log('BAC4: Linking node to existing diagram (v0.6.0)', {
       parentPath,
       parentNodeId,
       childDiagramPath,
     });
 
-    const data = await this.getRelationshipsData();
+    try {
+      // 1. Read parent diagram file
+      const content = await this.plugin.app.vault.adapter.read(parentPath);
+      const data = JSON.parse(content);
 
-    // Get parent diagram
-    const parentDiagram = data.diagrams.find((d) => d.filePath === parentPath);
-    if (!parentDiagram) {
-      throw new Error('Parent diagram not found');
+      // 2. Find the node by ID
+      const nodeIndex = data.nodes.findIndex((n: any) => n.id === parentNodeId);
+      if (nodeIndex === -1) {
+        throw new Error(`Node ${parentNodeId} not found in diagram`);
+      }
+
+      // 3. Set linkedDiagramPath in node data
+      if (!data.nodes[nodeIndex].data) {
+        data.nodes[nodeIndex].data = {};
+      }
+      data.nodes[nodeIndex].data.linkedDiagramPath = childDiagramPath;
+
+      // 4. Update metadata
+      if (!data.metadata) {
+        data.metadata = {};
+      }
+      data.metadata.updatedAt = new Date().toISOString();
+
+      // 5. Write back
+      await this.plugin.app.vault.adapter.write(parentPath, JSON.stringify(data, null, 2));
+      console.log('BAC4: ✅ Linked node to diagram in file (v0.6.0)');
+    } catch (error) {
+      console.error('BAC4: Error linking diagram:', error);
+      throw error;
     }
-
-    // Get child diagram
-    const childDiagram = data.diagrams.find((d) => d.filePath === childDiagramPath);
-    if (!childDiagram) {
-      throw new Error('Child diagram not found');
-    }
-
-    // Check if a relationship already exists for this node
-    const existingRel = data.relationships.find(
-      (r) => r.parentDiagramId === parentDiagram.id && r.parentNodeId === parentNodeId
-    );
-
-    if (existingRel) {
-      // Update existing relationship
-      console.log('BAC4: Updating existing relationship');
-      existingRel.childDiagramId = childDiagram.id;
-      existingRel.parentNodeLabel = parentNodeLabel;
-    } else {
-      // Create new relationship
-      console.log('BAC4: Creating new relationship');
-      const relationship: DiagramRelationship = {
-        parentDiagramId: parentDiagram.id,
-        childDiagramId: childDiagram.id,
-        parentNodeId,
-        parentNodeLabel,
-        createdAt: new Date().toISOString(),
-      };
-      data.relationships.push(relationship);
-    }
-
-    await this.saveRelationshipsData(data);
-    console.log('BAC4: ✅ Linked node to diagram');
   }
 
   /**
@@ -541,25 +592,49 @@ export class DiagramNavigationService {
   }
 
   /**
-   * Unlink a node from its child diagram
+   * Unlink a node from its child diagram (v0.6.0)
+   *
+   * Removes the linkedDiagramPath from the node's data in the parent diagram file.
+   * No longer updates diagram-relationships.json.
+   *
+   * @param parentPath - Path to parent .bac4 file
+   * @param parentNodeId - ID of node to unlink
    */
   async unlinkNode(parentPath: string, parentNodeId: string): Promise<void> {
-    console.log('BAC4: Unlinking node', { parentPath, parentNodeId });
+    console.log('BAC4: Unlinking node (v0.6.0)', { parentPath, parentNodeId });
 
-    const data = await this.getRelationshipsData();
-    const parentDiagram = data.diagrams.find((d) => d.filePath === parentPath);
+    try {
+      // 1. Read parent diagram file
+      const content = await this.plugin.app.vault.adapter.read(parentPath);
+      const data = JSON.parse(content);
 
-    if (!parentDiagram) {
-      console.warn('BAC4: Parent diagram not found');
-      return;
+      // 2. Find the node by ID
+      const nodeIndex = data.nodes.findIndex((n: any) => n.id === parentNodeId);
+      if (nodeIndex === -1) {
+        console.warn('BAC4: Node not found, nothing to unlink');
+        return;
+      }
+
+      // 3. Remove linkedDiagramPath
+      if (data.nodes[nodeIndex].data && data.nodes[nodeIndex].data.linkedDiagramPath) {
+        delete data.nodes[nodeIndex].data.linkedDiagramPath;
+        console.log('BAC4: Removed linkedDiagramPath from node data');
+      } else {
+        console.log('BAC4: Node has no linkedDiagramPath to remove');
+      }
+
+      // 4. Update metadata
+      if (!data.metadata) {
+        data.metadata = {};
+      }
+      data.metadata.updatedAt = new Date().toISOString();
+
+      // 5. Write back
+      await this.plugin.app.vault.adapter.write(parentPath, JSON.stringify(data, null, 2));
+      console.log('BAC4: ✅ Unlinked node in file (v0.6.0)');
+    } catch (error) {
+      console.error('BAC4: Error unlinking node:', error);
+      throw error;
     }
-
-    // Remove the relationship
-    data.relationships = data.relationships.filter(
-      (r) => !(r.parentDiagramId === parentDiagram.id && r.parentNodeId === parentNodeId)
-    );
-
-    await this.saveRelationshipsData(data);
-    console.log('BAC4: ✅ Unlinked node');
   }
 }
