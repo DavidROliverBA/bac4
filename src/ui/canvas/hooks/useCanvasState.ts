@@ -15,6 +15,7 @@ import * as React from 'react';
 import type { Node } from 'reactflow';
 import type { CanvasNodeData, ReactFlowInstance } from '../../../types/canvas-types';
 import type { ComponentDefinition } from '../../../../component-library/types';
+import type BAC4Plugin from '../../../main';
 import { AUTO_CREATE_CHILD_DELAY_MS } from '../../../constants';
 import { getAutoName } from '../utils/auto-naming';
 import {
@@ -24,8 +25,10 @@ import {
   createC4Node,
   createCloudComponentNode,
 } from '../utils/node-factory';
+import { MarkdownLinkService } from '../../../services/markdown-link-service';
 
 export interface UseCanvasStateProps {
+  plugin: BAC4Plugin;
   reactFlowWrapper: React.RefObject<HTMLDivElement | null>;
   reactFlowInstance: ReactFlowInstance | null;
   setReactFlowInstance: (instance: ReactFlowInstance | null) => void;
@@ -56,15 +59,83 @@ export interface CanvasStateHandlers {
  */
 export function useCanvasState(props: UseCanvasStateProps): CanvasStateHandlers {
   const {
+    plugin,
     reactFlowWrapper,
     reactFlowInstance,
     setReactFlowInstance,
+    filePath,
     nodes,
     setNodes,
     nodeCounterRef,
     onCreateChildDiagram,
     onPaneClickCallback,
   } = props;
+
+  /**
+   * Generate markdown file path for cloud component
+   * Creates path in docs/ folder next to current diagram
+   */
+  const generateMarkdownPath = React.useCallback((label: string): string | null => {
+    if (!filePath) return null;
+
+    // Get parent directory of current diagram
+    const lastSlash = filePath.lastIndexOf('/');
+    const parentDir = lastSlash >= 0 ? filePath.substring(0, lastSlash) : '';
+
+    // Sanitize label for filename
+    const sanitizedLabel = label.replace(/[^a-zA-Z0-9_\-\s]/g, '').replace(/\s+/g, '_');
+
+    // Create path: parent/docs/Label.md
+    return parentDir ? `${parentDir}/docs/${sanitizedLabel}.md` : `docs/${sanitizedLabel}.md`;
+  }, [filePath]);
+
+  /**
+   * Create markdown documentation file for cloud component
+   */
+  const createCloudComponentDocs = React.useCallback(async (
+    nodeId: string,
+    label: string,
+    component: ComponentDefinition
+  ): Promise<string | null> => {
+    const markdownPath = generateMarkdownPath(label);
+    if (!markdownPath) {
+      console.log('BAC4: Cannot create markdown - diagram not saved');
+      return null;
+    }
+
+    try {
+      // Check if docs folder exists, create if not
+      const docsFolder = markdownPath.substring(0, markdownPath.lastIndexOf('/'));
+      const folderExists = plugin.app.vault.getAbstractFileByPath(docsFolder);
+
+      if (!folderExists) {
+        console.log('BAC4: Creating docs folder:', docsFolder);
+        await plugin.app.vault.createFolder(docsFolder);
+      }
+
+      // Check if markdown file already exists
+      const fileExists = await MarkdownLinkService.fileExists(plugin.app.vault, markdownPath);
+      if (fileExists) {
+        console.log('BAC4: Markdown file already exists:', markdownPath);
+        return markdownPath; // Return existing path
+      }
+
+      // Create markdown file with cloud component template
+      console.log('BAC4: Creating markdown file for cloud component:', markdownPath);
+      await MarkdownLinkService.createMarkdownFile(
+        plugin.app.vault,
+        markdownPath,
+        label,
+        'cloudComponent'
+      );
+      console.log('BAC4: ✅ Markdown file created');
+
+      return markdownPath;
+    } catch (error) {
+      console.error('BAC4: Error creating markdown file:', error);
+      return null; // Don't fail node creation if markdown creation fails
+    }
+  }, [plugin, generateMarkdownPath]);
 
   /**
    * React Flow initialization callback
@@ -145,9 +216,23 @@ export function useCanvasState(props: UseCanvasStateProps): CanvasStateHandlers 
 
         const newNode = createCloudComponentNode(nodeId, position, autoName, component);
         setNodes((nds) => [...nds, newNode]);
+
+        // Auto-create and link markdown file
+        createCloudComponentDocs(nodeId, autoName, component).then((markdownPath) => {
+          if (markdownPath) {
+            setNodes((nds) =>
+              nds.map((n) =>
+                n.id === nodeId
+                  ? { ...n, data: { ...n.data, linkedMarkdownPath: markdownPath } }
+                  : n
+              )
+            );
+            console.log('BAC4: ✅ Auto-linked markdown file:', markdownPath);
+          }
+        });
       }
     },
-    [reactFlowInstance, setNodes, nodeCounterRef, nodes, onCreateChildDiagram, reactFlowWrapper]
+    [reactFlowInstance, setNodes, nodeCounterRef, nodes, onCreateChildDiagram, reactFlowWrapper, createCloudComponentDocs]
   );
 
   /**
@@ -195,8 +280,22 @@ export function useCanvasState(props: UseCanvasStateProps): CanvasStateHandlers 
 
       const newNode = createCloudComponentNode(nodeId, position, component.name, component);
       setNodes((nds) => [...nds, newNode]);
+
+      // Auto-create and link markdown file
+      createCloudComponentDocs(nodeId, component.name, component).then((markdownPath) => {
+        if (markdownPath) {
+          setNodes((nds) =>
+            nds.map((n) =>
+              n.id === nodeId
+                ? { ...n, data: { ...n.data, linkedMarkdownPath: markdownPath } }
+                : n
+            )
+          );
+          console.log('BAC4: ✅ Auto-linked markdown file:', markdownPath);
+        }
+      });
     },
-    [setNodes, nodeCounterRef]
+    [setNodes, nodeCounterRef, createCloudComponentDocs]
   );
 
   /**

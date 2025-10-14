@@ -198,6 +198,7 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath }) => {
   });
 
   const canvasState = useCanvasState({
+    plugin,
     reactFlowWrapper,
     reactFlowInstance,
     setReactFlowInstance,
