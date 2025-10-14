@@ -278,13 +278,19 @@ export default class BAC4Plugin extends Plugin {
         }
       }
 
-      // Create empty Context diagram
+      // Create empty Context diagram (v0.6.0 format with metadata)
       const emptyDiagram = {
+        version: '0.6.0',
+        metadata: {
+          diagramType: 'context',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
         nodes: [],
         edges: [],
       };
       await this.app.vault.adapter.write(contextPath, JSON.stringify(emptyDiagram, null, 2));
-      console.log('BAC4: Created empty Context diagram');
+      console.log('BAC4: Created empty Context diagram with v0.6.0 format');
     }
 
     // Initialize relationships file
@@ -428,8 +434,14 @@ export default class BAC4Plugin extends Plugin {
       console.log('BAC4: Creating new diagram file:', fileName);
 
       // Create in default location (root of vault)
-      // Simple structure: just nodes and edges (metadata in relationships.json)
+      // v0.6.0 format with metadata
       const initialData = {
+        version: '0.6.0',
+        metadata: {
+          diagramType: 'context',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
         nodes: [],
         edges: [],
       };
@@ -598,8 +610,14 @@ export default class BAC4Plugin extends Plugin {
               await this.app.vault.createFolder('BAC4');
             }
 
-            // Create file
+            // Create file (v0.6.0 format with metadata)
             const diagramData = {
+              version: '0.6.0',
+              metadata: {
+                diagramType,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+              },
               nodes,
               edges,
             };
@@ -633,7 +651,14 @@ export default class BAC4Plugin extends Plugin {
               await this.app.vault.createFolder('BAC4');
             }
 
+            // Create empty diagram (v0.6.0 format with metadata)
             const emptyDiagram = {
+              version: '0.6.0',
+              metadata: {
+                diagramType,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+              },
               nodes: [],
               edges: [],
             };

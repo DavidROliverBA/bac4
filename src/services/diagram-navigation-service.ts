@@ -330,11 +330,19 @@ export class DiagramNavigationService {
     // File doesn't exist, create it
     console.log('BAC4: Creating new child diagram file');
 
-    // Create initial diagram data (no metadata in file anymore)
+    // Create initial diagram data (v0.6.0 format with metadata)
     const initialData = {
+      version: '0.6.0',
+      metadata: {
+        diagramType: childDiagramType,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
       nodes: [],
       edges: [],
     };
+
+    console.log('BAC4: Creating child diagram with type:', childDiagramType);
 
     // Write file
     await this.plugin.app.vault.create(childPath, JSON.stringify(initialData, null, 2));
