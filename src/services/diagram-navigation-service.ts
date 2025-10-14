@@ -297,17 +297,56 @@ export class DiagramNavigationService {
 
   // v0.6.0: buildBreadcrumbs() removed - not used in v0.6.0 UI
   // v0.6.0: getParentDiagram() removed - parent tracking via embedded links
-  // v0.6.0: navigateToParent() - TODO: Needs refactoring for v0.6.0
+
   /**
-   * Navigate to parent diagram (DEPRECATED - needs v0.6.0 refactoring)
+   * Navigate to parent diagram (v0.6.0: Scans vault for parent)
    *
-   * @deprecated This method uses relationships file. In v0.6.0, parent navigation
-   * needs to be redesigned to walk the file tree or track parent path in metadata.
+   * Finds the parent diagram by scanning all .bac4 files for a node that
+   * has linkedDiagramPath pointing to the current diagram.
+   *
+   * @param currentPath - Path to current .bac4 file
+   * @returns Path to parent diagram, or null if no parent found
    */
   async navigateToParent(currentPath: string): Promise<string | null> {
-    // v0.6.0 TODO: Refactor to read parent from diagram metadata or file tree
-    console.log('BAC4: navigateToParent() called (v0.6.0: needs refactoring)');
-    return null; // Temporarily disabled
+    console.log('BAC4: Finding parent for', currentPath);
+
+    try {
+      // Get all .bac4 files in vault
+      const allFiles = this.plugin.app.vault.getFiles().filter((f) => f.extension === 'bac4');
+
+      // Search each file for a node linking to current diagram
+      for (const file of allFiles) {
+        // Skip the current file
+        if (file.path === currentPath) continue;
+
+        try {
+          const content = await this.plugin.app.vault.adapter.read(file.path);
+          const data = JSON.parse(content);
+
+          // Check if any node links to current diagram
+          if (data.nodes && Array.isArray(data.nodes)) {
+            const hasLink = data.nodes.some(
+              (node: any) => node.data?.linkedDiagramPath === currentPath
+            );
+
+            if (hasLink) {
+              console.log('BAC4: Found parent diagram:', file.path);
+              return file.path;
+            }
+          }
+        } catch (error) {
+          // Skip files that can't be read or parsed
+          console.warn('BAC4: Could not read file:', file.path, error);
+          continue;
+        }
+      }
+
+      console.log('BAC4: No parent diagram found');
+      return null;
+    } catch (error) {
+      console.error('BAC4: Error finding parent:', error);
+      return null;
+    }
   }
 
   // v0.6.0: unregisterDiagram() removed - no registry to maintain
