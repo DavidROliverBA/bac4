@@ -11,6 +11,7 @@
 import { Vault, Workspace, TFile, TFolder, normalizePath } from 'obsidian';
 import { toPng } from 'html-to-image';
 import { getExportOptions } from '../constants';
+import { EXPORT_DELAY_MS } from '../constants/timing-constants';
 
 /**
  * Markdown Link Service
@@ -450,7 +451,11 @@ Add any additional context, decisions, or considerations here.
       throw new Error('Diagram container not found. Make sure diagram is fully loaded.');
     }
 
-    // Check dimensions
+    // Wait for React Flow to fully render before exporting
+    // This prevents "zero dimensions" errors when the canvas hasn't settled yet
+    await new Promise((resolve) => setTimeout(resolve, EXPORT_DELAY_MS));
+
+    // Check dimensions after waiting
     const rect = reactFlow.getBoundingClientRect();
     if (rect.width === 0 || rect.height === 0) {
       throw new Error('Diagram container has zero dimensions. Wait for diagram to render.');
