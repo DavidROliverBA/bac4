@@ -446,33 +446,66 @@ Add any additional context, decisions, or considerations here.
    */
   static async exportDiagramAsPng(): Promise<string> {
     // Find the React Flow container
-    const reactFlow = document.querySelector('.react-flow') as HTMLElement;
+    let reactFlow = document.querySelector('.react-flow') as HTMLElement;
     if (!reactFlow) {
       throw new Error('Diagram container not found. Make sure diagram is fully loaded.');
     }
 
-    // Wait for React Flow to have valid dimensions (retry up to 3 times)
+    // Wait for React Flow to be fully ready (check for nodes and valid dimensions)
     let rect = reactFlow.getBoundingClientRect();
+    let nodesContainer = document.querySelector('.react-flow__nodes');
     let attempts = 0;
-    const maxAttempts = 3;
+    const maxAttempts = 5; // Increased from 3 to 5 attempts
+    const delayMs = EXPORT_DELAY_MS; // 500ms per attempt = 2.5 seconds max
 
-    while ((rect.width === 0 || rect.height === 0) && attempts < maxAttempts) {
-      console.log(`BAC4: Waiting for diagram to render (attempt ${attempts + 1}/${maxAttempts})...`);
-      await new Promise((resolve) => setTimeout(resolve, EXPORT_DELAY_MS));
+    // Keep checking until:
+    // 1. Container has valid dimensions
+    // 2. React Flow has rendered its nodes container
+    // 3. We haven't exceeded max attempts
+    while (attempts < maxAttempts) {
+      // Re-query in case React re-rendered
+      reactFlow = document.querySelector('.react-flow') as HTMLElement;
+      if (!reactFlow) {
+        console.log(`BAC4: React Flow container disappeared, waiting... (attempt ${attempts + 1}/${maxAttempts})`);
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+        attempts++;
+        continue;
+      }
+
       rect = reactFlow.getBoundingClientRect();
+      nodesContainer = document.querySelector('.react-flow__nodes');
+
+      // Check if React Flow is ready
+      const hasDimensions = rect.width > 0 && rect.height > 0;
+      const hasNodesContainer = nodesContainer !== null;
+
+      if (hasDimensions && hasNodesContainer) {
+        console.log(`BAC4: React Flow ready after ${attempts} retries (${rect.width}x${rect.height})`);
+        break;
+      }
+
+      console.log(
+        `BAC4: Waiting for React Flow (attempt ${attempts + 1}/${maxAttempts})`,
+        `dims=${hasDimensions}, nodes=${hasNodesContainer}`
+      );
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
       attempts++;
     }
 
-    // Final dimension check
+    // Final validation
     if (rect.width === 0 || rect.height === 0) {
       console.error('BAC4: Diagram dimensions after waiting:', rect);
       throw new Error(
-        `Diagram container has zero dimensions after ${maxAttempts} attempts. ` +
+        `Diagram container has zero dimensions after ${attempts} attempts (${attempts * delayMs}ms). ` +
         `Try waiting a moment and clicking "Update Image" again.`
       );
     }
 
-    console.log(`BAC4: Diagram ready for export (${rect.width}x${rect.height})`);
+    if (!nodesContainer) {
+      console.warn('BAC4: No nodes container found, but dimensions are valid. Proceeding anyway.');
+    }
+
+    console.log(`BAC4: Exporting diagram (${rect.width}x${rect.height})`);
 
     // Export to PNG using html-to-image
     const exportOptions = getExportOptions('png');
