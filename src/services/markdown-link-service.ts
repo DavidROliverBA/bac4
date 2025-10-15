@@ -3,11 +3,14 @@
  *
  * Service for managing links between BAC4 diagram nodes and Obsidian markdown files.
  * Handles file existence checking, creation, opening, and path suggestions.
+ * Includes automatic diagram image export when creating markdown files.
  *
  * @module MarkdownLinkService
  */
 
 import { Vault, Workspace, TFile, TFolder, normalizePath } from 'obsidian';
+import { toPng } from 'html-to-image';
+import { getExportOptions } from '../constants';
 
 /**
  * Markdown Link Service
@@ -432,5 +435,212 @@ Add any additional context, decisions, or considerations here.
     }
 
     return { valid: true };
+  }
+
+  /**
+   * Export current diagram view as PNG image
+   *
+   * @returns Promise<string> - Base64 data URL of the exported image
+   * @throws Error if export fails or diagram container not found
+   */
+  static async exportDiagramAsPng(): Promise<string> {
+    // Find the React Flow container
+    const reactFlow = document.querySelector('.react-flow') as HTMLElement;
+    if (!reactFlow) {
+      throw new Error('Diagram container not found. Make sure diagram is fully loaded.');
+    }
+
+    // Check dimensions
+    const rect = reactFlow.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) {
+      throw new Error('Diagram container has zero dimensions. Wait for diagram to render.');
+    }
+
+    // Export to PNG using html-to-image
+    const exportOptions = getExportOptions('png');
+    const dataUrl = await toPng(reactFlow, exportOptions);
+
+    if (!dataUrl || dataUrl.length < 100) {
+      throw new Error('Export produced empty or invalid image');
+    }
+
+    return dataUrl;
+  }
+
+  /**
+   * Save diagram PNG image to vault
+   *
+   * @param vault - Obsidian vault instance
+   * @param imagePath - Vault-relative path for the image (e.g., "BAC4/docs/System_1.png")
+   * @param dataUrl - Base64 data URL of the image
+   * @returns Promise<TFile> - Created image file
+   */
+  static async saveDiagramImage(
+    vault: Vault,
+    imagePath: string,
+    dataUrl: string
+  ): Promise<TFile> {
+    const normalizedPath = normalizePath(imagePath);
+
+    // Ensure parent folder exists
+    const folderPath = normalizedPath.substring(0, normalizedPath.lastIndexOf('/'));
+    if (folderPath && !(vault.getAbstractFileByPath(folderPath) instanceof TFolder)) {
+      await vault.createFolder(folderPath).catch(() => {
+        // Folder might exist, ignore error
+      });
+    }
+
+    // Convert base64 data URL to binary
+    const base64Data = dataUrl.split(',')[1];
+    const binaryString = atob(base64Data);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+
+    // Create or overwrite the image file
+    const existingFile = vault.getAbstractFileByPath(normalizedPath);
+    if (existingFile instanceof TFile) {
+      // Update existing file
+      await vault.modifyBinary(existingFile, bytes.buffer);
+      return existingFile;
+    } else {
+      // Create new file
+      return await vault.createBinary(normalizedPath, bytes.buffer);
+    }
+  }
+
+  /**
+   * Create markdown file with embedded diagram image
+   *
+   * @param vault - Obsidian vault instance
+   * @param filePath - Vault-relative path for markdown file
+   * @param nodeLabel - Node label for template
+   * @param nodeType - Node type for template customization
+   * @param diagramType - Diagram type (context/container/component)
+   * @returns Promise<{ markdownFile: TFile, imageFile: TFile | null }> - Created files
+   */
+  static async createMarkdownFileWithImage(
+    vault: Vault,
+    filePath: string,
+    nodeLabel: string,
+    nodeType: string,
+    diagramType: 'context' | 'container' | 'component'
+  ): Promise<{ markdownFile: TFile; imageFile: TFile | null }> {
+    let imageFile: TFile | null = null;
+
+    try {
+      // Export diagram as PNG
+      console.log('BAC4: Exporting diagram as PNG for markdown file...');
+      const dataUrl = await this.exportDiagramAsPng();
+
+      // Generate image file path (same folder as markdown, .png extension)
+      const imagePath = filePath.replace('.md', '.png');
+
+      // Save image file
+      console.log('BAC4: Saving diagram image to:', imagePath);
+      imageFile = await this.saveDiagramImage(vault, imagePath, dataUrl);
+      console.log('BAC4: ✅ Diagram image saved successfully');
+    } catch (error) {
+      console.error('BAC4: Failed to export diagram image:', error);
+      // Continue with markdown creation even if image export fails
+    }
+
+    // Get markdown template with image reference
+    const imageName = imageFile ? this.getFileName(imageFile.path) : null;
+    const content = this.getMarkdownTemplateWithImage(
+      nodeLabel,
+      nodeType,
+      diagramType,
+      imageName
+    );
+
+    // Create markdown file
+    const normalizedPath = normalizePath(filePath);
+    const markdownFile = await vault.create(normalizedPath, content);
+
+    return { markdownFile, imageFile };
+  }
+
+  /**
+   * Update diagram image for existing markdown file
+   *
+   * @param vault - Obsidian vault instance
+   * @param markdownPath - Path to markdown file
+   * @returns Promise<TFile | null> - Updated image file or null if failed
+   */
+  static async updateDiagramImage(vault: Vault, markdownPath: string): Promise<TFile | null> {
+    try {
+      // Export diagram as PNG
+      console.log('BAC4: Updating diagram image...');
+      const dataUrl = await this.exportDiagramAsPng();
+
+      // Generate image file path
+      const imagePath = markdownPath.replace('.md', '.png');
+
+      // Save/update image file
+      const imageFile = await this.saveDiagramImage(vault, imagePath, dataUrl);
+      console.log('BAC4: ✅ Diagram image updated successfully');
+
+      return imageFile;
+    } catch (error) {
+      console.error('BAC4: Failed to update diagram image:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get markdown template content with embedded diagram image reference
+   *
+   * @param nodeLabel - Node label
+   * @param nodeType - Node type
+   * @param diagramType - Diagram type (context/container/component)
+   * @param imageName - Name of the diagram image file (or null if no image)
+   * @returns Markdown template string with image
+   */
+  private static getMarkdownTemplateWithImage(
+    nodeLabel: string,
+    nodeType: string,
+    diagramType: 'context' | 'container' | 'component',
+    imageName: string | null
+  ): string {
+    const timestamp = new Date().toISOString().split('T')[0];
+    const diagramTypeLabel =
+      diagramType.charAt(0).toUpperCase() + diagramType.slice(1);
+
+    // Build image section
+    const imageSection = imageName
+      ? `## ${nodeLabel} - ${diagramTypeLabel} Diagram
+
+![[${imageName}]]
+
+`
+      : '';
+
+    // Get base template
+    let baseTemplate: string;
+    switch (nodeType) {
+      case 'system':
+        baseTemplate = this.getSystemTemplate(nodeLabel, timestamp);
+        break;
+      case 'container':
+        baseTemplate = this.getContainerTemplate(nodeLabel, timestamp);
+        break;
+      case 'cloudComponent':
+        baseTemplate = this.getCloudComponentTemplate(nodeLabel, timestamp);
+        break;
+      case 'person':
+        baseTemplate = this.getPersonTemplate(nodeLabel, timestamp);
+        break;
+      default:
+        baseTemplate = this.getGenericTemplate(nodeLabel, timestamp);
+    }
+
+    // Insert image section after the header and timestamp
+    const lines = baseTemplate.split('\n');
+    const headerEnd = 2; // After "# NodeLabel" and "*Created: timestamp*"
+    lines.splice(headerEnd + 1, 0, imageSection);
+
+    return lines.join('\n');
   }
 }
