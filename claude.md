@@ -99,7 +99,8 @@ bac4-plugin/
 │   │       └── DiagramTypeSwitchModal.tsx # Type change warning
 │   ├── services/
 │   │   ├── component-library-service.ts # Cloud component management
-│   │   └── diagram-navigation-service.ts # Drill-down/linking/relationships logic
+│   │   ├── diagram-navigation-service.ts # Drill-down/linking/relationships logic
+│   │   └── markdown-link-service.ts # Markdown documentation with diagram screenshots (v0.8.0)
 │   ├── types/
 │   │   └── diagram-relationships.ts     # Types for diagram hierarchy
 │   ├── edges/
@@ -887,6 +888,289 @@ const handleDrillDown = async (node: Node) => {
 - Orchestrating services
 - Managing local UI state
 - Displaying feedback to users
+
+### MarkdownLinkService - Documentation & Diagram Screenshots (v0.8.0)
+
+**File:** `/src/services/markdown-link-service.ts`
+
+The MarkdownLinkService handles all markdown documentation linking and automatic diagram screenshot functionality. In v0.8.0, it was enhanced to automatically export diagrams as PNG images when creating markdown files.
+
+#### Core Methods
+
+**1. `exportDiagramAsPng(): Promise<string>`** (Static method)
+- **Purpose:** Export the current React Flow diagram as a PNG image
+- **Returns:** Base64 data URL of the exported PNG
+- **Features:**
+  - Smart React Flow readiness detection
+  - Retry mechanism (up to 5 attempts, 500ms delay)
+  - Checks for both valid dimensions AND internal nodes container
+  - Re-queries DOM on each retry (handles React re-renders)
+  - Total wait time: up to 2.5 seconds
+- **Throws:** Error if diagram container not found or export fails after retries
+
+**Implementation Detail - React Flow Readiness Detection:**
+```typescript
+// Wait for React Flow to be fully ready
+let reactFlow = document.querySelector('.react-flow') as HTMLElement;
+let nodesContainer = document.querySelector('.react-flow__nodes');
+let attempts = 0;
+const maxAttempts = 5;
+const delayMs = 500;
+
+while (attempts < maxAttempts) {
+  // Re-query DOM on each retry (handles React re-renders)
+  reactFlow = document.querySelector('.react-flow') as HTMLElement;
+  if (!reactFlow) {
+    await new Promise((resolve) => setTimeout(resolve, delayMs));
+    attempts++;
+    continue;
+  }
+
+  rect = reactFlow.getBoundingClientRect();
+  nodesContainer = document.querySelector('.react-flow__nodes');
+
+  // Check both dimensions AND internal nodes container
+  const hasDimensions = rect.width > 0 && rect.height > 0;
+  const hasNodesContainer = nodesContainer !== null;
+
+  if (hasDimensions && hasNodesContainer) {
+    console.log(`BAC4: React Flow ready after ${attempts} retries`);
+    break;
+  }
+
+  await new Promise((resolve) => setTimeout(resolve, delayMs));
+  attempts++;
+}
+
+// Export using html-to-image library
+const exportOptions = getExportOptions('png');
+const dataUrl = await toPng(reactFlow, exportOptions);
+```
+
+**Why This Works:**
+- Checking `.react-flow__nodes` provides a better signal that React Flow is fully initialized
+- Re-querying DOM on each retry handles React re-renders that temporarily set dimensions to zero
+- Multiple retries with delays allow React Flow to stabilize after UI updates (modal opens, PropertyPanel updates, etc.)
+
+**2. `saveDiagramImage(vault, imagePath, dataUrl): Promise<TFile>`** (Static method)
+- **Purpose:** Save a base64 PNG data URL to the vault as a binary file
+- **Parameters:**
+  - `vault: Vault` - Obsidian vault instance
+  - `imagePath: string` - Absolute path where image should be saved
+  - `dataUrl: string` - Base64 data URL from exportDiagramAsPng()
+- **Returns:** The created or updated TFile
+- **Features:**
+  - Converts base64 data URL to binary ArrayBuffer
+  - Creates new file if it doesn't exist
+  - Updates existing file if it does exist (preserves single image)
+  - Uses Obsidian's vault API (createBinary/modifyBinary)
+
+**3. `createMarkdownFileWithImage(vault, filePath, nodeLabel, nodeType, diagramType): Promise<{ markdownFile: TFile; imageFile: TFile | null }>`** (Static method)
+- **Purpose:** Create a markdown file with an automatically embedded diagram screenshot
+- **Parameters:**
+  - `vault: Vault` - Obsidian vault instance
+  - `filePath: string` - Path for the markdown file (e.g., "docs/System_1.md")
+  - `nodeLabel: string` - Label of the node being documented
+  - `nodeType: string` - Type of node (system, container, cloud-component)
+  - `diagramType: 'context' | 'container' | 'component'` - Current diagram level
+- **Returns:** Object with both markdownFile and imageFile (imageFile may be null if export fails)
+- **Features:**
+  - Exports diagram as PNG automatically
+  - Saves PNG to same folder as markdown file
+  - Generates markdown content with image reference
+  - Creates markdown file with template
+  - **Graceful fallback:** If image export fails, still creates markdown file
+  - Shows appropriate success/warning messages to user
+
+**Example Generated Markdown:**
+```markdown
+# System 1
+
+*Created: 2025-10-15*
+
+## System 1 - Context Diagram
+
+![[System_1.png]]
+
+## Overview
+
+Add documentation for this System node here...
+
+## Description
+
+...
+```
+
+**Heading Format:** `## [Node Label] - [Diagram Type] Diagram`
+- Diagram type is capitalized: "Context", "Container", or "Component"
+- Image reference uses Obsidian wiki-link format: `![[filename.png]]`
+
+**4. `updateDiagramImage(vault, markdownPath): Promise<TFile | null>`** (Static method)
+- **Purpose:** Re-export diagram and update the existing image file
+- **Parameters:**
+  - `vault: Vault` - Obsidian vault instance
+  - `markdownPath: string` - Path to the markdown file (image path derived from this)
+- **Returns:** The updated image TFile
+- **Features:**
+  - Re-exports current diagram state as PNG
+  - Replaces existing image file (no duplication)
+  - Preserves markdown content (only updates image)
+  - Used by "Update Image" button in PropertyPanel
+
+**5. `getMarkdownTemplateWithImage(nodeLabel, nodeType, diagramType, imageName): string`** (Private method)
+- **Purpose:** Generate markdown template with embedded image
+- **Features:**
+  - Adds heading: `## [Node Label] - [Diagram Type] Diagram`
+  - Embeds image with: `![[imageName]]`
+  - Inserts image section after heading and timestamp
+  - Includes placeholder sections (Overview, Description, etc.)
+
+#### Integration Points
+
+**useNodeHandlers.ts:**
+```typescript
+// Updated createAndLinkMarkdownFile to use new service method
+const result = await MarkdownLinkService.createMarkdownFileWithImage(
+  plugin.app.vault,
+  filePath,
+  node.data.label,
+  node.type || 'generic',
+  diagramType  // Current diagram type
+);
+
+// New updateMarkdownImage callback
+const updateMarkdownImage = React.useCallback(
+  async (nodeId: string) => {
+    const node = nodes.find((n) => n.id === nodeId);
+    if (!node?.data.linkedMarkdownPath) {
+      ErrorHandler.showInfo('No linked markdown file to update image for');
+      return;
+    }
+
+    try {
+      await MarkdownLinkService.updateDiagramImage(
+        plugin.app.vault,
+        node.data.linkedMarkdownPath
+      );
+      ErrorHandler.showSuccess('Diagram image updated successfully');
+    } catch (error) {
+      ErrorHandler.handleError(error, 'Failed to update diagram image');
+    }
+  },
+  [nodes, plugin]
+);
+```
+
+**PropertyPanel.tsx:**
+```typescript
+// Three-button workflow when markdown file exists
+<button onClick={handleOpenMarkdownFile}>📄 Open File</button>
+<button onClick={handleUpdateMarkdownImage}>🔄 Update Image</button>
+<button onClick={handleUnlinkMarkdownFile}>❌ Unlink</button>
+```
+
+#### Error Handling & Edge Cases
+
+**Graceful Fallback:**
+- If diagram export fails (dimensions issue, rendering problem), markdown file is still created
+- User sees warning: "Markdown file created (image export failed)"
+- Markdown content is generated without image embed
+
+**Common Failure Scenarios:**
+1. **React Flow not ready:** Retry mechanism handles this (up to 2.5 seconds)
+2. **Zero dimensions during UI transitions:** Re-querying DOM on each retry solves this
+3. **Component Palette rendering time:** Retry mechanism provides sufficient wait time
+4. **No linked markdown file:** `updateMarkdownImage()` shows info message, doesn't throw
+
+**Logging:**
+- Detailed console logs for debugging: `BAC4: React Flow ready after ${attempts} retries`
+- Logs dimension checks: `BAC4: Waiting (attempt ${n}/${maxAttempts})`
+- Success confirmations: `BAC4: ✅ Markdown file created`, `BAC4: ✅ Diagram image updated`
+
+#### Usage Examples
+
+**Creating Markdown with Screenshot:**
+```typescript
+// From node handler
+const result = await MarkdownLinkService.createMarkdownFileWithImage(
+  plugin.app.vault,
+  'docs/Payment System.md',
+  'Payment System',
+  'system',
+  'context'
+);
+
+// Result contains:
+// - markdownFile: TFile (always present)
+// - imageFile: TFile | null (null if export failed)
+```
+
+**Updating Existing Screenshot:**
+```typescript
+// From PropertyPanel "Update Image" button
+await MarkdownLinkService.updateDiagramImage(
+  plugin.app.vault,
+  'docs/Payment System.md'
+);
+// Updates docs/Payment System.png with current diagram state
+```
+
+**Opening Linked Markdown:**
+```typescript
+// Existing functionality (unchanged)
+await MarkdownLinkService.openMarkdownFile(
+  plugin.app.workspace,
+  plugin.app.vault,
+  'docs/Payment System.md',
+  false  // openInNewTab
+);
+```
+
+#### Dependencies
+
+**Required Libraries:**
+- `html-to-image` - PNG export via `toPng()` function (already a dependency)
+- `obsidian` - Vault API for file operations
+- Existing export utilities from `useExport.ts` (getExportOptions)
+
+**No New Dependencies Required!**
+
+#### Performance Considerations
+
+**Export Timing:**
+- Retry mechanism adds up to 2.5 seconds max wait time
+- Most exports succeed on first or second attempt (<1 second)
+- Component diagrams may need 2-3 attempts (ComponentPalette rendering time)
+- Context diagrams typically succeed on first attempt
+
+**Bundle Size Impact:**
+- No new dependencies added
+- Reuses existing html-to-image library
+- Service methods are lightweight (~210 lines total)
+
+**User Experience:**
+- Export happens in background while PropertyPanel updates
+- User sees success notification when complete
+- Markdown file opens immediately (doesn't wait for image)
+
+#### Future Enhancements (v0.9.0+)
+
+Possible improvements:
+- Auto-update image on diagram changes (optional setting)
+- Multiple image formats (SVG for vector)
+- Image versioning (keep history of diagrams)
+- Batch update all markdown images in project
+- Custom image placement in template
+- Image compression settings
+- Dark mode aware exports
+
+#### Breaking Changes
+
+**None.** This is a purely additive feature in v0.8.0.
+- Old `createMarkdownFile()` method still exists and works
+- New `createMarkdownFileWithImage()` is separate method
+- Graceful fallback if image export fails
+- No changes to file format or data structure
 
 ### TypeScript Standards (Strict Mode)
 

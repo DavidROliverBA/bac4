@@ -1,11 +1,11 @@
 # BAC4 - AI-Native Cloud Architecture Management for Obsidian
 
-**Version:** 0.7.0 🎉
+**Version:** 0.8.0 🎉
 **Status:** Production-Ready ✅
 
 An Obsidian plugin that transforms your vault into a comprehensive enterprise architecture management platform. Extends the C4 model with cloud-specific component mappings and provides **THREE WAYS** to create diagrams: manual, AI API, or natural conversation with Claude Desktop via MCP.
 
-> **✅ v0.7.0:** Complete v0.6.0 migration - all methods now use self-contained files with embedded links!
+> **✨ v0.8.0:** Automatic diagram screenshots in markdown documentation!
 
 ---
 
@@ -25,7 +25,7 @@ An Obsidian plugin that transforms your vault into a comprehensive enterprise ar
 ### Method 2: Manual Installation from GitHub Release
 
 1. **Download the latest release** from [GitHub Releases](https://github.com/DavidROliverBA/bac4-plugin/releases)
-   - Download `bac4-plugin-v0.7.0.zip`
+   - Download `bac4-plugin-v0.8.0.zip`
 
 2. **Extract the files** to your vault's plugins folder:
    ```bash
@@ -77,6 +77,7 @@ After installation, verify BAC4 is working:
 - 🤖 **AI-Powered Diagram Generation** (Anthropic API)
 - 💬 **MCP Integration** - Chat with Claude Desktop to generate diagrams
 - 🔗 **Hierarchical Navigation** with drill-down (Context → Container → Component)
+- 📸 **Automatic Diagram Screenshots** ⭐ **NEW!** - Markdown docs with embedded PNGs
 - 📤 **Export** diagrams as PNG, JPEG, or SVG
 - 📁 **Git-Native** - All data stored as JSON for version control
 
@@ -148,6 +149,17 @@ Drag and drop nodes, connect with edges, customize everything.
 - ✅ **Best for:** Complex diagrams, iterative refinement
 
 **See:** [AI Integration Guide](docs/AI_INTEGRATION_COMPLETE.md)
+
+### **Markdown Documentation** ⭐ **NEW in v0.8.0!**
+- ✅ **Automatic diagram screenshots** - PNGs embedded in markdown files
+- ✅ **Smart heading generation** - "## [Node Label] - [Context/Container/Component] Diagram"
+- ✅ **Update Image button** - Refresh screenshots when diagrams change
+- ✅ **Three-button workflow:**
+  - 📄 **Open File** - Quick access to linked documentation
+  - 🔄 **Update Image** - Regenerate diagram screenshot
+  - ❌ **Unlink** - Disconnect markdown file
+- ✅ **Graceful fallback** - Creates markdown even if screenshot fails
+- ✅ **Obsidian wiki-links** - `![[diagram.png]]` format for native display
 
 ### **File Management** (v0.6.0 Format)
 - ✅ `.bac4` file format (self-contained JSON with metadata)
@@ -420,7 +432,15 @@ BAC4 follows a layered plugin architecture:
 - ✅ Cloud component auto-linking to markdown
 - ✅ No diagram-relationships.json dependency
 
-### **v0.8.0 - Multi-Cloud Expansion** (Planned)
+### **v0.8.0 - Markdown Documentation** ✅ **COMPLETE**
+- ✅ Automatic diagram screenshots in markdown files
+- ✅ Smart heading generation with diagram type
+- ✅ Update Image button for refreshing screenshots
+- ✅ Three-button workflow (Open, Update, Unlink)
+- ✅ Graceful error handling and retry mechanism
+- ✅ Obsidian wiki-link format for images
+
+### **v0.9.0 - Multi-Cloud Expansion** (Planned)
 - ⏳ Azure component library
 - ⏳ GCP component library
 - ⏳ Multi-cloud architecture patterns
@@ -485,6 +505,63 @@ MIT License - see [LICENSE](LICENSE) file for details
 - **AI Partner:** Claude Code (Anthropic)
 - **Canvas Library:** React Flow / XyFlow
 - **C4 Model:** Simon Brown (https://c4model.com)
+
+---
+
+## 🎉 What's New in v0.8.0
+
+### **Automatic Diagram Screenshots in Markdown Documentation** 📸
+
+Create beautiful, self-documenting architecture with **automatic diagram screenshots** embedded in your markdown files!
+
+#### **What's New:**
+
+**1. Automatic Screenshot Generation**
+- When creating markdown files for nodes, BAC4 now automatically:
+  - Exports the current diagram as a high-quality PNG
+  - Saves it in the same folder as the markdown file
+  - Embeds it with a properly formatted heading
+
+**2. Smart Heading Format**
+```markdown
+## System 1 - Context Diagram
+![[System_1.png]]
+```
+- Heading includes node label and diagram type (Context/Container/Component)
+- Obsidian wiki-link format for seamless display
+
+**3. Three-Button Workflow**
+When a node has linked documentation, PropertyPanel shows:
+- 📄 **Open File** - Quick access to documentation
+- 🔄 **Update Image** - Regenerate screenshot after diagram changes
+- ❌ **Unlink** - Disconnect markdown file from node
+
+**4. Robust Export with Retry**
+- Waits for React Flow to fully render (up to 2.5 seconds)
+- Checks for React Flow's internal nodes container
+- Graceful fallback: Creates markdown even if screenshot fails
+- Clear error messages with helpful suggestions
+
+#### **How to Use:**
+
+1. **Select a node** (System, Container, or CloudComponent)
+2. **PropertyPanel → Linked Documentation** → "Link to Markdown File"
+3. **Provide a file path** (e.g., `docs/Payment_System.md`)
+4. **Click "Create File"**
+5. **Done!** Markdown file created with embedded diagram screenshot
+
+**Update screenshots:**
+- Modify your diagram (add/move nodes)
+- Click **🔄 Update Image** button
+- Screenshot regenerates automatically
+
+#### **Technical Details:**
+
+- Uses `html-to-image` library (same as manual export)
+- PNG format with high quality settings
+- Same folder storage for easy organization
+- No external dependencies - works offline
+- Graceful error handling preserves workflow
 
 ---
 
@@ -623,6 +700,13 @@ The new format provides:
 
 ## 📜 Previous Releases
 
+### v0.8.0 - Markdown Documentation (2025-10-15)
+- 📸 Automatic diagram screenshots in markdown files
+- 🔄 Update Image button for refreshing screenshots
+- 📝 Smart heading generation with diagram type
+- 🔧 Robust React Flow export with retry mechanism
+- ✨ Three-button workflow (Open, Update, Unlink)
+
 ### v0.7.0 - Complete Migration (2025-10-14)
 - ✅ All methods migrated to v0.6.0 architecture
 - ✅ PropertyPanel linking fully functional
@@ -668,5 +752,5 @@ The new format provides:
 
 🤖 **Powered by AI, built for humans!**
 
-*Last updated: 2025-10-14 (v0.7.0)*
+*Last updated: 2025-10-15 (v0.8.0)*
 
