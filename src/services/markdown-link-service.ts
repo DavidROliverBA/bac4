@@ -451,15 +451,28 @@ Add any additional context, decisions, or considerations here.
       throw new Error('Diagram container not found. Make sure diagram is fully loaded.');
     }
 
-    // Wait for React Flow to fully render before exporting
-    // This prevents "zero dimensions" errors when the canvas hasn't settled yet
-    await new Promise((resolve) => setTimeout(resolve, EXPORT_DELAY_MS));
+    // Wait for React Flow to have valid dimensions (retry up to 3 times)
+    let rect = reactFlow.getBoundingClientRect();
+    let attempts = 0;
+    const maxAttempts = 3;
 
-    // Check dimensions after waiting
-    const rect = reactFlow.getBoundingClientRect();
-    if (rect.width === 0 || rect.height === 0) {
-      throw new Error('Diagram container has zero dimensions. Wait for diagram to render.');
+    while ((rect.width === 0 || rect.height === 0) && attempts < maxAttempts) {
+      console.log(`BAC4: Waiting for diagram to render (attempt ${attempts + 1}/${maxAttempts})...`);
+      await new Promise((resolve) => setTimeout(resolve, EXPORT_DELAY_MS));
+      rect = reactFlow.getBoundingClientRect();
+      attempts++;
     }
+
+    // Final dimension check
+    if (rect.width === 0 || rect.height === 0) {
+      console.error('BAC4: Diagram dimensions after waiting:', rect);
+      throw new Error(
+        `Diagram container has zero dimensions after ${maxAttempts} attempts. ` +
+        `Try waiting a moment and clicking "Update Image" again.`
+      );
+    }
+
+    console.log(`BAC4: Diagram ready for export (${rect.width}x${rect.height})`);
 
     // Export to PNG using html-to-image
     const exportOptions = getExportOptions('png');
@@ -469,6 +482,7 @@ Add any additional context, decisions, or considerations here.
       throw new Error('Export produced empty or invalid image');
     }
 
+    console.log(`BAC4: Export successful (${Math.round(dataUrl.length / 1024)}kb)`);
     return dataUrl;
   }
 
