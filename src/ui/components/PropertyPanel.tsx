@@ -79,6 +79,7 @@ interface PropertyPanelProps {
   onUnlinkMarkdownFile?: (nodeId: string) => void;
   onCreateAndLinkMarkdownFile?: (nodeId: string, filePath: string) => Promise<void>;
   onOpenLinkedMarkdownFile?: (nodeId: string) => Promise<void>;
+  onUpdateMarkdownImage?: (nodeId: string) => Promise<void>;
   // New props for navigation
   onNavigateToChild?: () => void;
   onNavigateToParent?: () => void;
@@ -107,6 +108,7 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
   onUnlinkMarkdownFile,
   onCreateAndLinkMarkdownFile,
   onOpenLinkedMarkdownFile,
+  onUpdateMarkdownImage,
   onNavigateToChild,
   onNavigateToParent,
   showNavigateToChild,
@@ -304,6 +306,11 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
   const handleCreateMarkdownFile = async () => {
     if (!node || !node.data.linkedMarkdownPath) return;
     await onCreateAndLinkMarkdownFile?.(node.id, node.data.linkedMarkdownPath);
+  };
+
+  const handleUpdateMarkdownImage = async () => {
+    if (!node) return;
+    await onUpdateMarkdownImage?.(node.id);
   };
 
   // Dragging handlers
@@ -833,36 +840,51 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
                         {MarkdownLinkService.getFileName(node.data.linkedMarkdownPath)}
                       </span>
                     </div>
-                    <div style={{ display: 'flex', gap: SPACING.small }}>
+                    <div style={{ display: 'flex', gap: SPACING.small, flexWrap: 'wrap' }}>
                       <button
                         onClick={handleOpenMarkdownFile}
+                        title="Open linked markdown file"
                         style={{
-                          flex: 1,
-                          padding: SPACING.padding.input,
-                          background: UI_COLORS.interactiveAccent,
-                          border: 'none',
+                          padding: SPACING.padding.button,
+                          background: UI_COLORS.interactiveNormal,
+                          border: `1px solid ${UI_COLORS.border}`,
                           borderRadius: BORDER_RADIUS.normal,
-                          color: '#fff',
-                          cursor: 'pointer',
-                          fontSize: FONT_SIZES.normal,
-                          fontWeight: 600,
-                        }}
-                      >
-                        Open File
-                      </button>
-                      <button
-                        onClick={handleUnlinkMarkdownFile}
-                        style={{
-                          padding: SPACING.padding.input,
-                          background: UI_COLORS.backgroundSecondary,
-                          border: `1px solid ${UI_COLORS.backgroundModifierBorder}`,
-                          borderRadius: BORDER_RADIUS.normal,
-                          color: UI_COLORS.textMuted,
+                          color: UI_COLORS.textNormal,
                           cursor: 'pointer',
                           fontSize: FONT_SIZES.small,
                         }}
                       >
-                        Unlink
+                        📄 Open File
+                      </button>
+                      <button
+                        onClick={handleUpdateMarkdownImage}
+                        title="Update diagram image in markdown file"
+                        style={{
+                          padding: SPACING.padding.button,
+                          background: UI_COLORS.interactiveNormal,
+                          border: `1px solid ${UI_COLORS.border}`,
+                          borderRadius: BORDER_RADIUS.normal,
+                          color: UI_COLORS.textNormal,
+                          cursor: 'pointer',
+                          fontSize: FONT_SIZES.small,
+                        }}
+                      >
+                        🔄 Update Image
+                      </button>
+                      <button
+                        onClick={handleUnlinkMarkdownFile}
+                        title="Unlink markdown file from node"
+                        style={{
+                          padding: SPACING.padding.button,
+                          background: UI_COLORS.interactiveNormal,
+                          border: `1px solid ${UI_COLORS.border}`,
+                          borderRadius: BORDER_RADIUS.normal,
+                          color: UI_COLORS.textNormal,
+                          cursor: 'pointer',
+                          fontSize: FONT_SIZES.small,
+                        }}
+                      >
+                        ❌ Unlink
                       </button>
                     </div>
                   </>

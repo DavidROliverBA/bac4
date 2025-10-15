@@ -461,6 +461,7 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath }) => {
           onUnlinkMarkdownFile={nodeHandlers.unlinkMarkdownFile}
           onCreateAndLinkMarkdownFile={nodeHandlers.createAndLinkMarkdownFile}
           onOpenLinkedMarkdownFile={nodeHandlers.openLinkedMarkdownFile}
+          onUpdateMarkdownImage={nodeHandlers.updateMarkdownImage}
           onNavigateToChild={handleNavigateToChild}
           onNavigateToParent={handleNavigateToParent}
           showNavigateToChild={navigationIconVisibility.showPlus}

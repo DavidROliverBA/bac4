@@ -45,6 +45,7 @@ export interface NodeHandlers {
   unlinkMarkdownFile: (nodeId: string) => void;
   createAndLinkMarkdownFile: (nodeId: string, filePath: string) => Promise<void>;
   openLinkedMarkdownFile: (nodeId: string) => Promise<void>;
+  updateMarkdownImage: (nodeId: string) => Promise<void>;
 }
 
 /**
@@ -432,7 +433,7 @@ export function useNodeHandlers(props: UseNodeHandlersProps): NodeHandlers {
   );
 
   /**
-   * Create a markdown file and link it to a node
+   * Create a markdown file with diagram image and link it to a node
    */
   const createAndLinkMarkdownFile = React.useCallback(
     async (nodeId: string, filePath: string) => {
@@ -443,14 +444,21 @@ export function useNodeHandlers(props: UseNodeHandlersProps): NodeHandlers {
       }
 
       try {
-        console.log('BAC4: Creating markdown file', { nodeId, filePath });
-        await MarkdownLinkService.createMarkdownFile(
+        console.log('BAC4: Creating markdown file with diagram image', { nodeId, filePath });
+
+        // Create markdown file with embedded diagram image
+        const result = await MarkdownLinkService.createMarkdownFileWithImage(
           plugin.app.vault,
           filePath,
           node.data.label,
-          node.type || 'generic'
+          node.type || 'generic',
+          diagramType
         );
-        console.log('BAC4: ✅ Markdown file created');
+
+        console.log('BAC4: ✅ Markdown file created', {
+          markdown: result.markdownFile.path,
+          image: result.imageFile?.path || 'none',
+        });
 
         // Link the file
         linkMarkdownFile(nodeId, filePath);
@@ -464,13 +472,47 @@ export function useNodeHandlers(props: UseNodeHandlersProps): NodeHandlers {
         );
         console.log('BAC4: ✅ Markdown file opened');
 
-        ErrorHandler.showSuccess('Markdown file created and linked');
+        ErrorHandler.showSuccess(
+          result.imageFile
+            ? 'Markdown file created with diagram image'
+            : 'Markdown file created (image export failed)'
+        );
       } catch (error) {
         console.error('BAC4: Error creating markdown file:', error);
         ErrorHandler.handleError(error, 'Failed to create markdown file');
       }
     },
-    [nodes, plugin, linkMarkdownFile]
+    [nodes, plugin, diagramType, linkMarkdownFile]
+  );
+
+  /**
+   * Update the diagram image for an existing markdown file
+   */
+  const updateMarkdownImage = React.useCallback(
+    async (nodeId: string) => {
+      const node = nodes.find((n) => n.id === nodeId);
+      if (!node?.data.linkedMarkdownPath) {
+        console.error('BAC4: No linked markdown file for node:', nodeId);
+        ErrorHandler.showInfo('No linked markdown file to update image for');
+        return;
+      }
+
+      try {
+        console.log('BAC4: Updating diagram image for markdown:', node.data.linkedMarkdownPath);
+
+        const imageFile = await MarkdownLinkService.updateDiagramImage(
+          plugin.app.vault,
+          node.data.linkedMarkdownPath
+        );
+
+        console.log('BAC4: ✅ Diagram image updated:', imageFile?.path);
+        ErrorHandler.showSuccess('Diagram image updated successfully');
+      } catch (error) {
+        console.error('BAC4: Error updating diagram image:', error);
+        ErrorHandler.handleError(error, 'Failed to update diagram image');
+      }
+    },
+    [nodes, plugin]
   );
 
   return {
@@ -485,5 +527,6 @@ export function useNodeHandlers(props: UseNodeHandlersProps): NodeHandlers {
     unlinkMarkdownFile,
     createAndLinkMarkdownFile,
     openLinkedMarkdownFile,
+    updateMarkdownImage,
   };
 }
