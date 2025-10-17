@@ -8,6 +8,7 @@ import * as React from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
 import { FONT_SIZES, SPACING, UI_COLORS, DEFAULT_NODE_COLOR } from '../../constants';
 import type { PersonNodeData } from '../../types/canvas-types';
+import { NodeChangeBadge } from '../components/ChangeBadge';
 
 export const PersonNode: React.FC<NodeProps<PersonNodeData>> = ({ data, selected }) => {
   const color = data.color || DEFAULT_NODE_COLOR;
@@ -34,6 +35,9 @@ export const PersonNode: React.FC<NodeProps<PersonNodeData>> = ({ data, selected
         position: 'relative',
       }}
     >
+      {/* Change badge (v1.0.0 timeline) */}
+      {data.changeIndicator && <NodeChangeBadge changeType={data.changeIndicator} />}
+
       {/* Connection handles - all four sides */}
       <Handle
         type="target"

@@ -79,22 +79,25 @@ export function useEdgeHandlers(props: UseEdgeHandlersProps): EdgeHandlers {
    */
   const updateEdgeLabel = React.useCallback(
     (edgeId: string, newLabel: string) => {
+      let updatedEdge: Edge<EdgeData> | null = null;
+
       setEdges((eds) =>
         eds.map((edge) => {
           if (edge.id === edgeId) {
-            return {
+            updatedEdge = {
               ...edge,
               data: { ...edge.data, label: newLabel },
             };
+            return updatedEdge;
           }
           return edge;
         })
       );
 
-      // Also update selected edge state if needed
-      onEdgeSelect((prev: Edge<EdgeData> | null) =>
-        prev?.id === edgeId ? { ...prev, data: { ...prev.data, label: newLabel } } : prev
-      );
+      // Update selected edge if this is the selected edge
+      if (updatedEdge) {
+        onEdgeSelect(updatedEdge);
+      }
     },
     [setEdges, onEdgeSelect]
   );
@@ -106,6 +109,7 @@ export function useEdgeHandlers(props: UseEdgeHandlersProps): EdgeHandlers {
     (edgeId: string, direction: 'right' | 'left' | 'both') => {
       console.log('BAC4: updateEdgeDirection called', { edgeId, direction });
       const markers = getEdgeMarkers(direction);
+      let updatedEdge: Edge<EdgeData> | null = null;
 
       setEdges((eds) =>
         eds.map((edge) => {
@@ -114,20 +118,21 @@ export function useEdgeHandlers(props: UseEdgeHandlersProps): EdgeHandlers {
               oldDirection: edge.data?.direction,
               newDirection: direction,
             });
-            return {
+            updatedEdge = {
               ...edge,
               ...markers,
               data: { ...edge.data, direction },
             };
+            return updatedEdge;
           }
           return edge;
         })
       );
 
-      // Also update selected edge state if needed
-      onEdgeSelect((prev: Edge<EdgeData> | null) =>
-        prev?.id === edgeId ? { ...prev, ...markers, data: { ...prev.data, direction } } : prev
-      );
+      // Update selected edge if this is the selected edge
+      if (updatedEdge) {
+        onEdgeSelect(updatedEdge);
+      }
       console.log('BAC4: ✅ Updated edge direction and markers', markers);
     },
     [setEdges, onEdgeSelect]

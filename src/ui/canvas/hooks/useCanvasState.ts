@@ -93,9 +93,9 @@ export function useCanvasState(props: UseCanvasStateProps): CanvasStateHandlers 
    * Create markdown documentation file for cloud component
    */
   const createCloudComponentDocs = React.useCallback(async (
-    nodeId: string,
+    _nodeId: string,
     label: string,
-    component: ComponentDefinition
+    _component: ComponentDefinition
   ): Promise<string | null> => {
     const markdownPath = generateMarkdownPath(label);
     if (!markdownPath) {

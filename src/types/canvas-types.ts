@@ -39,6 +39,7 @@ export interface C4NodeData extends BaseNodeData {
 export interface SystemNodeData extends BaseNodeData {
   external?: boolean;
   linkedDiagramPath?: string; // Path to child Container diagram (v0.6.0)
+  changeIndicator?: 'new' | 'modified' | 'removed' | null; // v1.0.0: Timeline change indicator
 }
 
 /**
@@ -46,6 +47,7 @@ export interface SystemNodeData extends BaseNodeData {
  */
 export interface PersonNodeData extends BaseNodeData {
   role?: string;
+  changeIndicator?: 'new' | 'modified' | 'removed' | null; // v1.0.0: Timeline change indicator
 }
 
 /**
@@ -57,6 +59,7 @@ export interface ContainerNodeData extends BaseNodeData {
   icon: string; // Lucide icon ID (e.g., "cloud-cog", "database", "server")
   type?: string; // Optional type tag displayed in [brackets] (e.g., "REST API", "PostgreSQL")
   linkedDiagramPath?: string; // Path to child Component diagram (v0.6.0)
+  changeIndicator?: 'new' | 'modified' | 'removed' | null; // v1.0.0: Timeline change indicator
 }
 
 /**
@@ -68,6 +71,8 @@ export interface CloudComponentNodeData extends BaseNodeData {
   componentType?: string; // Component type (e.g., "EC2", "Lambda", "Fargate")
   category?: string;
   icon?: string;
+  properties?: Record<string, unknown>; // v1.0.0: Custom properties for cloud components
+  changeIndicator?: 'new' | 'modified' | 'removed' | null; // v1.0.0: Timeline change indicator
 }
 
 /**

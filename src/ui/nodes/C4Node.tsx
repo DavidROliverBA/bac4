@@ -8,6 +8,8 @@ import {
   NODE_DIMENSIONS,
   C4_TYPE_COLORS,
 } from '../../constants';
+import { NodeChangeBadge } from '../components/ChangeBadge';
+import type { ChangeIndicator } from '../../types/timeline';
 
 /**
  * C4 Node Data Interface
@@ -18,6 +20,7 @@ export interface C4NodeData {
   technology?: string;
   description?: string;
   color?: string;
+  changeIndicator?: ChangeIndicator; // v1.0.0 timeline
 }
 
 /**
@@ -50,11 +53,15 @@ export const C4Node: React.FC<NodeProps<C4NodeData>> = ({ data, selected }) => {
       boxShadow: selected
         ? `0 0 0 3px ${UI_COLORS.interactiveAccent}`
         : '0 1px 4px rgba(0,0,0,0.15)',
+      position: 'relative' as const, // v1.0.0: needed for badge positioning
     };
   };
 
   return (
     <div style={getNodeStyles()}>
+      {/* Change badge (v1.0.0 timeline) */}
+      {data.changeIndicator && <NodeChangeBadge changeType={data.changeIndicator} />}
+
       {/* Connection handles - all four sides */}
       <Handle type="target" position={Position.Top} id="top" style={{ background: color }} />
       <Handle type="target" position={Position.Left} id="left" style={{ background: color }} />

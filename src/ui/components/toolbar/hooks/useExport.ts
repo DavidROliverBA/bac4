@@ -12,9 +12,12 @@ import { useReactFlow } from 'reactflow';
 import { toPng, toJpeg, toSvg } from 'html-to-image';
 import { EXPORT_DELAY_MS, getExportOptions, getExportExtension } from '../../../../constants';
 import { ErrorHandler } from '../../../../utils/error-handling';
+import type { Timeline } from '../../../../types/timeline';
+import { TimelineService } from '../../../../services/TimelineService';
 
 export interface UseExportOptions {
   diagramName?: string;
+  timeline?: Timeline | null; // v1.0.0: Include timeline for watermark
 }
 
 export interface ExportHandlers {
@@ -23,16 +26,24 @@ export interface ExportHandlers {
 }
 
 /**
- * Get the React Flow container element for export
+ * Get the canvas export container element
  *
- * We export the main .react-flow container, not the .react-flow__viewport,
- * because the viewport can be transformed/scaled and may have zero dimensions.
- * The container always has the full visible dimensions.
+ * We export the .bac4-canvas-export-container which includes both the React Flow
+ * canvas AND the AnnotationOverlay, ensuring annotations are included in exports.
  *
- * @returns The React Flow HTML element or null if not found
+ * @returns The canvas export container HTML element or null if not found
  */
 function getExportElement(): HTMLElement | null {
-  // First, try to get the main React Flow container
+  // Try to get the BAC4 canvas export container (includes ReactFlow + AnnotationOverlay)
+  const exportContainer = document.querySelector('.bac4-canvas-export-container') as HTMLElement;
+  if (exportContainer) {
+    const rect = exportContainer.getBoundingClientRect();
+    if (rect.width > 0 && rect.height > 0) {
+      return exportContainer;
+    }
+  }
+
+  // Fallback: try the main React Flow container
   const reactFlow = document.querySelector('.react-flow') as HTMLElement;
   if (reactFlow) {
     const rect = reactFlow.getBoundingClientRect();
@@ -41,13 +52,64 @@ function getExportElement(): HTMLElement | null {
     }
   }
 
-  // Fallback: try viewport (though this usually has issues)
-  const viewport = document.querySelector('.react-flow__viewport') as HTMLElement;
-  if (viewport) {
-    return viewport;
+  return null;
+}
+
+/**
+ * Hide UI controls during export
+ *
+ * Temporarily hides zoom controls, palette, property panel, and toolbars
+ * so they don't appear in the exported image.
+ *
+ * @returns Array of hidden elements (to restore later)
+ */
+function hideUIControlsForExport(): HTMLElement[] {
+  const hiddenElements: HTMLElement[] = [];
+
+  // Hide zoom controls (canvas controls)
+  const zoomControls = document.querySelectorAll('.bac4-canvas-export-container > div[style*="position: absolute"][style*="bottom: 16px"]');
+  zoomControls.forEach((el) => {
+    const element = el as HTMLElement;
+    hiddenElements.push(element);
+    element.style.display = 'none';
+  });
+
+  // Hide component palette
+  const palette = document.querySelector('.bac4-canvas-export-container .component-palette') as HTMLElement;
+  if (palette) {
+    hiddenElements.push(palette);
+    palette.style.display = 'none';
   }
 
-  return null;
+  // Hide property panel
+  const propertyPanel = document.querySelector('.property-panel') as HTMLElement;
+  if (propertyPanel) {
+    hiddenElements.push(propertyPanel);
+    propertyPanel.style.display = 'none';
+  }
+
+  // Hide formatting toolbars (annotation toolbars)
+  const toolbars = document.querySelectorAll('.bac4-canvas-export-container > div > div[style*="position: absolute"][style*="top"][style*="px"]');
+  toolbars.forEach((el) => {
+    const element = el as HTMLElement;
+    if (element.style.zIndex === '101') { // Formatting toolbar has z-index 101
+      hiddenElements.push(element);
+      element.style.display = 'none';
+    }
+  });
+
+  return hiddenElements;
+}
+
+/**
+ * Restore UI controls after export
+ *
+ * @param elements - Array of elements that were hidden
+ */
+function restoreUIControls(elements: HTMLElement[]): void {
+  elements.forEach((el) => {
+    el.style.display = '';
+  });
 }
 
 /**
@@ -69,7 +131,7 @@ function getExportElement(): HTMLElement | null {
  * ```
  */
 export function useExport(options: UseExportOptions = {}): ExportHandlers {
-  const { diagramName = 'diagram' } = options;
+  const { diagramName = 'diagram', timeline } = options;
   const { getNodes } = useReactFlow();
   const [isExporting, setIsExporting] = React.useState(false);
 
@@ -126,6 +188,34 @@ export function useExport(options: UseExportOptions = {}): ExportHandlers {
 
       setIsExporting(true);
 
+      // Hide UI controls before export
+      const hiddenElements = hideUIControlsForExport();
+
+      // Add watermark if timeline exists
+      let watermarkElement: HTMLElement | null = null;
+      if (timeline) {
+        const currentSnapshot = TimelineService.getCurrentSnapshot(timeline);
+        watermarkElement = document.createElement('div');
+        watermarkElement.style.position = 'absolute';
+        watermarkElement.style.bottom = '16px';
+        watermarkElement.style.right = '16px';
+        watermarkElement.style.padding = '8px 12px';
+        watermarkElement.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+        watermarkElement.style.color = 'white';
+        watermarkElement.style.fontSize = '12px';
+        watermarkElement.style.fontFamily = 'var(--font-text)';
+        watermarkElement.style.borderRadius = '4px';
+        watermarkElement.style.zIndex = '999';
+        const timestampStr = currentSnapshot.timestamp
+          ? new Date(currentSnapshot.timestamp).toLocaleString()
+          : new Date(currentSnapshot.createdAt).toLocaleString();
+        watermarkElement.innerHTML = `
+          <div><strong>${currentSnapshot.label}</strong></div>
+          <div style="font-size: 10px; opacity: 0.8;">${timestampStr}</div>
+        `;
+        element.appendChild(watermarkElement);
+      }
+
       // Small delay to allow UI to update before export
       setTimeout(() => {
         const exportOptions = getExportOptions(format);
@@ -171,11 +261,17 @@ export function useExport(options: UseExportOptions = {}): ExportHandlers {
             );
           })
           .finally(() => {
+            // Remove watermark after export
+            if (watermarkElement && watermarkElement.parentNode) {
+              watermarkElement.parentNode.removeChild(watermarkElement);
+            }
+            // Restore UI controls
+            restoreUIControls(hiddenElements);
             setIsExporting(false);
           });
       }, EXPORT_DELAY_MS);
     },
-    [getNodes, diagramName]
+    [getNodes, diagramName, timeline]
   );
 
   return {

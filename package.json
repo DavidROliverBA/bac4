@@ -1,5 +1,5 @@
 {
-  "name": "bac4-plugin",
+  "name": "bac4",
   "version": "0.8.0",
   "description": "BAC4 - AI-Native Cloud Architecture Management for Obsidian (v0.8.0: Automatic diagram screenshots in markdown docs)",
   "main": "main.js",

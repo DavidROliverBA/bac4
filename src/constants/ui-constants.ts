@@ -153,10 +153,28 @@ export const DIMENSIONS = {
   buttonMinWidth: '140px',
   /** Maximum button width */
   buttonMaxWidth: '160px',
-  /** Property panel width */
+  /** Property panel width - Default (large screens) */
   propertyPanelWidth: '260px',
+  /** Property panel width - Compact (laptops/small screens) */
+  propertyPanelWidthCompact: '220px',
   /** Property panel max height */
   propertyPanelMaxHeight: '550px',
+  /** Property panel max height - Compact */
+  propertyPanelMaxHeightCompact: '450px',
+} as const;
+
+/**
+ * Responsive breakpoints for different screen sizes
+ */
+export const BREAKPOINTS = {
+  /** Extra small devices (phones, < 768px) */
+  xs: 768,
+  /** Small devices (tablets, < 1024px) */
+  sm: 1024,
+  /** Medium devices (laptops, < 1440px) */
+  md: 1440,
+  /** Large devices (desktops, >= 1440px) */
+  lg: 1440,
 } as const;
 
 /**

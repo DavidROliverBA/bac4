@@ -1,11 +1,9 @@
 import { TFile } from 'obsidian';
 import type BAC4Plugin from '../main';
 import type {
-  DiagramRelationshipsData,
   DiagramNode,
-  DiagramRelationship,
 } from '../types/canvas-types';
-import type { BreadcrumbItem } from '../types/component-props';
+import { TimelineService } from './TimelineService';
 
 /** Path to the central relationships file */
 const RELATIONSHIPS_FILE = 'diagram-relationships.json';
@@ -80,28 +78,7 @@ export class DiagramNavigationService {
     console.log('BAC4: ensureRelationshipsFile() called (v0.6.0: deprecated, no-op)');
   }
 
-  /**
-   * Get relationships data file (v0.6.0: Return empty if doesn't exist, don't create)
-   *
-   * In v0.6.0, this file is deprecated. Methods that use it should handle
-   * empty results gracefully. We no longer auto-create this file.
-   */
-  private async getRelationshipsData(): Promise<DiagramRelationshipsData> {
-    try {
-      const content = await this.plugin.app.vault.adapter.read(RELATIONSHIPS_FILE);
-      return JSON.parse(content);
-    } catch (error) {
-      // v0.6.0: File doesn't exist, return empty structure (don't create file)
-      console.log('BAC4: diagram-relationships.json not found (v0.6.0: this is expected)');
-      return {
-        version: '1.0.0',
-        diagrams: [],
-        relationships: [],
-        updatedAt: new Date().toISOString(),
-      };
-    }
-  }
-
+  // v0.6.0: getRelationshipsData() removed - deprecated, no longer needed
   // v0.6.0: saveRelationshipsData() removed - no longer needed
   // v0.6.0: registerDiagram() removed - diagrams are self-contained
   // v0.6.0: updateDiagramName() removed - names stored in diagram file metadata
@@ -231,7 +208,7 @@ export class DiagramNavigationService {
     parentPath: string,
     parentNodeId: string,
     parentNodeLabel: string,
-    parentDiagramType: 'context' | 'container',
+    _parentDiagramType: 'context' | 'container',
     childDiagramType: 'container' | 'component',
     suggestedFileName?: string
   ): Promise<string> {
@@ -274,25 +251,26 @@ export class DiagramNavigationService {
     // File doesn't exist, create it
     console.log('BAC4: Creating new child diagram file with type:', childDiagramType);
 
-    // Create initial diagram data (v0.6.0 format with metadata)
+    // Create initial diagram data (v1.0.0 format with timeline)
+    const now = new Date().toISOString();
+    const initialTimeline = TimelineService.createInitialTimeline([], [], 'Current');
     const initialData = {
-      version: '0.6.0',
+      version: '1.0.0',
       metadata: {
         diagramType: childDiagramType,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        createdAt: now,
+        updatedAt: now,
       },
-      nodes: [],
-      edges: [],
+      timeline: initialTimeline,
     };
 
     // Write child file
     await this.plugin.app.vault.create(childPath, JSON.stringify(initialData, null, 2));
     console.log('BAC4: ✅ Created child diagram file:', childPath);
 
-    // v0.6.0: Return child path - let the calling component update parent node's linkedDiagramPath
+    // Return child path - let the calling component update parent node's linkedDiagramPath
     // The component will update React state, and auto-save will persist to disk
-    console.log('BAC4: ✅ Child diagram created (v0.6.0)');
+    console.log('BAC4: ✅ Child diagram created (v1.0.0)');
     return childPath;
   }
 
@@ -309,10 +287,10 @@ export class DiagramNavigationService {
   }
 
   /**
-   * Find child diagram for a specific parent node (v0.6.0)
+   * Find child diagram for a specific parent node (v1.0.0)
    *
    * Reads the parent diagram file and checks if the node has a linkedDiagramPath.
-   * No external relationships file needed - link is embedded in node data.
+   * Supports both v1.0.0 (timeline/snapshots) and legacy formats.
    *
    * @param parentPath - Path to parent .bac4 file
    * @param parentNodeId - ID of node to check
@@ -326,21 +304,42 @@ export class DiagramNavigationService {
       const parentContent = await this.plugin.app.vault.adapter.read(parentPath);
       const parentData = JSON.parse(parentContent);
 
+      // Extract nodes (v1.0.0 uses timeline snapshots, legacy uses root-level nodes)
+      let nodes: Array<{ id: string; data?: { linkedDiagramPath?: string } }>;
+
+      if (parentData.timeline) {
+        // v1.0.0 format - get working snapshot (first in order)
+        const workingSnapshotId = parentData.timeline.snapshotOrder?.[0];
+        const workingSnapshot = parentData.timeline.snapshots?.find((s: { id: string }) => s.id === workingSnapshotId);
+
+        if (!workingSnapshot) {
+          console.error('BAC4 NavService: Working snapshot not found in timeline');
+          return null;
+        }
+
+        nodes = workingSnapshot.nodes || [];
+        console.log('BAC4 NavService: Using v1.0.0 timeline format, working snapshot:', workingSnapshotId);
+      } else {
+        // Legacy format
+        nodes = parentData.nodes || [];
+        console.log('BAC4 NavService: Using legacy format');
+      }
+
       // Find the node
-      const node = parentData.nodes.find((n: any) => n.id === parentNodeId);
+      const node = nodes.find((n) => n.id === parentNodeId);
       if (!node) {
         console.log('BAC4 NavService: Node not found:', parentNodeId);
         return null;
       }
 
-      // Check if node has linkedDiagramPath (v0.6.0)
+      // Check if node has linkedDiagramPath
       const linkedPath = node.data?.linkedDiagramPath;
       if (!linkedPath) {
         console.log('BAC4 NavService: Node has no linkedDiagramPath');
         return null;
       }
 
-      console.log('BAC4 NavService: Found child diagram (v0.6.0):', linkedPath);
+      console.log('BAC4 NavService: Found child diagram:', linkedPath);
       return linkedPath;
     } catch (error) {
       console.error('BAC4 NavService: Error reading parent diagram:', error);
@@ -352,10 +351,11 @@ export class DiagramNavigationService {
   // v0.6.0: getParentDiagram() removed - parent tracking via embedded links
 
   /**
-   * Navigate to parent diagram (v0.6.0: Scans vault for parent)
+   * Navigate to parent diagram (v1.0.0: Scans vault for parent)
    *
    * Finds the parent diagram by scanning all .bac4 files for a node that
    * has linkedDiagramPath pointing to the current diagram.
+   * Supports both v1.0.0 (timeline/snapshots) and legacy formats.
    *
    * @param currentPath - Path to current .bac4 file
    * @returns Path to parent diagram, or null if no parent found
@@ -376,16 +376,27 @@ export class DiagramNavigationService {
           const content = await this.plugin.app.vault.adapter.read(file.path);
           const data = JSON.parse(content);
 
-          // Check if any node links to current diagram
-          if (data.nodes && Array.isArray(data.nodes)) {
-            const hasLink = data.nodes.some(
-              (node: any) => node.data?.linkedDiagramPath === currentPath
-            );
+          // Extract nodes based on format
+          let nodes: Array<{ data?: { linkedDiagramPath?: string } }> = [];
 
-            if (hasLink) {
-              console.log('BAC4: Found parent diagram:', file.path);
-              return file.path;
-            }
+          if (data.timeline) {
+            // v1.0.0 format - get working snapshot (first in order)
+            const workingSnapshotId = data.timeline.snapshotOrder?.[0];
+            const workingSnapshot = data.timeline.snapshots?.find((s: { id: string }) => s.id === workingSnapshotId);
+            nodes = workingSnapshot?.nodes || [];
+          } else {
+            // Legacy format
+            nodes = data.nodes || [];
+          }
+
+          // Check if any node links to current diagram
+          const hasLink = nodes.some(
+            (node) => node.data?.linkedDiagramPath === currentPath
+          );
+
+          if (hasLink) {
+            console.log('BAC4: Found parent diagram:', file.path);
+            return file.path;
           }
         } catch (error) {
           // Skip files that can't be read or parsed
@@ -512,17 +523,16 @@ export class DiagramNavigationService {
   }
 
   /**
-   * Link a parent node to an existing child diagram
+   * Link a parent node to an existing child diagram (v1.0.0)
    *
    * Creates or updates a parent-child relationship to point to an existing
-   * diagram file. Useful for connecting nodes to diagrams created separately.
-   * Replaces any existing link for this node.
+   * diagram file. Supports both v1.0.0 (timeline/snapshots) and legacy formats.
    *
    * @param parentPath - Path to the parent .bac4 file
    * @param parentNodeId - ID of the node in parent diagram
    * @param parentNodeLabel - Label of the node (for relationship metadata)
    * @param childDiagramPath - Path to the existing child .bac4 file
-   * @throws Error if parent or child diagram not found in registry
+   * @throws Error if parent or child diagram not found
    *
    * @example
    * ```ts
@@ -539,10 +549,10 @@ export class DiagramNavigationService {
   async linkToExistingDiagram(
     parentPath: string,
     parentNodeId: string,
-    parentNodeLabel: string,
+    _parentNodeLabel: string,
     childDiagramPath: string
   ): Promise<void> {
-    console.log('BAC4: Linking node to existing diagram (v0.6.0)', {
+    console.log('BAC4: Linking node to existing diagram (v1.0.0)', {
       parentPath,
       parentNodeId,
       childDiagramPath,
@@ -553,27 +563,61 @@ export class DiagramNavigationService {
       const content = await this.plugin.app.vault.adapter.read(parentPath);
       const data = JSON.parse(content);
 
-      // 2. Find the node by ID
-      const nodeIndex = data.nodes.findIndex((n: any) => n.id === parentNodeId);
-      if (nodeIndex === -1) {
-        throw new Error(`Node ${parentNodeId} not found in diagram`);
+      // 2. Determine format and update nodes
+      if (data.timeline) {
+        // v1.0.0 format - update working snapshot (first in order)
+        const workingSnapshotId = data.timeline.snapshotOrder?.[0];
+        const snapshotIndex = data.timeline.snapshots?.findIndex((s: { id: string }) => s.id === workingSnapshotId);
+
+        if (snapshotIndex === -1 || snapshotIndex === undefined) {
+          throw new Error('Working snapshot not found in timeline');
+        }
+
+        const nodes = data.timeline.snapshots[snapshotIndex].nodes || [];
+        const nodeIndex = nodes.findIndex((n: { id: string }) => n.id === parentNodeId);
+
+        if (nodeIndex === -1) {
+          throw new Error(`Node ${parentNodeId} not found in working snapshot`);
+        }
+
+        // Set linkedDiagramPath
+        if (!nodes[nodeIndex].data) {
+          nodes[nodeIndex].data = {};
+        }
+        nodes[nodeIndex].data.linkedDiagramPath = childDiagramPath;
+
+        // Update metadata
+        if (!data.metadata) {
+          data.metadata = {};
+        }
+        data.metadata.updatedAt = new Date().toISOString();
+
+        console.log('BAC4: Updated working snapshot with link (v1.0.0)');
+      } else {
+        // Legacy format
+        const nodeIndex = data.nodes.findIndex((n: { id: string }) => n.id === parentNodeId);
+        if (nodeIndex === -1) {
+          throw new Error(`Node ${parentNodeId} not found in diagram`);
+        }
+
+        // Set linkedDiagramPath
+        if (!data.nodes[nodeIndex].data) {
+          data.nodes[nodeIndex].data = {};
+        }
+        data.nodes[nodeIndex].data.linkedDiagramPath = childDiagramPath;
+
+        // Update metadata
+        if (!data.metadata) {
+          data.metadata = {};
+        }
+        data.metadata.updatedAt = new Date().toISOString();
+
+        console.log('BAC4: Updated legacy format with link');
       }
 
-      // 3. Set linkedDiagramPath in node data
-      if (!data.nodes[nodeIndex].data) {
-        data.nodes[nodeIndex].data = {};
-      }
-      data.nodes[nodeIndex].data.linkedDiagramPath = childDiagramPath;
-
-      // 4. Update metadata
-      if (!data.metadata) {
-        data.metadata = {};
-      }
-      data.metadata.updatedAt = new Date().toISOString();
-
-      // 5. Write back
+      // 3. Write back
       await this.plugin.app.vault.adapter.write(parentPath, JSON.stringify(data, null, 2));
-      console.log('BAC4: ✅ Linked node to diagram in file (v0.6.0)');
+      console.log('BAC4: ✅ Linked node to diagram in file');
     } catch (error) {
       console.error('BAC4: Error linking diagram:', error);
       throw error;
@@ -592,46 +636,79 @@ export class DiagramNavigationService {
   }
 
   /**
-   * Unlink a node from its child diagram (v0.6.0)
+   * Unlink a node from its child diagram (v1.0.0)
    *
    * Removes the linkedDiagramPath from the node's data in the parent diagram file.
-   * No longer updates diagram-relationships.json.
+   * Supports both v1.0.0 (timeline/snapshots) and legacy formats.
    *
    * @param parentPath - Path to parent .bac4 file
    * @param parentNodeId - ID of node to unlink
    */
   async unlinkNode(parentPath: string, parentNodeId: string): Promise<void> {
-    console.log('BAC4: Unlinking node (v0.6.0)', { parentPath, parentNodeId });
+    console.log('BAC4: Unlinking node (v1.0.0)', { parentPath, parentNodeId });
 
     try {
       // 1. Read parent diagram file
       const content = await this.plugin.app.vault.adapter.read(parentPath);
       const data = JSON.parse(content);
 
-      // 2. Find the node by ID
-      const nodeIndex = data.nodes.findIndex((n: any) => n.id === parentNodeId);
-      if (nodeIndex === -1) {
-        console.warn('BAC4: Node not found, nothing to unlink');
-        return;
-      }
+      // 2. Determine format and update nodes
+      if (data.timeline) {
+        // v1.0.0 format - update working snapshot (first in order)
+        const workingSnapshotId = data.timeline.snapshotOrder?.[0];
+        const snapshotIndex = data.timeline.snapshots?.findIndex((s: { id: string }) => s.id === workingSnapshotId);
 
-      // 3. Remove linkedDiagramPath
-      if (data.nodes[nodeIndex].data && data.nodes[nodeIndex].data.linkedDiagramPath) {
-        delete data.nodes[nodeIndex].data.linkedDiagramPath;
-        console.log('BAC4: Removed linkedDiagramPath from node data');
+        if (snapshotIndex === -1 || snapshotIndex === undefined) {
+          throw new Error('Working snapshot not found in timeline');
+        }
+
+        const nodes = data.timeline.snapshots[snapshotIndex].nodes || [];
+        const nodeIndex = nodes.findIndex((n: { id: string }) => n.id === parentNodeId);
+
+        if (nodeIndex === -1) {
+          console.warn('BAC4: Node not found in working snapshot, nothing to unlink');
+          return;
+        }
+
+        // Remove linkedDiagramPath
+        if (nodes[nodeIndex].data && nodes[nodeIndex].data.linkedDiagramPath) {
+          delete nodes[nodeIndex].data.linkedDiagramPath;
+          console.log('BAC4: Removed linkedDiagramPath from working snapshot (v1.0.0)');
+        } else {
+          console.log('BAC4: Node has no linkedDiagramPath to remove');
+        }
+
+        // Update metadata
+        if (!data.metadata) {
+          data.metadata = {};
+        }
+        data.metadata.updatedAt = new Date().toISOString();
       } else {
-        console.log('BAC4: Node has no linkedDiagramPath to remove');
+        // Legacy format
+        const nodeIndex = data.nodes.findIndex((n: { id: string }) => n.id === parentNodeId);
+        if (nodeIndex === -1) {
+          console.warn('BAC4: Node not found, nothing to unlink');
+          return;
+        }
+
+        // Remove linkedDiagramPath
+        if (data.nodes[nodeIndex].data && data.nodes[nodeIndex].data.linkedDiagramPath) {
+          delete data.nodes[nodeIndex].data.linkedDiagramPath;
+          console.log('BAC4: Removed linkedDiagramPath from node data (legacy)');
+        } else {
+          console.log('BAC4: Node has no linkedDiagramPath to remove');
+        }
+
+        // Update metadata
+        if (!data.metadata) {
+          data.metadata = {};
+        }
+        data.metadata.updatedAt = new Date().toISOString();
       }
 
-      // 4. Update metadata
-      if (!data.metadata) {
-        data.metadata = {};
-      }
-      data.metadata.updatedAt = new Date().toISOString();
-
-      // 5. Write back
+      // 3. Write back
       await this.plugin.app.vault.adapter.write(parentPath, JSON.stringify(data, null, 2));
-      console.log('BAC4: ✅ Unlinked node in file (v0.6.0)');
+      console.log('BAC4: ✅ Unlinked node in file');
     } catch (error) {
       console.error('BAC4: Error unlinking node:', error);
       throw error;

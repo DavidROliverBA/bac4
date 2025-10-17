@@ -376,8 +376,8 @@ git log --oneline architecture/ --since="3 months ago"
 3. Install and enable
 
 **Option B: Manual Install** (available now)
-1. Download from [GitHub Releases](https://github.com/DavidROliverBA/bac4-plugin/releases/latest)
-2. Extract to `.obsidian/plugins/bac4-plugin/`
+1. Download from [GitHub Releases](https://github.com/DavidROliverBA/bac4/releases/latest)
+2. Extract to `.obsidian/plugins/bac4/`
 3. Reload Obsidian, enable the plugin
 
 ### Step 3: Create Your First Diagram
@@ -396,9 +396,9 @@ git log --oneline architecture/ --since="3 months ago"
 
 ### Step 4: Explore the Docs
 
-- [Quick Start Guide](https://github.com/DavidROliverBA/bac4-plugin#-quick-start)
-- [MCP Workflow (Claude Desktop Integration)](https://github.com/DavidROliverBA/bac4-plugin/blob/main/docs/MCP_WORKFLOW_GUIDE.md)
-- [AI Integration Guide](https://github.com/DavidROliverBA/bac4-plugin/blob/main/docs/AI_INTEGRATION_COMPLETE.md)
+- [Quick Start Guide](https://github.com/DavidROliverBA/bac4#-quick-start)
+- [MCP Workflow (Claude Desktop Integration)](https://github.com/DavidROliverBA/bac4/blob/main/docs/MCP_WORKFLOW_GUIDE.md)
+- [AI Integration Guide](https://github.com/DavidROliverBA/bac4/blob/main/docs/AI_INTEGRATION_COMPLETE.md)
 
 ---
 
@@ -440,11 +440,11 @@ Stop spending nights updating Visio diagrams. Start spending that time on the ar
 
 ## Try BAC4 Today
 
-**GitHub:** [https://github.com/DavidROliverBA/bac4-plugin](https://github.com/DavidROliverBA/bac4-plugin)
+**GitHub:** [https://github.com/DavidROliverBA/bac4](https://github.com/DavidROliverBA/bac4)
 
-**Latest Release:** [v0.7.0](https://github.com/DavidROliverBA/bac4-plugin/releases/latest)
+**Latest Release:** [v0.7.0](https://github.com/DavidROliverBA/bac4/releases/latest)
 
-**Documentation:** [Full docs on GitHub](https://github.com/DavidROliverBA/bac4-plugin#readme)
+**Documentation:** [Full docs on GitHub](https://github.com/DavidROliverBA/bac4#readme)
 
 **Questions?** Open an issue on GitHub or find me on the Obsidian Discord.
 
@@ -467,4 +467,4 @@ Stop spending nights updating Visio diagrams. Start spending that time on the ar
 
 ---
 
-*Did BAC4 save you time? [Star the repo on GitHub](https://github.com/DavidROliverBA/bac4-plugin) and share your story!*
+*Did BAC4 save you time? [Star the repo on GitHub](https://github.com/DavidROliverBA/bac4) and share your story!*

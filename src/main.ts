@@ -10,6 +10,7 @@ import {
 import { BAC4SettingsTab } from './ui/settings-tab';
 import { BAC4CanvasView } from './ui/canvas-view';
 import { hasBac4Diagram } from './utils/frontmatter-parser';
+import { TimelineService } from './services/TimelineService';
 import './styles.css';
 
 /**
@@ -152,7 +153,7 @@ export default class BAC4Plugin extends Plugin {
             let needsUpdate = false;
 
             // Update linkedDiagramPath and linkedMarkdownPath in nodes
-            const updatedNodes = data.nodes.map((node: any) => {
+            const updatedNodes = (data.nodes as Array<{ id: string; data?: { linkedDiagramPath?: string; linkedMarkdownPath?: string } }>).map((node) => {
               const updatedNode = { ...node };
 
               // Check linkedDiagramPath
@@ -278,19 +279,20 @@ export default class BAC4Plugin extends Plugin {
         }
       }
 
-      // Create empty Context diagram (v0.6.0 format with metadata)
+      // Create empty Context diagram (v1.0.0 format with timeline)
+      const now = new Date().toISOString();
+      const initialTimeline = TimelineService.createInitialTimeline([], [], 'Current');
       const emptyDiagram = {
-        version: '0.6.0',
+        version: '1.0.0',
         metadata: {
           diagramType: 'context',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
+          createdAt: now,
+          updatedAt: now,
         },
-        nodes: [],
-        edges: [],
+        timeline: initialTimeline,
       };
       await this.app.vault.adapter.write(contextPath, JSON.stringify(emptyDiagram, null, 2));
-      console.log('BAC4: Created empty Context diagram with v0.6.0 format');
+      console.log('BAC4: Created empty Context diagram with v1.0.0 format');
     }
 
     // Open Context diagram (v0.6.0: No registration needed, self-contained diagrams)
@@ -308,7 +310,7 @@ export default class BAC4Plugin extends Plugin {
   private checkAndActivateExistingDiagram(filePath: string): boolean {
     const existingLeaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_CANVAS);
     const existingLeaf = existingLeaves.find((leaf) => {
-      const view = leaf.view as any;
+      const view = leaf.view as { file?: { path?: string } };
       return view.file?.path === filePath;
     });
 
@@ -424,16 +426,17 @@ export default class BAC4Plugin extends Plugin {
       console.log('BAC4: Creating new diagram file:', fileName);
 
       // Create in default location (root of vault)
-      // v0.6.0 format with metadata
+      // v1.0.0 format with timeline
+      const now = new Date().toISOString();
+      const initialTimeline = TimelineService.createInitialTimeline([], [], 'Current');
       const initialData = {
-        version: '0.6.0',
+        version: '1.0.0',
         metadata: {
           diagramType: 'context',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
+          createdAt: now,
+          updatedAt: now,
         },
-        nodes: [],
-        edges: [],
+        timeline: initialTimeline,
       };
 
       const file = await this.app.vault.create(fileName, JSON.stringify(initialData, null, 2));
@@ -528,6 +531,30 @@ export default class BAC4Plugin extends Plugin {
         await this.importMCPGeneratedDiagram();
       },
     });
+
+    // Timeline Commands
+    this.addCommand({
+      id: 'bac4-add-snapshot',
+      name: 'Add Timeline Snapshot',
+      checkCallback: (checking: boolean) => {
+        // Only enable if a BAC4 diagram is open
+        const activeView = this.app.workspace.getActiveViewOfType(BAC4CanvasView);
+        if (!activeView) {
+          return false;
+        }
+
+        if (!checking) {
+          // Call the handleAddSnapshot method exposed by the view
+          if (activeView.handleAddSnapshot) {
+            activeView.handleAddSnapshot();
+          } else {
+            new Notice('Timeline not initialized yet. Please wait a moment and try again.');
+          }
+        }
+
+        return true;
+      },
+    });
   }
 
   /**
@@ -595,19 +622,20 @@ export default class BAC4Plugin extends Plugin {
               await this.app.vault.createFolder('BAC4');
             }
 
-            // Create file (v0.6.0 format with metadata)
+            // Create file (v1.0.0 format with timeline)
+            const now = new Date().toISOString();
+            const initialTimeline = TimelineService.createInitialTimeline(nodes, edges, 'Current');
             const diagramData = {
-              version: '0.6.0',
+              version: '1.0.0',
               metadata: {
                 diagramType,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
+                createdAt: now,
+                updatedAt: now,
               },
-              nodes,
-              edges,
+              timeline: initialTimeline,
             };
 
-            const file = await this.app.vault.create(
+            await this.app.vault.create(
               filePath,
               JSON.stringify(diagramData, null, 2)
             );
@@ -631,19 +659,20 @@ export default class BAC4Plugin extends Plugin {
               await this.app.vault.createFolder('BAC4');
             }
 
-            // Create empty diagram (v0.6.0 format with metadata)
+            // Create empty diagram (v1.0.0 format with timeline)
+            const now = new Date().toISOString();
+            const initialTimeline = TimelineService.createInitialTimeline([], [], 'Current');
             const emptyDiagram = {
-              version: '0.6.0',
+              version: '1.0.0',
               metadata: {
                 diagramType,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
+                createdAt: now,
+                updatedAt: now,
               },
-              nodes: [],
-              edges: [],
+              timeline: initialTimeline,
             };
 
-            const file = await this.app.vault.create(
+            await this.app.vault.create(
               filePath,
               JSON.stringify(emptyDiagram, null, 2)
             );
@@ -691,26 +720,6 @@ export default class BAC4Plugin extends Plugin {
     const mostRecent = bac4Files[0];
 
     console.log('BAC4: Most recent diagram:', mostRecent.path);
-
-    // Read the file to detect diagram type
-    const content = await this.app.vault.read(mostRecent);
-    const data = JSON.parse(content);
-
-    // Detect diagram type from nodes
-    let diagramType: 'context' | 'container' | 'component' = 'context';
-    if (data.nodes && data.nodes.length > 0) {
-      const hasCloudComponents = data.nodes.some((n: any) => n.type === 'cloudComponent');
-      const hasContainers = data.nodes.some((n: any) => n.type === 'container');
-      const hasSystems = data.nodes.some((n: any) => n.type === 'system' || n.type === 'person');
-
-      if (hasCloudComponents) {
-        diagramType = 'component';
-      } else if (hasContainers) {
-        diagramType = 'container';
-      } else if (hasSystems) {
-        diagramType = 'context';
-      }
-    }
 
     // Open the diagram (v0.6.0: No registration needed, self-contained diagrams)
     await this.openCanvasView(mostRecent.path);

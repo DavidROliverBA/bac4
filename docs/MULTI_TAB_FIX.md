@@ -206,11 +206,11 @@ npm run build
 
 ```bash
 # 1. Build the plugin
-cd /Users/david.oliver/Documents/GitHub/bac4-plugin
+cd /Users/david.oliver/Documents/GitHub/bac4
 npm run build
 
 # 2. Copy to test vault
-cp main.js manifest.json "/Users/david.oliver/Documents/Vaults/TestVault/.obsidian/plugins/bac4-plugin/"
+cp main.js manifest.json "/Users/david.oliver/Documents/Vaults/TestVault/.obsidian/plugins/bac4/"
 
 # 3. Reload Obsidian
 # Press Cmd+R or restart Obsidian completely

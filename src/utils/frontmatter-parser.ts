@@ -11,7 +11,7 @@ export interface FrontmatterData {
   bac4_data?: string;
   bac4_created?: string;
   bac4_updated?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface ParsedMarkdown {

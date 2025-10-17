@@ -26,9 +26,19 @@ import { DirectionalEdge } from './edges/DirectionalEdge';
 import { ComponentPalette } from './components/ComponentPalette';
 import { PropertyPanel } from './components/PropertyPanel';
 import { UnifiedToolbar } from './components/UnifiedToolbar';
+import { TimelineToolbar } from './components/TimelineToolbar';
+import { AddSnapshotModal } from './components/AddSnapshotModal';
+import { SnapshotManagerModal } from './components/SnapshotManager';
+import { AnnotationType } from './components/AnnotationPalette';
+import { AnnotationOverlay } from './components/AnnotationOverlay';
+import { ChangesSummaryPanel } from './components/ChangesSummaryPanel';
 import { ComponentLibraryService } from '../services/component-library-service';
 import { DiagramNavigationService } from '../services/diagram-navigation-service';
+import { TimelineService } from '../services/TimelineService';
+import { ChangeDetectionService } from '../services/ChangeDetectionService';
+import { AnnotationService } from '../services/AnnotationService';
 import type { CanvasNodeData, ReactFlowInstance } from '../types/canvas-types';
+import type { Timeline, Annotation, ChangeSet } from '../types/timeline';
 import { getNavigationIconVisibility } from '../utils/navigation-utils';
 
 // Import custom hooks
@@ -47,6 +57,7 @@ import { shouldAutoCreateChild, getDiagramName } from './canvas/utils/canvas-uti
 interface CanvasEditorProps {
   plugin: BAC4Plugin;
   filePath?: string;
+  view?: BAC4CanvasView;
 }
 
 // <AI_MODIFIABLE>
@@ -69,12 +80,14 @@ const edgeTypes: EdgeTypes = {
 };
 // </AI_MODIFIABLE>
 
-const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath }) => {
+const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath, view }) => {
   console.log('CanvasEditor: Component rendered with filePath =', filePath);
 
   // State management
   const [nodes, setNodes, onNodesChange] = useNodesState<CanvasNodeData>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const [timeline, setTimeline] = React.useState<Timeline | null>(null);
+  const [annotations, setAnnotations] = React.useState<Annotation[]>([]);
   const reactFlowWrapper = React.useRef<HTMLDivElement>(null);
   const [reactFlowInstance, setReactFlowInstance] = React.useState<ReactFlowInstance | null>(null);
   const [selectedNode, setSelectedNode] = React.useState<Node<CanvasNodeData> | null>(null);
@@ -83,6 +96,24 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath }) => {
     'context'
   );
   const nodeCounterRef = React.useRef(0);
+
+  // Change detection state (v1.0.0)
+  const [showChanges, setShowChanges] = React.useState(false);
+  const [baseSnapshotId, setBaseSnapshotId] = React.useState<string | null>(null);
+  const [currentChangeSet, setCurrentChangeSet] = React.useState<ChangeSet | null>(null);
+  const [beforeSnapshotNodes, setBeforeSnapshotNodes] = React.useState<Node[]>([]);
+  const [beforeSnapshotEdges, setBeforeSnapshotEdges] = React.useState<Edge[]>([]);
+
+  // Annotation state (v1.0.0)
+  const [selectedAnnotationId, setSelectedAnnotationId] = React.useState<string | null>(null);
+
+  // Timeline ref for auto-save (v1.0.0 - prevents race conditions)
+  const timelineRef = React.useRef<Timeline | null>(null);
+
+  // Keep ref in sync with state
+  React.useEffect(() => {
+    timelineRef.current = timeline;
+  }, [timeline]);
 
   // Services
   const [componentService] = React.useState(() => {
@@ -218,8 +249,13 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath }) => {
     diagramType,
     nodes,
     edges,
+    timeline,
+    timelineRef,
+    annotations,
     setNodes,
     setEdges,
+    setTimeline,
+    setAnnotations,
     setDiagramType,
     nodeCounterRef,
     navigationService,
@@ -267,7 +303,12 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath }) => {
     const hasParent = diagramType !== 'context';
 
     // v0.6.0: Check linkedDiagramPath instead of hasChildDiagram
-    const hasChildDiagram = !!(selectedNode.data as any).linkedDiagramPath;
+    // Type guard: linkedDiagramPath exists on SystemNodeData and ContainerNodeData
+    const hasChildDiagram = !!(
+      selectedNode.data &&
+      'linkedDiagramPath' in selectedNode.data &&
+      selectedNode.data.linkedDiagramPath
+    );
 
     return getNavigationIconVisibility(
       selectedNode.type,
@@ -276,6 +317,289 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath }) => {
       hasParent
     );
   }, [selectedNode, filePath, diagramType]);
+
+  /**
+   * Timeline Handlers (v1.0.0)
+   */
+  const handleSnapshotSwitch = React.useCallback(
+    (snapshotId: string) => {
+      if (!timeline) return;
+
+      const result = TimelineService.switchSnapshot(snapshotId, timeline);
+      let updatedNodes = result.nodes;
+      let updatedEdges = result.edges;
+
+      // Apply change detection if enabled
+      if (showChanges && baseSnapshotId && baseSnapshotId !== snapshotId) {
+        const baseSnapshot = TimelineService.getSnapshotById(baseSnapshotId, timeline);
+        const currentSnapshot = TimelineService.getSnapshotById(snapshotId, timeline);
+
+        if (baseSnapshot && currentSnapshot) {
+          const changes = ChangeDetectionService.compareSnapshots(
+            baseSnapshot,
+            currentSnapshot
+          );
+
+          // Store changeSet and before snapshot data for ChangesSummaryPanel
+          setCurrentChangeSet(changes);
+          setBeforeSnapshotNodes(baseSnapshot.nodes);
+          setBeforeSnapshotEdges(baseSnapshot.edges);
+
+          // Apply change indicators to nodes
+          updatedNodes = ChangeDetectionService.applyNodeChangeIndicators(
+            currentSnapshot.nodes,
+            changes
+          );
+
+          // Apply change indicators to edges
+          updatedEdges = ChangeDetectionService.applyEdgeChangeIndicators(
+            currentSnapshot.edges,
+            changes
+          );
+
+          console.log('BAC4: Applied change indicators', {
+            nodeChanges: changes.addedNodes.length + changes.modifiedNodes.length + changes.removedNodes.length,
+            edgeChanges: changes.addedEdges.length + changes.removedEdges.length,
+          });
+        }
+      } else {
+        // Clear change data when not comparing
+        setCurrentChangeSet(null);
+        setBeforeSnapshotNodes([]);
+        setBeforeSnapshotEdges([]);
+      }
+
+      setNodes(updatedNodes);
+      setEdges(updatedEdges);
+      setAnnotations(result.annotations);
+
+      // Update timeline's currentSnapshotId
+      setTimeline({
+        ...timeline,
+        currentSnapshotId: snapshotId,
+      });
+
+      console.log('BAC4: Switched to snapshot:', snapshotId);
+    },
+    [timeline, setNodes, setEdges, setAnnotations, showChanges, baseSnapshotId]
+  );
+
+  const handleAddSnapshot = React.useCallback(() => {
+    if (!timeline) return;
+
+    // CRITICAL FIX: Always capture from CANVAS STATE, not from stored snapshot
+    // The stored snapshot may be outdated due to auto-save debounce (1 second delay)
+    // We must use the current canvas state to get the latest changes
+    console.log('BAC4: 📸 Creating snapshot from CANVAS STATE', {
+      canvasNodeCount: nodes.length,
+      canvasEdgeCount: edges.length,
+      canvasAnnotationCount: annotations.length,
+      timelineSnapshotCount: timeline.snapshots.length,
+    });
+
+    const modal = new AddSnapshotModal(
+      plugin.app,
+      nodes,         // ← FIXED: Use current canvas state
+      edges,         // ← FIXED: Use current canvas state
+      annotations,   // ← FIXED: Use current canvas state
+      timeline,
+      (updatedTimeline: Timeline, newSnapshotId: string) => {
+        console.log('BAC4: 📸 Snapshot created:', newSnapshotId);
+        console.log('BAC4: Updated timeline snapshot count:', updatedTimeline.snapshots.length);
+
+        // Update timeline - stay on currently selected snapshot (all snapshots editable)
+        setTimeline(updatedTimeline);
+
+        console.log('BAC4: ✅ Snapshot created, staying on current snapshot');
+      }
+    );
+    modal.open();
+  }, [plugin.app, timeline, nodes, edges, annotations, setNodes, setEdges, setAnnotations, setTimeline]);
+
+  // Expose handleAddSnapshot to the view instance for command palette access
+  React.useEffect(() => {
+    if (view) {
+      view.handleAddSnapshot = handleAddSnapshot;
+    }
+    return () => {
+      if (view) {
+        view.handleAddSnapshot = null;
+      }
+    };
+  }, [view, handleAddSnapshot]);
+
+  const handleManageSnapshots = React.useCallback(() => {
+    if (!timeline) return;
+
+    const modal = new SnapshotManagerModal(
+      plugin.app,
+      timeline,
+      (updatedTimeline: Timeline) => {
+        setTimeline(updatedTimeline);
+      }
+    );
+    modal.open();
+  }, [plugin.app, timeline]);
+
+  /**
+   * Toggle change indicators
+   */
+  const handleToggleChanges = React.useCallback(() => {
+    setShowChanges((prev) => {
+      const newValue = !prev;
+
+      // When enabling change detection, set base snapshot to current snapshot
+      if (newValue && timeline) {
+        setBaseSnapshotId(timeline.currentSnapshotId);
+        console.log('BAC4: Change detection enabled, base snapshot:', timeline.currentSnapshotId);
+      } else {
+        // When disabling, clear change indicators by re-switching to current snapshot
+        if (timeline) {
+          const currentSnapshot = TimelineService.getCurrentSnapshot(timeline);
+          setNodes(currentSnapshot.nodes);
+          setEdges(currentSnapshot.edges);
+        }
+        setBaseSnapshotId(null);
+        // Clear change data
+        setCurrentChangeSet(null);
+        setBeforeSnapshotNodes([]);
+        setBeforeSnapshotEdges([]);
+        console.log('BAC4: Change detection disabled');
+      }
+
+      return newValue;
+    });
+  }, [timeline, setNodes, setEdges]);
+
+  /**
+   * Keyboard shortcuts for timeline navigation (Cmd+[, Cmd+])
+   */
+  React.useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (!timeline || timeline.snapshots.length < 2) return;
+
+      const currentSnapshot = TimelineService.getCurrentSnapshot(timeline);
+
+      // Cmd+[ - Previous snapshot
+      if (event.metaKey && event.key === '[') {
+        event.preventDefault();
+        const previous = TimelineService.getPreviousSnapshot(currentSnapshot.id, timeline);
+        if (previous) {
+          handleSnapshotSwitch(previous.id);
+        }
+      }
+
+      // Cmd+] - Next snapshot
+      if (event.metaKey && event.key === ']') {
+        event.preventDefault();
+        const next = TimelineService.getNextSnapshot(currentSnapshot.id, timeline);
+        if (next) {
+          handleSnapshotSwitch(next.id);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [timeline, handleSnapshotSwitch]);
+
+  /**
+   * Annotation Handlers (v1.0.0)
+   */
+  const handleAddAnnotation = React.useCallback(
+    (type: AnnotationType) => {
+      if (!timeline) return;
+
+      // Create annotation at center of viewport
+      const viewportCenter = reactFlowInstance
+        ? reactFlowInstance.project({ x: window.innerWidth / 2, y: window.innerHeight / 2 })
+        : { x: 200, y: 200 };
+
+      const annotation = AnnotationService.createAnnotation({
+        type,
+        position: { x: viewportCenter.x, y: viewportCenter.y },
+        snapshotId: timeline.currentSnapshotId,
+        properties: {
+          text: type === 'sticky-note' || type === 'text-box' ? 'New annotation...' : '',
+          color: type === 'sticky-note' ? '#FFD700' : type === 'text-box' ? '#FFFFFF' : '#90CAF9',
+          width: type === 'sticky-note' ? 200 : type === 'text-box' ? 250 : 150,
+          height: type === 'sticky-note' ? 150 : type === 'text-box' ? 100 : 150,
+          linkedNodeId: null,
+        },
+      });
+
+      const updatedAnnotations = [...annotations, annotation];
+      setAnnotations(updatedAnnotations);
+      setSelectedAnnotationId(annotation.id);
+
+      console.log('BAC4: Created annotation:', annotation.type, annotation.id);
+    },
+    [timeline, annotations, reactFlowInstance]
+  );
+
+  const handleAnnotationClick = React.useCallback((id: string) => {
+    console.log('BAC4: handleAnnotationClick called with id =', id);
+    setSelectedAnnotationId(id);
+    setSelectedNode(null);
+    setSelectedEdge(null);
+    console.log('BAC4: ✅ Annotation selected:', id);
+  }, []);
+
+  const handleAnnotationDrag = React.useCallback(
+    (id: string, x: number, y: number) => {
+      const updated = annotations.map((ann) =>
+        ann.id === id ? { ...ann, position: { x, y } } : ann
+      );
+      setAnnotations(updated);
+    },
+    [annotations]
+  );
+
+  const handleAnnotationDragEnd = React.useCallback(
+    (id: string) => {
+      console.log('BAC4: Annotation drag ended:', id);
+      // Save is handled by auto-save effect
+    },
+    []
+  );
+
+  const handleAnnotationTextUpdate = React.useCallback(
+    (id: string, text: string, formatting?: { fontSize?: number; bold?: boolean; underline?: boolean }) => {
+      const updated = annotations.map((ann) =>
+        ann.id === id ? { ...ann, data: { ...ann.data, text, ...formatting } } : ann
+      );
+      setAnnotations(updated);
+      console.log('BAC4: Annotation updated:', id, formatting ? 'with formatting' : '');
+    },
+    [annotations]
+  );
+
+  const handleAnnotationResize = React.useCallback(
+    (id: string, width: number, height: number) => {
+      const updated = annotations.map((ann) =>
+        ann.id === id ? { ...ann, data: { ...ann.data, width, height } } : ann
+      );
+      setAnnotations(updated);
+    },
+    [annotations]
+  );
+
+  const handleDeleteAnnotation = React.useCallback(() => {
+    console.log('BAC4: handleDeleteAnnotation called, selectedAnnotationId =', selectedAnnotationId);
+    console.log('BAC4: Current annotations count =', annotations.length);
+
+    if (!selectedAnnotationId) {
+      console.log('BAC4: ❌ No annotation selected, returning early');
+      return;
+    }
+
+    const updated = annotations.filter((ann) => ann.id !== selectedAnnotationId);
+    console.log('BAC4: ✅ Filtered annotations, new count =', updated.length);
+
+    setAnnotations(updated);
+    setSelectedAnnotationId(null);
+    console.log('BAC4: ✅ Deleted annotation:', selectedAnnotationId);
+  }, [selectedAnnotationId, annotations]);
 
   return (
     <div
@@ -291,15 +615,33 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath }) => {
         currentType={diagramType}
         onTypeChange={diagramActions.handleDiagramTypeChange}
         onAddNode={canvasState.addNodeGeneric}
+        onAddAnnotation={handleAddAnnotation}
         selectedNode={selectedNode}
+        selectedAnnotationId={selectedAnnotationId}
         onDeleteNode={() => selectedNode && nodeHandlers.handleDeleteNode(selectedNode.id)}
+        onDeleteAnnotation={handleDeleteAnnotation}
         onRenameDiagram={diagramActions.handleRenameDiagram}
+        onAddSnapshot={timeline ? handleAddSnapshot : undefined}
         diagramName={filePath ? getDiagramName(filePath) : 'diagram'}
+        timeline={timeline}
       />
+
+      {/* Timeline Toolbar (v1.0.0 - shows when 2+ snapshots) */}
+      {timeline && (
+        <TimelineToolbar
+          timeline={timeline}
+          onSnapshotSwitch={handleSnapshotSwitch}
+          onAddSnapshot={handleAddSnapshot}
+          onManageSnapshots={handleManageSnapshots}
+          showChanges={showChanges}
+          onToggleChanges={handleToggleChanges}
+        />
+      )}
 
       {/* React Flow Canvas */}
       <div
         ref={reactFlowWrapper}
+        className="bac4-canvas-export-container"
         style={{
           width: '100%',
           flex: 1,
@@ -430,6 +772,29 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath }) => {
           />
         )}
 
+        {/* Annotation Overlay (v1.0.0) */}
+        <AnnotationOverlay
+          annotations={annotations}
+          selectedAnnotationId={selectedAnnotationId}
+          onAnnotationClick={handleAnnotationClick}
+          onAnnotationDrag={handleAnnotationDrag}
+          onAnnotationDragEnd={handleAnnotationDragEnd}
+          onAnnotationTextUpdate={handleAnnotationTextUpdate}
+          onAnnotationResize={handleAnnotationResize}
+        />
+
+        {/* Changes Summary Panel (v1.0.0) */}
+        {currentChangeSet && (
+          <ChangesSummaryPanel
+            changeSet={currentChangeSet}
+            nodes={nodes}
+            edges={edges}
+            beforeNodes={beforeSnapshotNodes}
+            beforeEdges={beforeSnapshotEdges}
+            isVisible={showChanges}
+          />
+        )}
+
         {/* Property Panel */}
         <PropertyPanel
           node={selectedNode}
@@ -480,6 +845,8 @@ export class BAC4CanvasView extends ItemView {
   root: ReactDOM.Root | null = null;
   filePath?: string;
   file?: TFile;
+  // Handler for adding timeline snapshots (set by React component)
+  handleAddSnapshot: (() => void) | null = null;
 
   constructor(leaf: WorkspaceLeaf, plugin: BAC4Plugin, filePath?: string) {
     super(leaf);
@@ -555,7 +922,9 @@ export class BAC4CanvasView extends ItemView {
       console.log('BAC4CanvasView: Set filePath from state.filePath:', this.filePath);
     }
 
-    await super.setState(state, result);
+    // Parent ItemView.setState expects any, but we receive unknown
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await super.setState(state, result as any);
 
     // Re-render if we have a root and filePath changed
     if (this.root && this.filePath) {
@@ -575,6 +944,7 @@ export class BAC4CanvasView extends ItemView {
 
   async onLoadFile(file: TFile): Promise<void> {
     console.log('BAC4CanvasView: ⚠️ onLoadFile called with', file.path);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     console.log('BAC4CanvasView: Current leaf ID:', (this.leaf as any).id);
 
     // CRITICAL: Check for duplicates BEFORE setting file
@@ -585,6 +955,7 @@ export class BAC4CanvasView extends ItemView {
       const view = leaf.view as BAC4CanvasView;
       const hasFile = view.file?.path === file.path || view.filePath === file.path;
       if (hasFile) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         console.log('BAC4CanvasView: Leaf', (leaf as any).id, 'has file', file.path);
       }
       return hasFile && leaf !== this.leaf;
@@ -642,7 +1013,7 @@ export class BAC4CanvasView extends ItemView {
     this.root.render(
       <React.StrictMode>
         <ReactFlowProvider key={this.filePath || 'no-file'}>
-          <CanvasEditor plugin={this.plugin} filePath={this.filePath} />
+          <CanvasEditor plugin={this.plugin} filePath={this.filePath} view={this} />
         </ReactFlowProvider>
       </React.StrictMode>
     );
@@ -660,6 +1031,7 @@ export class BAC4CanvasView extends ItemView {
     }
 
     // Check if leaf has a view with a file
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const leaf = this.leaf as any;
     if (leaf.view?.file) {
       this.file = leaf.view.file;
@@ -671,9 +1043,10 @@ export class BAC4CanvasView extends ItemView {
     if (!this.filePath && leaf.getViewState) {
       const state = leaf.getViewState();
       console.log('BAC4CanvasView: Checking leaf state:', state);
-      if (state?.state?.file) {
-        this.filePath = state.state.file;
-        const file = this.app.vault.getAbstractFileByPath(this.filePath);
+      if (state?.state?.file && typeof state.state.file === 'string') {
+        const pathFromState = state.state.file;
+        this.filePath = pathFromState;
+        const file = this.app.vault.getAbstractFileByPath(pathFromState);
         if (file) {
           this.file = file as TFile;
         }

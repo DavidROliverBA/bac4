@@ -27,7 +27,7 @@ BAC4: *generates complete diagram in 5 seconds*
 
 This is what 10x productivity looks like for solution architects.
 
-Download: https://github.com/DavidROliverBA/bac4-plugin
+Download: https://github.com/DavidROliverBA/bac4
 
 #AI #CloudArchitecture
 ```
@@ -71,7 +71,7 @@ And it's free.
 
 ROI: ∞
 
-Download: https://github.com/DavidROliverBA/bac4-plugin
+Download: https://github.com/DavidROliverBA/bac4
 
 #Productivity #CloudArchitecture
 ```
@@ -129,7 +129,7 @@ That's 48+ hours saved per year. At $150/hour, that's $7,200 in value.
 
 If you're a solution architect, enterprise architect, or technical lead managing cloud architectures, this tool will change how you work.
 
-Try it today: https://github.com/DavidROliverBA/bac4-plugin
+Try it today: https://github.com/DavidROliverBA/bac4
 
 Built with the BMAD Method in partnership with Claude Code.
 
@@ -171,7 +171,7 @@ Introducing BAC4: Architecture management that actually works.
 
 If you're tired of fighting with diagramming tools, give BAC4 a try.
 
-Download: https://github.com/DavidROliverBA/bac4-plugin
+Download: https://github.com/DavidROliverBA/bac4
 
 #SolutionArchitecture #EnterpriseArchitecture #CloudComputing #Productivity
 ```
@@ -211,7 +211,7 @@ Traditional tools (Visio, Lucidchart, PowerPoint) weren't built for cloud archit
 
 It's an Obsidian plugin, so it integrates with your knowledge base (if you use Obsidian). If not, Obsidian is free and works on all platforms.
 
-GitHub: https://github.com/DavidROliverBA/bac4-plugin
+GitHub: https://github.com/DavidROliverBA/bac4
 
 Would love feedback from the community!
 
@@ -242,7 +242,7 @@ Perfect for solution architects managing 3+ cloud projects.
 
 Runs as an Obsidian plugin (free, cross-platform).
 
-GitHub: https://github.com/DavidROliverBA/bac4-plugin
+GitHub: https://github.com/DavidROliverBA/bac4
 
 Questions welcome!
 ```
@@ -275,7 +275,7 @@ Your architecture diagrams should live with your technical notes, ADRs, runbooks
 
 **Current version:** v0.7.0 (production-ready)
 
-GitHub: https://github.com/DavidROliverBA/bac4-plugin
+GitHub: https://github.com/DavidROliverBA/bac4
 
 Installing:
 - Manual: Download from releases, extract to plugins folder
@@ -292,7 +292,7 @@ Feedback appreciated!
 ```
 **Title:** BAC4 – Git-native cloud architecture diagrams with AI generation
 
-**URL:** https://github.com/DavidROliverBA/bac4-plugin
+**URL:** https://github.com/DavidROliverBA/bac4
 
 **Optional comment to post:**
 
@@ -373,7 +373,7 @@ Your architecture diagrams should live with your technical notes, ADRs, and docu
 **Install:** GitHub releases (manual) or BRAT plugin
 **Submitting to:** Community Plugins (in review)
 
-GitHub: https://github.com/DavidROliverBA/bac4-plugin
+GitHub: https://github.com/DavidROliverBA/bac4
 
 Questions? Drop them below or open an issue on GitHub!
 
@@ -465,13 +465,13 @@ Not scattered across multiple SaaS platforms.
 ## Installation
 
 **Method 1: Manual (available now)**
-1. Download [latest release](https://github.com/DavidROliverBA/bac4-plugin/releases/latest)
-2. Extract to `.obsidian/plugins/bac4-plugin/`
+1. Download [latest release](https://github.com/DavidROliverBA/bac4/releases/latest)
+2. Extract to `.obsidian/plugins/bac4/`
 3. Reload Obsidian, enable plugin
 
 **Method 2: BRAT (beta testing)**
 1. Install BRAT plugin
-2. Add `DavidROliverBA/bac4-plugin`
+2. Add `DavidROliverBA/bac4`
 3. Enable BAC4
 
 **Method 3: Community Plugins (coming soon)**
@@ -479,7 +479,7 @@ Currently in review process!
 
 ## Documentation
 
-- **GitHub:** https://github.com/DavidROliverBA/bac4-plugin
+- **GitHub:** https://github.com/DavidROliverBA/bac4
 - **README:** Complete docs with quick start, features, examples
 - **MCP Workflow Guide:** How to use Claude Desktop integration
 - **AI Integration Guide:** Technical details on AI features
@@ -510,9 +510,9 @@ Optional costs:
 This is v0.7.0 - production-ready but actively evolving.
 
 If you:
-- Find bugs → [Open an issue](https://github.com/DavidROliverBA/bac4-plugin/issues)
-- Have feature ideas → [Start a discussion](https://github.com/DavidROliverBA/bac4-plugin/discussions)
-- Want to contribute → [See CONTRIBUTING.md](https://github.com/DavidROliverBA/bac4-plugin)
+- Find bugs → [Open an issue](https://github.com/DavidROliverBA/bac4/issues)
+- Have feature ideas → [Start a discussion](https://github.com/DavidROliverBA/bac4/discussions)
+- Want to contribute → [See CONTRIBUTING.md](https://github.com/DavidROliverBA/bac4)
 
 ## Who's It For?
 
@@ -530,7 +530,7 @@ If you:
 
 ## Try It!
 
-Download: https://github.com/DavidROliverBA/bac4-plugin/releases/latest
+Download: https://github.com/DavidROliverBA/bac4/releases/latest
 
 Create your first AI-generated diagram in 5 minutes!
 
@@ -579,7 +579,7 @@ And it's Git-native. Every diagram is version-controlled JSON. See exactly what 
 - Architecture reviews: 3 hours → 1 hour
 - 48+ hours saved per year
 
-**Try it:** https://github.com/DavidROliverBA/bac4-plugin
+**Try it:** https://github.com/DavidROliverBA/bac4
 
 Download takes 2 minutes. First AI-generated diagram takes 5 minutes.
 

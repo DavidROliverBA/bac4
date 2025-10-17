@@ -242,7 +242,7 @@ Return matching nodes and their relationships as a list.`;
    * Build prompt for documentation generation
    */
   private buildDocumentationPrompt(
-    diagrams: Array<{ path: string; content: any }>
+    diagrams: Array<{ path: string; content: unknown }>
   ): string {
     return `Generate comprehensive architecture documentation from these BAC4 diagrams:
 
@@ -361,8 +361,9 @@ Create a markdown document with:
 
       // Sanitize edges to remove explicit handle specifications
       // This allows React Flow to automatically connect to the closest handle
-      const sanitizedEdges = (parsed.edges || []).map((edge: any) => {
-        const { sourceHandle, targetHandle, ...rest } = edge;
+      const sanitizedEdges = (parsed.edges || []).map((edge: unknown) => {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { sourceHandle, targetHandle, ...rest } = edge as Record<string, unknown>;
         // Explicitly set to null to let React Flow calculate closest handle
         return {
           ...rest,

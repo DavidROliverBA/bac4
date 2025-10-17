@@ -358,7 +358,7 @@ If AI generation fails, the plugin:
 1. **Install Plugin**
    ```bash
    npm run build
-   cp main.js manifest.json /path/to/vault/.obsidian/plugins/bac4-plugin/
+   cp main.js manifest.json /path/to/vault/.obsidian/plugins/bac4/
    ```
 
 2. **Configure API Key**

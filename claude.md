@@ -76,7 +76,7 @@ All diagram controls consolidated in one horizontal bar:
 ## Project Structure
 
 ```
-bac4-plugin/
+bac4/
 ├── src/
 │   ├── main.ts                          # Plugin entry point
 │   ├── core/
@@ -234,7 +234,7 @@ npm run typecheck    # TypeScript type checking
 
 ### Installing in Obsidian
 1. Build the plugin: `npm run build`
-2. Symlink to vault: `ln -s /path/to/bac4-plugin /path/to/vault/.obsidian/plugins/bac4-plugin`
+2. Symlink to vault: `ln -s /path/to/bac4 /path/to/vault/.obsidian/plugins/bac4`
 3. Enable in Obsidian: Settings → Community Plugins → Enable "BAC4"
 
 ## Current Status
@@ -1530,7 +1530,7 @@ ReactFlowProvider is **REQUIRED** - React Flow uses Zustand for state management
 
 **ALWAYS test by:**
 1. ✅ Build the plugin: `npm run build`
-2. ✅ Copy to test vault: `cp main.js manifest.json /path/to/vault/.obsidian/plugins/bac4-plugin/`
+2. ✅ Copy to test vault: `cp main.js manifest.json /path/to/vault/.obsidian/plugins/bac4/`
 3. ✅ Reload Obsidian (Cmd+R or restart)
 4. ✅ Open 2-3 different diagram files in **separate tabs**
 5. ✅ Verify ALL tabs show dots and arrows simultaneously
@@ -1593,7 +1593,226 @@ This issue can happen whenever:
 
 **General Rule:** If React Flow component has an optional `id` prop and you have multiple instances, **always provide unique IDs**.
 
-### Recent Changes (v0.6.0 - Latest)
+### Recent Changes
+
+**v1.0.0 (2025-10-16) - Timeline Tracking & Read-Only Snapshots** 🎉
+
+**CRITICAL BUG FIX: Snapshot Creation Capturing Empty Data**
+
+**Problem:** When users created snapshots immediately after adding nodes, the "Current" snapshot would become empty and lose all data. Subsequent snapshots would capture correctly, but the working snapshot (Current) would be permanently empty.
+
+**Root Cause:** Two separate issues compounded:
+1. **Auto-save debounce (1 second)** + `handleAddSnapshot` using **stored snapshot** instead of **canvas state**
+   - User adds 3 nodes → auto-save hasn't fired yet (debounced)
+   - User clicks "Create Snapshot" → snapshot created from stored "Current" (which is still empty)
+   - Result: Snapshot captures empty data because stored snapshot hasn't been updated
+2. **Timeline ref race condition** - Auto-save effect captured stale timeline from closure
+
+**The Fix - Three-Phase Implementation:**
+
+#### Phase 1: Read-Only Mode for Frozen Snapshots ✅
+
+**Goal:** Prevent users from editing frozen snapshots (which would cause data loss on snapshot switching)
+
+**Implementation:**
+- Created `ReadOnlyBanner` component (orange gradient banner with lock icon 🔒)
+- Added `isReadOnly` computed property: `!isViewingWorkingSnapshot` (first snapshot is editable, others read-only)
+- Disabled ReactFlow interactions: `nodesDraggable={!isReadOnly}`, `nodesConnectable={!isReadOnly}`
+- Disabled toolbar controls when read-only (DiagramTypeSelector, NodeCreationButtons, AnnotationButtons)
+- Updated DiagramActions delete button with read-only check
+- "Switch to Current" button in banner for quick navigation back to editable snapshot
+
+**Files Modified:**
+- `src/ui/components/ReadOnlyBanner.tsx` (new, 87 lines)
+- `src/ui/canvas-view.tsx` (isReadOnly logic, ReactFlow props, banner integration)
+- `src/ui/components/UnifiedToolbar.tsx` (isReadOnly prop, conditional rendering)
+- `src/ui/components/toolbar/components/DiagramActions.tsx` (delete button disabled state)
+- `src/ui/components/toolbar/components/DiagramTypeSelector.tsx` (disabled prop)
+
+**Key Code (`canvas-view.tsx:500-516`):**
+```typescript
+const isReadOnly = React.useMemo(() => {
+  if (!timeline) return false;
+  const firstSnapshotId = timeline.snapshotOrder[0];
+  const isViewingWorkingSnapshot = timeline.currentSnapshotId === firstSnapshotId;
+  return !isViewingWorkingSnapshot;
+}, [timeline]);
+```
+
+#### Phase 2: Timeline Ref Race Condition Fix ✅
+
+**Goal:** Prevent auto-save from capturing stale timeline state from closure
+
+**Problem:** Auto-save effect captured `timeline` from closure, which could be outdated when auto-save fires (1 second later)
+
+**Solution:** Use `React.useRef` to maintain reference to latest timeline value
+
+**Files Modified:**
+- `src/ui/canvas-view.tsx` (added timelineRef, sync effect)
+- `src/ui/canvas/hooks/useFileOperations.ts` (use timelineRef.current in auto-save)
+
+**Key Code (`canvas-view.tsx:111-117`):**
+```typescript
+// Timeline ref for auto-save (v1.0.0 - prevents race conditions)
+const timelineRef = React.useRef<Timeline | null>(null);
+
+// Keep ref in sync with state
+React.useEffect(() => {
+  timelineRef.current = timeline;
+}, [timeline]);
+```
+
+**Key Code (`useFileOperations.ts:87-92`):**
+```typescript
+const saveTimeout = setTimeout(async () => {
+  try {
+    // Get latest timeline from ref to avoid stale closure data
+    const timeline = timelineRef.current;
+    if (!timeline) {
+      console.log('BAC4: Timeline ref is null, skipping auto-save');
+      return;
+    }
+    // ... rest of auto-save logic
+```
+
+#### Phase 3: Enhanced UX Improvements ✅
+
+**Goal:** Provide clear visual indicators for editable vs read-only snapshots
+
+**Implementation:**
+- Added lock 🔒 and pencil ✏️ icons to timeline dropdown (TimelineToolbar)
+- First snapshot (index 0) shows ✏️ (editable "Current")
+- All other snapshots show 🔒 (frozen/read-only)
+- Updated SnapshotManager with icons and tooltips
+- Changed "(current)" to "(viewing)" for clarity
+
+**Files Modified:**
+- `src/ui/components/TimelineToolbar.tsx` (lock/pencil icons in dropdown)
+- `src/ui/components/SnapshotManager.tsx` (icons, tooltips, index display)
+
+**Key Code (`TimelineToolbar.tsx:135-145`):**
+```typescript
+{orderedSnapshots.map((snapshot, index) => {
+  const isWorkingSnapshot = index === 0;
+  const icon = isWorkingSnapshot ? '✏️' : '🔒';
+  return (
+    <option key={snapshot.id} value={snapshot.id}>
+      {icon} {snapshot.label}
+      {snapshot.timestamp ? ` (${snapshot.timestamp})` : ''}
+    </option>
+  );
+})}
+```
+
+#### The Critical Fix: Snapshot Creation from Canvas State ✅
+
+**This is the fix that resolved the empty "Current" snapshot bug.**
+
+**Problem:** `handleAddSnapshot` was creating snapshots from **stored timeline snapshot** instead of **live canvas state**
+
+**Before (BROKEN):**
+```typescript
+const currentWorkingSnapshot = timeline.snapshots.find(s => s.id === firstSnapshotId);
+const modal = new AddSnapshotModal(
+  plugin.app,
+  currentWorkingSnapshot.nodes,     // ← BUG: Using outdated stored snapshot
+  currentWorkingSnapshot.edges,     // ← BUG: May not reflect canvas changes
+  currentWorkingSnapshot.annotations, // ← BUG: Auto-save hasn't fired yet!
+  timeline,
+  // ...
+);
+```
+
+**After (FIXED):**
+```typescript
+// CRITICAL FIX: Always capture from CANVAS STATE, not from stored snapshot
+// The stored snapshot may be outdated due to auto-save debounce (1 second delay)
+const modal = new AddSnapshotModal(
+  plugin.app,
+  nodes,         // ← FIXED: Use current canvas state
+  edges,         // ← FIXED: Use current canvas state
+  annotations,   // ← FIXED: Use current canvas state
+  timeline,
+  // ...
+);
+```
+
+**Why This Works:**
+- `nodes`, `edges`, `annotations` are React state that reflects the **current canvas**
+- These values are always up-to-date, regardless of auto-save timing
+- Snapshot captures what the user sees on screen, not what's stored in the file
+- Auto-save can happen later without affecting snapshot accuracy
+
+**Dependency Array Update:**
+```typescript
+}, [plugin.app, timeline, nodes, edges, annotations, setNodes, setEdges, setAnnotations, setTimeline]);
+```
+
+**File Modified:**
+- `src/ui/canvas-view.tsx:388-406` (`handleAddSnapshot` callback)
+
+**Diagnostic Logging Added:**
+```typescript
+console.log('BAC4: 📸 Creating snapshot from CANVAS STATE', {
+  canvasNodeCount: nodes.length,
+  canvasEdgeCount: edges.length,
+  canvasAnnotationCount: annotations.length,
+  timelineSnapshotCount: timeline.snapshots.length,
+});
+```
+
+#### Testing & Verification
+
+**Test Scenario:**
+1. Open diagram
+2. Add 3 nodes
+3. Immediately click "Add Snapshot" (before 1-second auto-save)
+4. Verify "Snapshot 1" contains 3 nodes
+5. Switch back to "Current" snapshot
+6. Verify "Current" still contains 3 nodes (not empty)
+
+**Result:** ✅ All tests passing, no data loss
+
+**Deployment:**
+- Build: 732KB (production)
+- Deployed to: BAC4Testv09 + TestVault
+- Cache flush instructions provided
+- User testing: In progress
+
+#### Impact & Benefits
+
+**User Experience:**
+- ✅ No more data loss when creating snapshots
+- ✅ Clear visual feedback (lock/pencil icons, read-only banner)
+- ✅ Prevents accidental edits to frozen snapshots
+- ✅ "Switch to Current" button for quick recovery
+
+**Code Quality:**
+- ✅ Eliminated race condition in auto-save
+- ✅ Fixed snapshot creation timing issue
+- ✅ Enhanced debugging with diagnostic logs
+- ✅ Better separation of concerns (canvas state vs stored state)
+
+**Technical Debt Resolved:**
+- ✅ Timeline ref pattern prevents future closure issues
+- ✅ Canvas state as source of truth for snapshots
+- ✅ Read-only mode prevents entire class of data loss bugs
+
+#### Future Considerations
+
+**Potential Enhancements (v1.1.0+):**
+- Snapshot diff viewer (show changes between snapshots)
+- Snapshot export/import (share snapshots across vaults)
+- Snapshot search/filter (find snapshots by content)
+- Automatic snapshot on major changes (configurable threshold)
+- Snapshot merge capability (combine multiple snapshots)
+
+**Known Limitations:**
+- Annotations not yet included in snapshots (future enhancement)
+- No undo/redo within snapshots (would require separate history)
+- Read-only mode is binary (can't partially edit frozen snapshots)
+
+---
 
 **v0.6.0 (2025-10-14) - Self-Contained Diagrams & File Format Overhaul** 🎉
 - **Breaking Change:** New .bac4 file format with version and metadata

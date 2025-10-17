@@ -11,6 +11,7 @@ import { Handle, Position, NodeProps } from 'reactflow';
 import { setIcon } from 'obsidian';
 import { FONT_SIZES, SPACING, UI_COLORS, BORDER_RADIUS } from '../../constants';
 import type { ContainerNodeData } from '../../types/canvas-types';
+import { NodeChangeBadge } from '../components/ChangeBadge';
 
 // Default values
 const DEFAULT_ICON = 'box';
@@ -55,6 +56,9 @@ export const ContainerNode: React.FC<NodeProps<ContainerNodeData>> = ({ data, se
         position: 'relative',
       }}
     >
+      {/* Change badge (v1.0.0 timeline) */}
+      {data.changeIndicator && <NodeChangeBadge changeType={data.changeIndicator} />}
+
       {/* Connection handles - all four sides */}
       <Handle
         type="target"

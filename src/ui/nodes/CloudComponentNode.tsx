@@ -8,6 +8,7 @@ import * as React from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
 import type { CloudComponentNodeData } from '../../types/canvas-types';
 import { FONT_SIZES, SPACING, UI_COLORS, BORDER_RADIUS, NODE_DIMENSIONS } from '../../constants';
+import { NodeChangeBadge } from '../components/ChangeBadge';
 
 /**
  * Cloud Component Node Component
@@ -86,6 +87,13 @@ export const CloudComponentNode: React.FC<NodeProps<CloudComponentNodeData>> = (
 
   return (
     <div style={getNodeStyles()}>
+      {/* Change badge (v1.0.0 timeline) - positioned center-top to avoid other badges */}
+      {data.changeIndicator && (
+        <div style={{ position: 'absolute', top: '-10px', left: '50%', transform: 'translateX(-50%)' }}>
+          <NodeChangeBadge changeType={data.changeIndicator} />
+        </div>
+      )}
+
       {/* Connection handles - all four sides */}
       <Handle type="target" position={Position.Top} id="top" style={{ background: color }} />
       <Handle type="target" position={Position.Left} id="left" style={{ background: color }} />

@@ -31,8 +31,11 @@
  * ```
  */
 
-import { Vault } from 'obsidian';
+import { Vault, TFile } from 'obsidian';
+import { Node, Edge } from 'reactflow';
 import { stringify as yamlStringify, parse as yamlParse } from 'yaml';
+import { BAC4FileV1, isBAC4FileV1, Timeline } from '../types/timeline';
+import { TimelineService } from '../services/TimelineService';
 
 /**
  * Base error class for all file I/O operations
@@ -108,7 +111,7 @@ export async function readJSON<T>(vault: Vault, filePath: string): Promise<T> {
       throw new FileNotFoundError(filePath);
     }
 
-    const content = await vault.read(file as any);
+    const content = await vault.read(file as TFile);
 
     try {
       return JSON.parse(content) as T;
@@ -146,13 +149,13 @@ export async function readJSON<T>(vault: Vault, filePath: string): Promise<T> {
  * // Creates or updates diagram.json with formatted JSON
  * ```
  */
-export async function writeJSON(vault: Vault, filePath: string, data: any): Promise<void> {
+export async function writeJSON(vault: Vault, filePath: string, data: unknown): Promise<void> {
   try {
     const content = JSON.stringify(data, null, 2);
 
     const file = vault.getAbstractFileByPath(filePath);
     if (file) {
-      await vault.modify(file as any, content);
+      await vault.modify(file as TFile, content);
     } else {
       await vault.create(filePath, content);
     }
@@ -193,7 +196,7 @@ export async function readYAML<T>(vault: Vault, filePath: string): Promise<T> {
       throw new FileNotFoundError(filePath);
     }
 
-    const content = await vault.read(file as any);
+    const content = await vault.read(file as TFile);
 
     try {
       return yamlParse(content) as T;
@@ -231,13 +234,13 @@ export async function readYAML<T>(vault: Vault, filePath: string): Promise<T> {
  * await writeYAML(vault, 'diagram.meta.yml', metadata);
  * ```
  */
-export async function writeYAML(vault: Vault, filePath: string, data: any): Promise<void> {
+export async function writeYAML(vault: Vault, filePath: string, data: unknown): Promise<void> {
   try {
     const content = yamlStringify(data);
 
     const file = vault.getAbstractFileByPath(filePath);
     if (file) {
-      await vault.modify(file as any, content);
+      await vault.modify(file as TFile, content);
     } else {
       await vault.create(filePath, content);
     }
@@ -301,5 +304,358 @@ export async function deleteFile(vault: Vault, filePath: string): Promise<boolea
     return true;
   } catch (error) {
     throw new FileIOError(`Failed to delete file: ${filePath}`, error as Error);
+  }
+}
+
+// ============================================================================
+// BAC4 v1.0.0 File Format Operations
+// ============================================================================
+
+/**
+ * Error thrown when a BAC4 file has invalid format
+ *
+ * @class InvalidFormatError
+ * @extends FileIOError
+ */
+export class InvalidFormatError extends FileIOError {
+  constructor(path: string, reason: string) {
+    super(`Invalid BAC4 file format: ${path} - ${reason}`);
+    this.name = 'InvalidFormatError';
+  }
+}
+
+/**
+ * Migrate old BAC4 file (v0.6.0) to v1.0.0 format
+ *
+ * Takes a legacy file with just nodes/edges and wraps it in v1.0.0 timeline structure.
+ *
+ * @param data - Old format data (with nodes/edges)
+ * @param diagramType - Diagram type to use (defaults to 'context')
+ * @returns Migrated BAC4FileV1 data
+ */
+function migrateToV1(
+  data: unknown,
+  diagramType: 'context' | 'container' | 'component' = 'context'
+): BAC4FileV1 {
+  const now = new Date().toISOString();
+
+  // Type guard: ensure data is an object
+  const dataObj = (typeof data === 'object' && data !== null ? data : {}) as Record<string, unknown>;
+
+  // Extract nodes and edges from old format
+  const nodes = (Array.isArray(dataObj.nodes) ? dataObj.nodes : []) as Node[];
+  const edges = (Array.isArray(dataObj.edges) ? dataObj.edges : []) as Edge[];
+
+  // Create timeline with initial snapshot
+  const timeline: Timeline = TimelineService.createInitialTimeline(nodes, edges, 'Current');
+
+  // Try to detect diagram type from nodes if not provided
+  let detectedType = diagramType;
+  const metadata = dataObj.metadata as Record<string, unknown> | undefined;
+  if (metadata?.diagramType && typeof metadata.diagramType === 'string') {
+    detectedType = metadata.diagramType as 'context' | 'container' | 'component';
+  } else if (nodes.length > 0) {
+    // Simple heuristic: check first node type
+    const firstNodeType = nodes[0].type;
+    if (firstNodeType === 'system' || firstNodeType === 'person') {
+      detectedType = 'context';
+    } else if (firstNodeType === 'container') {
+      detectedType = 'container';
+    } else if (firstNodeType === 'cloudComponent') {
+      detectedType = 'component';
+    }
+  }
+
+  const migratedData: BAC4FileV1 = {
+    version: '1.0.0',
+    metadata: {
+      diagramType: detectedType,
+      createdAt: (metadata?.createdAt as string) || now,
+      updatedAt: now,
+    },
+    timeline,
+  };
+
+  console.log(
+    `BAC4: ✅ Migrated old format to v1.0.0 (${nodes.length} nodes, ${edges.length} edges)`
+  );
+
+  return migratedData;
+}
+
+/**
+ * Read and validate a BAC4 v1.0.0 diagram file
+ *
+ * Reads a .bac4 file, validates it's v1.0.0 format, and returns the parsed data.
+ * Automatically migrates old v0.6.0 files to v1.0.0 format.
+ *
+ * @param vault - Obsidian vault instance
+ * @param filePath - Path to the .bac4 file (relative to vault root)
+ * @returns Promise resolving to the parsed BAC4 v1.0.0 file
+ * @throws {FileNotFoundError} If file doesn't exist
+ * @throws {ParseError} If JSON parsing fails
+ * @throws {FileIOError} For other I/O errors
+ *
+ * @example
+ * ```ts
+ * const diagram = await readBAC4File(vault, 'Context.bac4');
+ * console.log(diagram.version); // '1.0.0'
+ * console.log(diagram.timeline.snapshots.length); // Number of snapshots
+ * ```
+ */
+export async function readBAC4File(vault: Vault, filePath: string): Promise<BAC4FileV1> {
+  try {
+    // Read raw JSON
+    const data = await readJSON<unknown>(vault, filePath);
+
+    // Check if it's v1.0.0 format
+    if (isBAC4FileV1(data)) {
+      console.log(
+        `BAC4: Loaded v1.0.0 file "${filePath}" with ${data.timeline.snapshots.length} snapshot(s)`
+      );
+      return data;
+    }
+
+    // Check if it's old format (v0.6.0 or earlier)
+    // Old formats have nodes/edges but no timeline, OR version !== "1.0.0"
+    const hasNodesEdges =
+      typeof data === 'object' && data !== null && 'nodes' in data && 'edges' in data;
+
+    const hasNoTimeline =
+      typeof data === 'object' && data !== null && !('timeline' in data);
+
+    const isOldFormat = hasNodesEdges && hasNoTimeline;
+
+    if (isOldFormat) {
+      console.log(`BAC4: Detected old format file "${filePath}", migrating to v1.0.0...`);
+
+      // Migrate to v1.0.0
+      const migratedData = migrateToV1(data);
+
+      // Save migrated version back to file
+      await writeBAC4File(vault, filePath, migratedData);
+      console.log(`BAC4: ✅ Migration complete, file saved as v1.0.0`);
+
+      return migratedData;
+    }
+
+    // Unknown format
+    throw new InvalidFormatError(
+      filePath,
+      'File must be v1.0.0 format with timeline, or old format with nodes/edges'
+    );
+  } catch (error) {
+    if (error instanceof FileIOError) {
+      throw error;
+    }
+    throw new FileIOError(`Failed to read BAC4 file: ${filePath}`, error as Error);
+  }
+}
+
+/**
+ * Write a BAC4 v1.0.0 diagram file
+ *
+ * Saves a complete BAC4 v1.0.0 file with timeline data.
+ * Updates the metadata.updatedAt timestamp automatically.
+ *
+ * @param vault - Obsidian vault instance
+ * @param filePath - Path to the .bac4 file (relative to vault root)
+ * @param data - BAC4 v1.0.0 file data
+ * @returns Promise resolving when write completes
+ * @throws {FileIOError} If write operation fails
+ *
+ * @example
+ * ```ts
+ * const diagram: BAC4FileV1 = {
+ *   version: '1.0.0',
+ *   metadata: {
+ *     diagramType: 'context',
+ *     createdAt: new Date().toISOString(),
+ *     updatedAt: new Date().toISOString(),
+ *   },
+ *   timeline: timeline,
+ * };
+ *
+ * await writeBAC4File(vault, 'Context.bac4', diagram);
+ * ```
+ */
+export async function writeBAC4File(
+  vault: Vault,
+  filePath: string,
+  data: BAC4FileV1
+): Promise<void> {
+  try {
+    // Update timestamp
+    const updatedData: BAC4FileV1 = {
+      ...data,
+      metadata: {
+        ...data.metadata,
+        updatedAt: new Date().toISOString(),
+      },
+    };
+
+    await writeJSON(vault, filePath, updatedData);
+
+    console.log(
+      `BAC4: Saved v1.0.0 file "${filePath}" with ${data.timeline.snapshots.length} snapshot(s)`
+    );
+  } catch (error) {
+    throw new FileIOError(`Failed to write BAC4 file: ${filePath}`, error as Error);
+  }
+}
+
+/**
+ * Create a new BAC4 v1.0.0 file with initial timeline
+ *
+ * Creates a new diagram file with v1.0.0 format and a single "Current" snapshot.
+ * Useful for creating new diagrams from scratch.
+ *
+ * @param vault - Obsidian vault instance
+ * @param filePath - Path to the .bac4 file to create (relative to vault root)
+ * @param diagramType - Type of diagram ('context', 'container', 'component')
+ * @param nodes - Initial nodes (optional, defaults to empty)
+ * @param edges - Initial edges (optional, defaults to empty)
+ * @returns Promise resolving to the created BAC4FileV1 object
+ * @throws {FileIOError} If file creation fails
+ *
+ * @example
+ * ```ts
+ * // Create empty Context diagram
+ * await createBAC4File(vault, 'Context.bac4', 'context');
+ *
+ * // Create Container diagram with initial nodes
+ * const nodes = [
+ *   { id: 'node-1', type: 'container', data: { label: 'API' }, position: { x: 100, y: 100 } }
+ * ];
+ * await createBAC4File(vault, 'Container.bac4', 'container', nodes);
+ * ```
+ */
+export async function createBAC4File(
+  vault: Vault,
+  filePath: string,
+  diagramType: 'context' | 'container' | 'component',
+  nodes: Node[] = [],
+  edges: Edge[] = []
+): Promise<BAC4FileV1> {
+  try {
+    const now = new Date().toISOString();
+
+    // Create initial timeline with single snapshot
+    const timeline: Timeline = TimelineService.createInitialTimeline(nodes, edges, 'Current');
+
+    const data: BAC4FileV1 = {
+      version: '1.0.0',
+      metadata: {
+        diagramType,
+        createdAt: now,
+        updatedAt: now,
+      },
+      timeline,
+    };
+
+    await writeBAC4File(vault, filePath, data);
+
+    console.log(`BAC4: Created new v1.0.0 file "${filePath}" (${diagramType})`);
+
+    return data;
+  } catch (error) {
+    throw new FileIOError(`Failed to create BAC4 file: ${filePath}`, error as Error);
+  }
+}
+
+/**
+ * Get timeline from BAC4 file
+ *
+ * Quick accessor to get just the timeline data from a file.
+ *
+ * @param vault - Obsidian vault instance
+ * @param filePath - Path to the .bac4 file
+ * @returns Promise resolving to the timeline
+ * @throws {FileIOError} If file read fails
+ *
+ * @example
+ * ```ts
+ * const timeline = await getTimelineFromFile(vault, 'Context.bac4');
+ * console.log(`Current snapshot: ${timeline.currentSnapshotId}`);
+ * ```
+ */
+export async function getTimelineFromFile(vault: Vault, filePath: string): Promise<Timeline> {
+  const data = await readBAC4File(vault, filePath);
+  return data.timeline;
+}
+
+/**
+ * Update timeline in BAC4 file
+ *
+ * Updates just the timeline portion of a BAC4 file, preserving metadata.
+ *
+ * @param vault - Obsidian vault instance
+ * @param filePath - Path to the .bac4 file
+ * @param timeline - Updated timeline data
+ * @returns Promise resolving when update completes
+ * @throws {FileIOError} If file operations fail
+ *
+ * @example
+ * ```ts
+ * // Add new snapshot
+ * const data = await readBAC4File(vault, 'Context.bac4');
+ * const { snapshot, timeline } = TimelineService.createSnapshot(
+ *   nodes, edges, annotations,
+ *   { label: 'Phase 2' },
+ *   data.timeline
+ * );
+ * await updateTimelineInFile(vault, 'Context.bac4', timeline);
+ * ```
+ */
+export async function updateTimelineInFile(
+  vault: Vault,
+  filePath: string,
+  timeline: Timeline
+): Promise<void> {
+  try {
+    const data = await readBAC4File(vault, filePath);
+
+    const updatedData: BAC4FileV1 = {
+      ...data,
+      timeline,
+    };
+
+    await writeBAC4File(vault, filePath, updatedData);
+
+    console.log(`BAC4: Updated timeline in "${filePath}"`);
+  } catch (error) {
+    throw new FileIOError(`Failed to update timeline in file: ${filePath}`, error as Error);
+  }
+}
+
+/**
+ * Check if file is v1.0.0 format
+ *
+ * Quick check to see if a file exists and is v1.0.0 format without throwing errors.
+ *
+ * @param vault - Obsidian vault instance
+ * @param filePath - Path to check
+ * @returns Promise resolving to true if file is v1.0.0, false otherwise
+ *
+ * @example
+ * ```ts
+ * if (await isBAC4v1File(vault, 'Context.bac4')) {
+ *   // Safe to load
+ *   const data = await readBAC4File(vault, 'Context.bac4');
+ * } else {
+ *   console.error('Not a v1.0.0 file');
+ * }
+ * ```
+ */
+export async function isBAC4v1File(vault: Vault, filePath: string): Promise<boolean> {
+  try {
+    if (!fileExists(vault, filePath)) {
+      return false;
+    }
+
+    const data = await readJSON<unknown>(vault, filePath);
+    return isBAC4FileV1(data);
+  } catch {
+    return false;
   }
 }

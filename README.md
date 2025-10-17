@@ -24,8 +24,8 @@ An Obsidian plugin that transforms your vault into a comprehensive enterprise ar
 
 ### Method 2: Manual Installation from GitHub Release
 
-1. **Download the latest release** from [GitHub Releases](https://github.com/DavidROliverBA/bac4-plugin/releases)
-   - Download `bac4-plugin-v0.8.0.zip`
+1. **Download the latest release** from [GitHub Releases](https://github.com/DavidROliverBA/bac4/releases)
+   - Download `bac4-v0.8.0.zip`
 
 2. **Extract the files** to your vault's plugins folder:
    ```bash
@@ -33,10 +33,10 @@ An Obsidian plugin that transforms your vault into a comprehensive enterprise ar
    cd /path/to/your-vault/.obsidian/plugins/
 
    # Create BAC4 plugin directory
-   mkdir bac4-plugin
+   mkdir bac4
 
    # Extract the zip contents into the directory
-   unzip ~/Downloads/bac4-plugin-v0.7.0.zip -d bac4-plugin/
+   unzip ~/Downloads/bac4-v0.7.0.zip -d bac4/
    ```
 
 3. **Enable the plugin** in Obsidian:
@@ -54,7 +54,7 @@ If you use the [BRAT plugin](https://github.com/TfTHacker/obsidian42-brat):
 1. Install and enable BRAT from Community Plugins
 2. Open BRAT settings
 3. Click **Add Beta plugin**
-4. Enter: `DavidROliverBA/bac4-plugin`
+4. Enter: `DavidROliverBA/bac4`
 5. Enable BAC4 in Community Plugins
 
 ### Verify Installation
@@ -80,6 +80,22 @@ After installation, verify BAC4 is working:
 - 📸 **Automatic Diagram Screenshots** ⭐ **NEW!** - Markdown docs with embedded PNGs
 - 📤 **Export** diagrams as PNG, JPEG, or SVG
 - 📁 **Git-Native** - All data stored as JSON for version control
+
+---
+
+## 📸 Screenshots
+
+### Visual C4 Canvas Editor with Timeline & Property Panel
+
+![BAC4 Canvas Editor](docs/images/screenshot.png)
+
+**Features shown:**
+- **Timeline Navigation** - Multiple snapshots with Previous/Next buttons and snapshot dropdown
+- **Canvas Editor** - Visual drag-and-drop diagram with Context level systems and relationships
+- **Property Panel** - Edit edge properties, relationship labels, and directions (→, ←, ↔)
+- **Common Relationships** - Quick-select from preset labels (uses, depends on, calls, reads, etc.)
+- **Sidebar Navigation** - Quick access to all diagrams in your vault
+- **Unified Toolbar** - Type selector, node creation buttons, and action buttons
 
 ---
 
@@ -214,8 +230,8 @@ Drag and drop nodes, connect with edges, customize everything.
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/DavidROliverBA/bac4-plugin.git
-   cd bac4-plugin
+   git clone https://github.com/DavidROliverBA/bac4.git
+   cd bac4
    ```
 
 2. Install dependencies:
@@ -231,7 +247,7 @@ Drag and drop nodes, connect with edges, customize everything.
 4. Link to Obsidian vault for testing:
    ```bash
    # Create a symlink in your vault's plugins folder
-   ln -s /path/to/bac4-plugin /path/to/your-vault/.obsidian/plugins/bac4-plugin
+   ln -s /path/to/bac4 /path/to/your-vault/.obsidian/plugins/bac4
    ```
 
 5. Enable the plugin in Obsidian:
@@ -256,7 +272,7 @@ npm run typecheck    # TypeScript checking
 ### **Project Structure**
 
 ```
-bac4-plugin/
+bac4/
 ├── src/
 │   ├── core/              # Core plugin logic, settings
 │   ├── ui/
@@ -491,7 +507,7 @@ MIT License - see [LICENSE](LICENSE) file for details
 
 ## 🔗 Links
 
-- **GitHub:** https://github.com/DavidROliverBA/bac4-plugin
+- **GitHub:** https://github.com/DavidROliverBA/bac4
 - **Obsidian:** https://obsidian.md
 - **Claude Desktop:** https://claude.ai/download
 - **Anthropic API:** https://console.anthropic.com

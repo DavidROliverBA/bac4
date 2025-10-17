@@ -13,7 +13,7 @@
  */
 
 import * as React from 'react';
-import type { Node } from 'reactflow';
+import type { Node, Edge } from 'reactflow';
 import { Menu } from 'obsidian';
 import type BAC4Plugin from '../../../main';
 import type { CanvasNodeData } from '../../../types/canvas-types';
@@ -28,7 +28,7 @@ export interface UseNodeHandlersProps {
   diagramType: 'context' | 'container' | 'component';
   nodes: Node<CanvasNodeData>[];
   setNodes: React.Dispatch<React.SetStateAction<Node<CanvasNodeData>[]>>;
-  setEdges: React.Dispatch<React.SetStateAction<any[]>>;
+  setEdges: React.Dispatch<React.SetStateAction<Edge[]>>;
   navigationService: DiagramNavigationService;
   onNodeSelect: (node: Node<CanvasNodeData> | null) => void;
 }

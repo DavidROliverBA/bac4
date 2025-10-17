@@ -33,7 +33,6 @@ import {
   BORDER_RADIUS,
   SHADOWS,
   COMMON_RELATIONSHIPS,
-  DIMENSIONS,
   Z_INDEX,
 } from '../../constants';
 import { ErrorHandler } from '../../utils/error-handling';
@@ -47,6 +46,7 @@ import { ColorPicker } from './form/ColorPicker';
 import { EdgeDirectionSelector } from './edges/EdgeDirectionSelector';
 import { DiagramLinking } from './diagram/DiagramLinking';
 import { IconSelector } from './form/IconSelector';
+import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 
 type CanvasNodeData =
   | C4NodeData
@@ -59,7 +59,7 @@ interface PropertyPanelProps {
   node: Node<CanvasNodeData> | null;
   edge: Edge | null;
   onUpdateLabel: (nodeId: string, label: string) => void;
-  onUpdateProperties: (nodeId: string, updates: any) => void;
+  onUpdateProperties: (nodeId: string, updates: Record<string, unknown>) => void;
   onUpdateEdgeLabel: (edgeId: string, label: string) => void;
   onUpdateEdgeDirection: (edgeId: string, direction: 'right' | 'left' | 'both') => void;
   onDeleteEdge?: (edgeId: string) => void;
@@ -116,6 +116,9 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
 }) => {
   if (!node && !edge) return null;
 
+  // Responsive layout hook
+  const layout = useResponsiveLayout();
+
   const isC4Node = node?.type === 'c4';
   const isCloudNode = node?.type === 'cloudComponent';
   const isSystemNode = node?.type === 'system';
@@ -130,8 +133,12 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
   // State for markdown linking
   const [markdownFileExists, setMarkdownFileExists] = React.useState(false);
 
-  // State for dragging
-  const [position, setPosition] = React.useState({ x: 16, y: window.innerHeight - 816 });
+  // State for dragging - Initialize position based on screen size
+  const [position, setPosition] = React.useState(() => {
+    // For compact screens, position closer to top
+    const initialY = layout.isCompact ? window.innerHeight - 500 : window.innerHeight - 816;
+    return { x: 16, y: Math.max(60, initialY) }; // Ensure it's below toolbar
+  });
   const [isDragging, setIsDragging] = React.useState(false);
   const [dragStart, setDragStart] = React.useState({ x: 0, y: 0 });
 
@@ -194,7 +201,7 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
     if (node) onUpdateLabel(node.id, value);
   };
 
-  const handlePropertyChange = (key: string, value: any) => {
+  const handlePropertyChange = (key: string, value: unknown) => {
     if (node) onUpdateProperties(node.id, { [key]: value });
   };
 
@@ -350,8 +357,8 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
         position: 'absolute',
         left: `${position.x}px`,
         top: `${position.y}px`,
-        width: DIMENSIONS.propertyPanelWidth,
-        maxHeight: DIMENSIONS.propertyPanelMaxHeight,
+        width: layout.propertyPanelWidth,
+        maxHeight: layout.propertyPanelMaxHeight,
         background: UI_COLORS.backgroundPrimary,
         border: `1px solid ${UI_COLORS.backgroundModifierBorder}`,
         borderRadius: BORDER_RADIUS.large,
@@ -366,7 +373,7 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
       <div
         onMouseDown={handleDragMouseDown}
         style={{
-          padding: SPACING.padding.panel,
+          padding: layout.panelPadding,
           borderBottom: `1px solid ${UI_COLORS.backgroundModifierBorder}`,
           display: 'flex',
           justifyContent: 'space-between',
@@ -375,7 +382,7 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
           userSelect: 'none',
         }}
       >
-        <h3 style={{ margin: 0, fontSize: FONT_SIZES.large, fontWeight: 600 }}>
+        <h3 style={{ margin: 0, fontSize: layout.baseFontSize, fontWeight: 600 }}>
           {edge ? 'Edge Properties' : 'Node Properties'}
         </h3>
         <button
@@ -386,7 +393,7 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
             border: 'none',
             color: UI_COLORS.textMuted,
             cursor: 'pointer',
-            fontSize: FONT_SIZES.extraLarge,
+            fontSize: FONT_SIZES.large,
             padding: '0',
           }}
         >
@@ -395,7 +402,7 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
       </div>
 
       {/* Properties */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: SPACING.padding.panel }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: layout.panelPadding }}>
         {/* Navigation Buttons - Only for nodes */}
         {node && (showNavigateToChild || showNavigateToParent) && (
           <div
@@ -463,7 +470,7 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
           <>
             <FormField
               label="Relationship Label"
-              value={String((edge as any).data?.label || '')}
+              value={String(edge.data?.label || edge.label || '')}
               onChange={(value) => onUpdateEdgeLabel(edge.id, value)}
               placeholder="e.g., uses, depends on, calls"
             />
@@ -492,7 +499,7 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
 
             <EdgeDirectionSelector
               label="Direction"
-              value={(edge as any).data?.direction || (edge as any).direction || 'right'}
+              value={(edge.data?.direction as 'right' | 'left' | 'both') || 'right'}
               onChange={(dir) => onUpdateEdgeDirection(edge.id, dir)}
             />
 
@@ -554,7 +561,7 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
 
             <ColorPicker
               label="Node Color"
-              value={(node.data as any).color || '#4A90E2'}
+              value={('color' in node.data ? node.data.color : undefined) || '#4A90E2'}
               onChange={(color) => handlePropertyChange('color', color)}
               showPresets={true}
             />

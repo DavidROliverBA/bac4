@@ -11,7 +11,7 @@ This document provides a complete guide for submitting BAC4 to the official Obsi
 
 ### ✅ **COMPLETE** - Repository Requirements
 
-- [x] **GitHub Repository:** https://github.com/DavidROliverBA/bac4-plugin
+- [x] **GitHub Repository:** https://github.com/DavidROliverBA/bac4
 - [x] **manifest.json:** Present and valid (v0.7.0)
 - [x] **versions.json:** Present and maintained
 - [x] **README.md:** Comprehensive with purpose, installation, usage instructions
@@ -91,19 +91,19 @@ Create a JSON entry for BAC4 to add to the Obsidian releases repository:
 
 ```json
 {
-  "id": "bac4-plugin",
+  "id": "bac4",
   "name": "BAC4 - Cloud Architecture Management",
   "author": "David Oliver",
   "description": "AI-native cloud architecture management with C4 model diagrams. Self-contained .bac4 files with embedded links. Create diagrams manually, via AI API, or chat with Claude Desktop via MCP. AWS/Azure/GCP component libraries included.",
-  "repo": "DavidROliverBA/bac4-plugin"
+  "repo": "DavidROliverBA/bac4"
 }
 ```
 
 **Verification:**
-- `id` matches manifest.json: ✅ "bac4-plugin"
+- `id` matches manifest.json: ✅ "bac4"
 - `name` matches manifest.json: ✅ "BAC4 - Cloud Architecture Management"
 - `description` matches manifest.json: ✅ (truncated to fit)
-- `repo` format correct: ✅ "DavidROliverBA/bac4-plugin"
+- `repo` format correct: ✅ "DavidROliverBA/bac4"
 
 ### Step 4: Create Pull Request
 
@@ -121,7 +121,7 @@ Create a JSON entry for BAC4 to add to the Obsidian releases repository:
 
 3. **Create a Branch:**
    ```bash
-   git checkout -b add-bac4-plugin
+   git checkout -b add-bac4
    ```
 
 4. **Edit community-plugins.json:**
@@ -137,7 +137,7 @@ Create a JSON entry for BAC4 to add to the Obsidian releases repository:
 
 6. **Push to Fork:**
    ```bash
-   git push origin add-bac4-plugin
+   git push origin add-bac4
    ```
 
 7. **Open Pull Request:**
@@ -363,13 +363,13 @@ git clone https://github.com/YOUR_USERNAME/obsidian-releases.git
 cd obsidian-releases
 
 # 4. Create branch
-git checkout -b add-bac4-plugin
+git checkout -b add-bac4
 
 # 5. Edit community-plugins.json (add BAC4 entry at end)
 # 6. Commit and push
 git add community-plugins.json
 git commit -m "Add plugin: BAC4 - Cloud Architecture Management"
-git push origin add-bac4-plugin
+git push origin add-bac4
 
 # 7. Open PR on GitHub
 # 8. Complete checklist in PR template

@@ -197,21 +197,21 @@ Cost: Free with Claude Pro/Max subscription
 Obsidian Settings → Community Plugins → Search "BAC4" → Install
 
 ### Option 2: Manual Install (Available Now)
-1. Download [latest release](https://github.com/DavidROliverBA/bac4-plugin/releases/latest)
-2. Extract to `.obsidian/plugins/bac4-plugin/`
+1. Download [latest release](https://github.com/DavidROliverBA/bac4/releases/latest)
+2. Extract to `.obsidian/plugins/bac4/`
 3. Reload Obsidian
 4. Enable plugin
 
 ### Option 3: BRAT (Beta Testing)
-Install BRAT plugin → Add `DavidROliverBA/bac4-plugin` → Enable
+Install BRAT plugin → Add `DavidROliverBA/bac4` → Enable
 
 ---
 
 ## Support & Community
 
-- **GitHub:** [DavidROliverBA/bac4-plugin](https://github.com/DavidROliverBA/bac4-plugin)
-- **Documentation:** [Complete docs](https://github.com/DavidROliverBA/bac4-plugin#readme)
-- **Issues:** [GitHub Issues](https://github.com/DavidROliverBA/bac4-plugin/issues)
+- **GitHub:** [DavidROliverBA/bac4](https://github.com/DavidROliverBA/bac4)
+- **Documentation:** [Complete docs](https://github.com/DavidROliverBA/bac4#readme)
+- **Issues:** [GitHub Issues](https://github.com/DavidROliverBA/bac4/issues)
 - **License:** MIT (use freely, commercially or personally)
 
 ---
@@ -233,7 +233,7 @@ Install BRAT plugin → Add `DavidROliverBA/bac4-plugin` → Enable
 ## Call to Action
 
 ### For Individual Architects:
-[Download BAC4 v0.7.0](https://github.com/DavidROliverBA/bac4-plugin/releases/latest) and create your first AI-generated diagram in 5 minutes.
+[Download BAC4 v0.7.0](https://github.com/DavidROliverBA/bac4/releases/latest) and create your first AI-generated diagram in 5 minutes.
 
 ### For Teams:
 [Read the full blog post](docs/BLOG_POST_SOLUTION_ARCHITECTS.md) to understand the full value proposition and ROI calculation.

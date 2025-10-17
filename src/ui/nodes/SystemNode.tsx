@@ -8,6 +8,7 @@ import * as React from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
 import { FONT_SIZES, SPACING, UI_COLORS, DEFAULT_NODE_COLOR } from '../../constants';
 import type { SystemNodeData } from '../../types/canvas-types';
+import { NodeChangeBadge } from '../components/ChangeBadge';
 
 export const SystemNode: React.FC<NodeProps<SystemNodeData>> = ({ data, selected }) => {
   const color = data.color || DEFAULT_NODE_COLOR;
@@ -42,6 +43,9 @@ export const SystemNode: React.FC<NodeProps<SystemNodeData>> = ({ data, selected
 
   return (
     <div style={getNodeStyles()}>
+      {/* Change badge (v1.0.0 timeline) */}
+      {data.changeIndicator && <NodeChangeBadge changeType={data.changeIndicator} />}
+
       {/* Connection handles - all four sides */}
       <Handle
         type="target"

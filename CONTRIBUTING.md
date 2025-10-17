@@ -50,8 +50,8 @@ This project follows a simple code of conduct:
 
 2. **Clone your fork**
    ```bash
-   git clone https://github.com/YOUR_USERNAME/bac4-plugin.git
-   cd bac4-plugin
+   git clone https://github.com/YOUR_USERNAME/bac4.git
+   cd bac4
    ```
 
 3. **Install dependencies**
@@ -67,10 +67,10 @@ This project follows a simple code of conduct:
 5. **Symlink to Obsidian vault** (for testing)
    ```bash
    # macOS/Linux
-   ln -s $(pwd) /path/to/your/vault/.obsidian/plugins/bac4-plugin
+   ln -s $(pwd) /path/to/your/vault/.obsidian/plugins/bac4
 
    # Windows (run as Administrator)
-   mklink /D "C:\path\to\vault\.obsidian\plugins\bac4-plugin" "C:\path\to\bac4-plugin"
+   mklink /D "C:\path\to\vault\.obsidian\plugins\bac4" "C:\path\to\bac4"
    ```
 
 6. **Enable in Obsidian**
@@ -118,7 +118,7 @@ Install extensions:
 ## Project Structure
 
 ```
-bac4-plugin/
+bac4/
 ├── src/                          # Source code
 │   ├── main.ts                   # Plugin entry point
 │   ├── core/                     # Core plugin functionality
@@ -511,7 +511,7 @@ Each guide includes:
 
 ### Getting Support
 
-- **Issues:** [GitHub Issues](https://github.com/DavidROliverBA/bac4-plugin/issues)
+- **Issues:** [GitHub Issues](https://github.com/DavidROliverBA/bac4/issues)
 - **Discussions:** Use GitHub Discussions for questions
 - **Pull Requests:** Open draft PRs for early feedback
 

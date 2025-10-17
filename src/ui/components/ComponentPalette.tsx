@@ -97,6 +97,8 @@ export const ComponentPalette: React.FC<ComponentPaletteProps> = ({
         document.removeEventListener('mouseup', handleMouseUp);
       };
     }
+
+    return undefined; // Explicit return for when not dragging/resizing
   }, [isDragging, isResizing, dragStart]);
 
   if (isCollapsed) {
