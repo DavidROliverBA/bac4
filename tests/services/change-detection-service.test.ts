@@ -148,7 +148,7 @@ describe('ChangeDetectionService', () => {
 			expect(changes.modifiedNodes).toHaveLength(1);
 		});
 
-		it('should detect modified nodes (significant position change)', () => {
+		it('should NOT detect position changes as modifications', () => {
 			const beforeNodes: Node[] = [
 				{
 					id: 'node-1',
@@ -172,7 +172,8 @@ describe('ChangeDetectionService', () => {
 
 			const changes = ChangeDetectionService.compareSnapshots(before, after);
 
-			expect(changes.modifiedNodes).toHaveLength(1);
+			// Position changes are tracked but NOT considered modifications
+			expect(changes.modifiedNodes).toHaveLength(0);
 		});
 
 		it('should NOT detect minor position changes (<50px)', () => {
@@ -284,6 +285,8 @@ describe('ChangeDetectionService', () => {
 				removedNodes: [],
 				addedEdges: [],
 				removedEdges: [],
+				unchangedNodes: [],
+				unchangedEdges: [],
 			};
 
 			const updated = ChangeDetectionService.applyNodeChangeIndicators(nodes, changeSet);
@@ -307,6 +310,8 @@ describe('ChangeDetectionService', () => {
 				removedNodes: [],
 				addedEdges: [],
 				removedEdges: [],
+				unchangedNodes: [],
+				unchangedEdges: [],
 			};
 
 			const updated = ChangeDetectionService.applyNodeChangeIndicators(nodes, changeSet);
@@ -330,6 +335,8 @@ describe('ChangeDetectionService', () => {
 				removedNodes: ['node-1'],
 				addedEdges: [],
 				removedEdges: [],
+				unchangedNodes: [],
+				unchangedEdges: [],
 			};
 
 			const updated = ChangeDetectionService.applyNodeChangeIndicators(nodes, changeSet);
@@ -353,6 +360,8 @@ describe('ChangeDetectionService', () => {
 				removedNodes: [],
 				addedEdges: [],
 				removedEdges: [],
+				unchangedNodes: [],
+				unchangedEdges: [],
 			};
 
 			const updated = ChangeDetectionService.applyNodeChangeIndicators(nodes, changeSet);
@@ -378,6 +387,8 @@ describe('ChangeDetectionService', () => {
 				removedNodes: [],
 				addedEdges: ['edge-1'],
 				removedEdges: [],
+				unchangedNodes: [],
+				unchangedEdges: [],
 			};
 
 			const updated = ChangeDetectionService.applyEdgeChangeIndicators(edges, changeSet);
@@ -401,6 +412,8 @@ describe('ChangeDetectionService', () => {
 				removedNodes: [],
 				addedEdges: [],
 				removedEdges: ['edge-1'],
+				unchangedNodes: [],
+				unchangedEdges: [],
 			};
 
 			const updated = ChangeDetectionService.applyEdgeChangeIndicators(edges, changeSet);
@@ -420,6 +433,8 @@ describe('ChangeDetectionService', () => {
 				removedNodes: ['node-4'],
 				addedEdges: ['edge-1'],
 				removedEdges: ['edge-2'],
+				unchangedNodes: [],
+				unchangedEdges: [],
 			};
 
 			const summary = ChangeDetectionService.generateChangeSummary(
@@ -447,6 +462,8 @@ describe('ChangeDetectionService', () => {
 				removedNodes: [],
 				addedEdges: [],
 				removedEdges: [],
+				unchangedNodes: [],
+				unchangedEdges: [],
 			};
 
 			const summary = ChangeDetectionService.generateChangeSummary(
@@ -494,6 +511,8 @@ describe('ChangeDetectionService', () => {
 				removedNodes: [],
 				addedEdges: [],
 				removedEdges: [],
+				unchangedNodes: [],
+				unchangedEdges: [],
 			};
 
 			const summary = ChangeDetectionService.generateDetailedChangeSummary(
@@ -542,6 +561,8 @@ describe('ChangeDetectionService', () => {
 				removedNodes: [],
 				addedEdges: ['edge-1'],
 				removedEdges: [],
+				unchangedNodes: [],
+				unchangedEdges: [],
 			};
 
 			const summary = ChangeDetectionService.generateDetailedChangeSummary(
@@ -636,6 +657,8 @@ describe('ChangeDetectionService', () => {
 				removedNodes: [],
 				addedEdges: ['edge-1'],
 				removedEdges: ['edge-2', 'edge-3'],
+				unchangedNodes: [],
+				unchangedEdges: [],
 			};
 
 			const count = ChangeDetectionService.countChanges(changeSet);
@@ -650,6 +673,8 @@ describe('ChangeDetectionService', () => {
 				removedNodes: [],
 				addedEdges: [],
 				removedEdges: [],
+				unchangedNodes: [],
+				unchangedEdges: [],
 			};
 
 			const count = ChangeDetectionService.countChanges(changeSet);
@@ -666,6 +691,8 @@ describe('ChangeDetectionService', () => {
 				removedNodes: [],
 				addedEdges: [],
 				removedEdges: [],
+				unchangedNodes: [],
+				unchangedEdges: [],
 			};
 
 			expect(ChangeDetectionService.hasChanges(changeSet)).toBe(true);
@@ -678,6 +705,8 @@ describe('ChangeDetectionService', () => {
 				removedNodes: [],
 				addedEdges: [],
 				removedEdges: [],
+				unchangedNodes: [],
+				unchangedEdges: [],
 			};
 
 			expect(ChangeDetectionService.hasChanges(changeSet)).toBe(false);

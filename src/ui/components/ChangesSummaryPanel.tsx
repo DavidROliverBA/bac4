@@ -88,7 +88,7 @@ export const ChangesSummaryPanel: React.FC<ChangesSummaryPanelProps> = ({
 						fontSize: FONT_SIZES.small,
 						fontWeight: 600,
 						color: color,
-						marginBottom: SPACING.gap.small,
+						marginBottom: SPACING.gap.tight,
 						display: 'flex',
 						alignItems: 'center',
 						gap: '6px',
@@ -158,7 +158,7 @@ export const ChangesSummaryPanel: React.FC<ChangesSummaryPanelProps> = ({
 					fontWeight: 600,
 					color: UI_COLORS.textNormal,
 					marginBottom: SPACING.gap.wide,
-					paddingBottom: SPACING.gap.small,
+					paddingBottom: SPACING.gap.tight,
 					borderBottom: `2px solid ${UI_COLORS.border}`,
 				}}
 			>
@@ -182,7 +182,7 @@ export const ChangesSummaryPanel: React.FC<ChangesSummaryPanelProps> = ({
 			)}
 
 			{/* Nodes Section */}
-			<div style={{ marginBottom: SPACING.gap.extraWide }}>
+			<div style={{ marginBottom: SPACING.gap.section }}>
 				<div
 					style={{
 						fontSize: FONT_SIZES.normal,

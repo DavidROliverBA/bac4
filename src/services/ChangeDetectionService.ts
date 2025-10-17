@@ -147,20 +147,23 @@ export class ChangeDetectionService {
 	 * Ignores minor position adjustments (<50px) to avoid false positives
 	 * from canvas panning or slight repositioning.
 	 *
+	 * NOTE: Currently unused but reserved for future position tracking feature.
+	 * Commented out to avoid TypeScript unused variable error.
+	 *
 	 * @param before - Position in earlier snapshot
 	 * @param after - Position in later snapshot
 	 * @returns True if position changed by more than 50px in any direction
 	 */
-	private static hasPositionChangedSignificantly(
-		before: { x: number; y: number },
-		after: { x: number; y: number }
-	): boolean {
-		const POSITION_THRESHOLD = 50; // pixels
-		const deltaX = Math.abs(after.x - before.x);
-		const deltaY = Math.abs(after.y - before.y);
-
-		return deltaX > POSITION_THRESHOLD || deltaY > POSITION_THRESHOLD;
-	}
+	// private static hasPositionChangedSignificantly(
+	// 	before: { x: number; y: number },
+	// 	after: { x: number; y: number }
+	// ): boolean {
+	// 	const POSITION_THRESHOLD = 50; // pixels
+	// 	const deltaX = Math.abs(after.x - before.x);
+	// 	const deltaY = Math.abs(after.y - before.y);
+	//
+	// 	return deltaX > POSITION_THRESHOLD || deltaY > POSITION_THRESHOLD;
+	// }
 
 	/**
 	 * Apply change indicators to nodes
