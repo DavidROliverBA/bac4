@@ -1,6 +1,6 @@
 {
 	"id": "bac4",
-	"name": "BAC4 - Cloud Architecture Management",
+	"name": "bac4 - The Solution Architects Toolbox",
 	"version": "0.8.0",
 	"minAppVersion": "1.0.0",
 	"description": "AI-native cloud architecture management with C4 model diagrams. Self-contained .bac4 files with embedded links. Create diagrams manually, via AI API, or chat with Claude Desktop via MCP. AWS/Azure/GCP component libraries included.",

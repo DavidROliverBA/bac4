@@ -92,7 +92,7 @@ Create a JSON entry for BAC4 to add to the Obsidian releases repository:
 ```json
 {
   "id": "bac4",
-  "name": "BAC4 - Cloud Architecture Management",
+  "name": "bac4 - The Solution Architects Toolbox",
   "author": "David Oliver",
   "description": "AI-native cloud architecture management with C4 model diagrams. Self-contained .bac4 files with embedded links. Create diagrams manually, via AI API, or chat with Claude Desktop via MCP. AWS/Azure/GCP component libraries included.",
   "repo": "DavidROliverBA/bac4"
@@ -101,7 +101,7 @@ Create a JSON entry for BAC4 to add to the Obsidian releases repository:
 
 **Verification:**
 - `id` matches manifest.json: ✅ "bac4"
-- `name` matches manifest.json: ✅ "BAC4 - Cloud Architecture Management"
+- `name` matches manifest.json: ✅ "bac4 - The Solution Architects Toolbox"
 - `description` matches manifest.json: ✅ (truncated to fit)
 - `repo` format correct: ✅ "DavidROliverBA/bac4"
 
@@ -132,7 +132,7 @@ Create a JSON entry for BAC4 to add to the Obsidian releases repository:
 5. **Commit Changes:**
    ```bash
    git add community-plugins.json
-   git commit -m "Add plugin: BAC4 - Cloud Architecture Management"
+   git commit -m "Add plugin: bac4 - The Solution Architects Toolbox"
    ```
 
 6. **Push to Fork:**
@@ -184,7 +184,7 @@ When opening the PR, you'll see a checklist. Here's what to check:
 **Template:**
 
 ```markdown
-# Add plugin: BAC4 - Cloud Architecture Management
+# Add plugin: bac4 - The Solution Architects Toolbox
 
 ## Plugin Overview
 BAC4 is an AI-native cloud architecture management plugin for Obsidian. It extends the C4 model with cloud-specific component mappings and provides visual diagram editing capabilities.
@@ -368,7 +368,7 @@ git checkout -b add-bac4
 # 5. Edit community-plugins.json (add BAC4 entry at end)
 # 6. Commit and push
 git add community-plugins.json
-git commit -m "Add plugin: BAC4 - Cloud Architecture Management"
+git commit -m "Add plugin: bac4 - The Solution Architects Toolbox"
 git push origin add-bac4
 
 # 7. Open PR on GitHub

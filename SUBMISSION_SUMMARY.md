@@ -117,7 +117,7 @@ Edit `community-plugins.json` and add (alphabetically):
 ```json
 {
   "id": "bac4",
-  "name": "BAC4 - Cloud Architecture Management",
+  "name": "bac4 - The Solution Architects Toolbox",
   "author": "David Oliver",
   "description": "AI-native cloud architecture management with C4 model diagrams. Self-contained .bac4 files with embedded links. Create diagrams manually, via AI API, or chat with Claude Desktop via MCP. AWS/Azure/GCP component libraries included.",
   "repo": "DavidROliverBA/bac4"
@@ -153,7 +153,7 @@ Your current manifest.json is **100% compliant**:
 ```json
 {
   "id": "bac4",              ✅ Matches repo name
-  "name": "BAC4 - Cloud Architecture Management",  ✅ Unique, descriptive
+  "name": "bac4 - The Solution Architects Toolbox",  ✅ Unique, descriptive
   "version": "0.8.0",               ✅ Semantic versioning (update to 1.0.0 recommended)
   "minAppVersion": "1.0.0",         ✅ Correct minimum Obsidian version
   "description": "...",             ✅ 182 chars (under 250 limit)

@@ -1,7 +1,7 @@
 {
   "name": "bac4",
   "version": "0.8.0",
-  "description": "BAC4 - AI-Native Cloud Architecture Management for Obsidian (v0.8.0: Automatic diagram screenshots in markdown docs)",
+  "description": "bac4 - The Solution Architects Toolbox (v0.8.0: Automatic diagram screenshots in markdown docs)",
   "main": "main.js",
   "scripts": {
     "dev": "node esbuild.config.mjs",

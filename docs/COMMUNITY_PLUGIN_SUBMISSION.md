@@ -22,7 +22,7 @@ This document outlines all requirements and steps for submitting BAC4 to the Obs
 ```json
 {
   "id": "bac4",
-  "name": "BAC4 - Cloud Architecture Management",
+  "name": "bac4 - The Solution Architects Toolbox",
   "version": "0.8.0",
   "minAppVersion": "1.0.0",
   "description": "AI-native cloud architecture management with C4 model diagrams...",
@@ -64,7 +64,7 @@ This document outlines all requirements and steps for submitting BAC4 to the Obs
 
 All required fields present:
 - ✅ `id`: "bac4" (matches repo name)
-- ✅ `name`: "BAC4 - Cloud Architecture Management" (descriptive, unique)
+- ✅ `name`: "bac4 - The Solution Architects Toolbox" (descriptive, unique)
 - ✅ `version`: "0.8.0" (semantic versioning)
 - ✅ `minAppVersion`: "1.0.0" (Obsidian minimum version)
 - ✅ `description`: Complete, under 250 characters ✅ (182 chars)
@@ -242,7 +242,7 @@ Save as: `docs/images/` folder, reference in README.
 ```json
 {
   "id": "bac4",
-  "name": "BAC4 - Cloud Architecture Management",
+  "name": "bac4 - The Solution Architects Toolbox",
   "author": "David Oliver",
   "description": "AI-native cloud architecture management with C4 model diagrams. Self-contained .bac4 files with embedded links. Create diagrams manually, via AI API, or chat with Claude Desktop via MCP. AWS/Azure/GCP component libraries included.",
   "repo": "DavidROliverBA/bac4"
@@ -268,7 +268,7 @@ Save as: `docs/images/` folder, reference in README.
 
 4. PR Description template:
    ```markdown
-   # BAC4 - Cloud Architecture Management
+   # bac4 - The Solution Architects Toolbox
 
    AI-native cloud architecture management with C4 model diagrams.
 

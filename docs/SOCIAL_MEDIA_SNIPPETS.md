@@ -347,7 +347,7 @@ Happy to answer questions!
 ## Discord Announcement (#updates channel)
 
 ```
-🎉 **New Plugin: BAC4 - Cloud Architecture Management**
+🎉 **New Plugin: bac4 - The Solution Architects Toolbox**
 
 Hey @Developer!
 

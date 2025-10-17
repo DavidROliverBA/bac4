@@ -1,4 +1,4 @@
-# BAC4 - AI-Native Cloud Architecture Management for Obsidian
+# bac4 - The Solution Architects Toolbox
 
 **Version:** 0.8.0 🎉
 **Status:** Production-Ready ✅
