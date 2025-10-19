@@ -946,7 +946,14 @@ export default class BAC4Plugin extends Plugin {
 
     console.log('BAC4: Generating graph data...');
     const layoutType = this.settings.graphLayout || 'hierarchical';
-    const filter = this.settings.graphFilter;
+
+    // Ensure graphFilter exists (for users upgrading from older versions)
+    const filter = this.settings.graphFilter || {
+      layers: [],
+      connectionFilter: 'all' as const,
+      minConnections: 5,
+    };
+
     const { nodes, edges } = await GraphGenerationService.generateGraph(this.app.vault, layoutType, filter);
     console.log(`BAC4: Generated ${nodes.length} nodes, ${edges.length} edges with ${layoutType} layout`);
 
@@ -1026,6 +1033,15 @@ export default class BAC4Plugin extends Plugin {
    */
   private async setGraphFilter(filter: Partial<typeof this.settings.graphFilter>): Promise<void> {
     console.log('BAC4: Setting graph filter:', filter);
+
+    // Ensure graphFilter exists (for users upgrading from older versions)
+    if (!this.settings.graphFilter) {
+      this.settings.graphFilter = {
+        layers: [],
+        connectionFilter: 'all',
+        minConnections: 5,
+      };
+    }
 
     // Merge with existing filter
     this.settings.graphFilter = { ...this.settings.graphFilter, ...filter };
