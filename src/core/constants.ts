@@ -9,21 +9,21 @@ export const VIEW_TYPE_PROMPT_LIBRARY = 'bac4-prompt-library';
  * Command identifiers
  */
 export const COMMAND_OPEN_DASHBOARD = 'bac4-open-dashboard';
-export const COMMAND_CREATE_PROJECT = 'bac4-create-project';
 export const COMMAND_OPEN_SETTINGS = 'bac4-open-settings';
 
 /**
  * Default settings
+ * v2.0.0: Simplified for 7-layer architecture model
  */
 export const DEFAULT_SETTINGS = {
   defaultProjectLocation: 'projects',
-  enableAIFeatures: true,
-  autoSaveInterval: 30000, // 30 seconds
+  enableAIFeatures: false,  // Reserved for future AI integration
+  autoSaveInterval: 30000,  // 30 seconds
   dashboardPath: 'BAC4/Context.bac4', // Default dashboard path
   mcp: {
-    enabled: true,          // AI features enabled by default
-    apiKey: '',             // User must provide their Anthropic API key
-    autoValidate: false,    // Disabled by default (can be performance intensive)
-    autoSuggest: false,     // Disabled by default (user-initiated generation only)
+    enabled: false,         // Reserved for future AI integration (v2.2.0+)
+    apiKey: '',
+    autoValidate: false,
+    autoSuggest: false,
   },
 };
