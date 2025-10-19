@@ -14,6 +14,7 @@ import { TFile, Vault } from 'obsidian';
 import type { CanvasNode, CanvasEdge, DiagramNode, DiagramType } from '../types/canvas-types';
 import { createGraphNode } from '../ui/canvas/utils/node-factory';
 import { C4_TYPE_COLORS } from '../constants/ui-constants';
+import { GraphLayoutService, type NodeLayout } from './graph-layout-service';
 
 interface DiagramMetadata {
   path: string;
@@ -188,14 +189,16 @@ export class GraphGenerationService {
    * Generate graph nodes and edges from all diagrams in vault
    *
    * v2.0.0: Uses hierarchical layout optimized for 7-layer architecture model.
-   * Arranges nodes by layer (Market → Code) with dynamic sizing based on connections.
+   * v2.0.1: Persistent layout - Restores user-customized node positions.
    *
    * **Layout Algorithm:**
-   * - Groups diagrams by layer (Market, Organisation, Capability, etc.)
-   * - Arranges layers vertically (top to bottom)
-   * - Arranges diagrams within each layer horizontally
-   * - Sizes nodes based on connection count (more connections = larger node)
-   * - Centers each layer horizontally
+   * 1. Load saved layout from .bac4-graph-layout.json
+   * 2. Groups diagrams by layer (Market, Organisation, Capability, etc.)
+   * 3. For each diagram:
+   *    - If saved position exists → Use saved position
+   *    - If new diagram → Auto-position in hierarchical layout
+   * 4. Sizes nodes based on connection count (more connections = larger node)
+   * 5. Centers each layer horizontally
    *
    * @param vault - Obsidian vault instance to scan
    * @returns Promise resolving to object containing nodes and edges arrays
@@ -210,6 +213,12 @@ export class GraphGenerationService {
    */
   static async generateGraph(vault: Vault): Promise<{ nodes: CanvasNode[]; edges: CanvasEdge[] }> {
     console.log('BAC4: Generating graph view...');
+
+    // Load saved layout positions (v2.0.1)
+    const savedLayout = await GraphLayoutService.loadLayout(vault);
+    console.log(
+      `BAC4: Loaded ${Object.keys(savedLayout.layout).length} saved node positions`
+    );
 
     // Get all diagram files
     const diagramFiles = await this.getAllDiagrams(vault);
@@ -276,9 +285,24 @@ export class GraphGenerationService {
         // Calculate dynamic node size based on connections
         const { width, height } = this.calculateNodeSize(totalConnections);
 
-        // Position horizontally within layer
-        const x = startX + indexInLayer * horizontalSpacing;
-        const y = currentY;
+        // Check if this diagram has a saved position (v2.0.1)
+        const savedPosition = GraphLayoutService.getSavedPosition(savedLayout, metadata.path);
+
+        let x: number;
+        let y: number;
+
+        if (savedPosition) {
+          // Use saved position (user has manually arranged this node)
+          x = savedPosition.x;
+          y = savedPosition.y;
+          console.log(
+            `BAC4: Using saved position for ${metadata.displayName}: (${x}, ${y})`
+          );
+        } else {
+          // Auto-position in hierarchical layout
+          x = startX + indexInLayer * horizontalSpacing;
+          y = currentY;
+        }
 
         // Get color based on diagram type
         const color = C4_TYPE_COLORS[metadata.diagramType] || C4_TYPE_COLORS.context;
@@ -294,10 +318,10 @@ export class GraphGenerationService {
           childCount
         );
 
-        // Set color and size
+        // Set color and size (use saved size if available)
         node.data.color = color;
-        node.width = width;
-        node.height = height;
+        node.width = savedPosition?.width ?? width;
+        node.height = savedPosition?.height ?? height;
 
         nodes.push(node);
 

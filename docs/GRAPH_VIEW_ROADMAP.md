@@ -1,7 +1,7 @@
 # BAC4 Graph View Enhancement Roadmap
 
-**Status:** Phase 1 Complete ✅
-**Version:** v2.0.0+
+**Status:** Phase 2 Complete ✅
+**Version:** v2.0.1
 **Last Updated:** 2025-10-19
 
 ---
@@ -12,9 +12,9 @@ This roadmap outlines improvements to BAC4's graph view, inspired by the Extende
 
 ---
 
-## Completed Features (v2.0.0)
+## Completed Features
 
-### ✅ Phase 1: Hierarchical Layout (COMPLETE)
+### ✅ Phase 1: Hierarchical Layout (COMPLETE - v2.0.0)
 
 **Implementation Date:** 2025-10-19
 
@@ -61,25 +61,25 @@ Component (Layer 6)       [Node11]
 Code (Layer 7)            [Node12] [Node13] [Node14]
 ```
 
----
+### ✅ Phase 2: Persistent Layout (COMPLETE - v2.0.1)
 
-## Planned Features
+**Implementation Date:** 2025-10-19
+**Actual Effort:** 3.5 hours
 
-### 🔄 Phase 2: Persistent Layout (HIGH PRIORITY)
-
-**Estimated Effort:** 3-4 hours
-**Target:** v2.0.1
-
-**Problem:** Graph regenerates from scratch each time, losing user's manual node arrangements.
+**Problem:** Graph regenerated from scratch each time, losing user's manual node arrangements.
 
 **Solution:** Save and restore user-customized node positions.
 
-#### Features:
-1. **Layout persistence file** - `.bac4-graph-layout.json` in vault root
-2. **Position saving** - Store x, y coordinates for each diagram
-3. **Position restoration** - Restore saved positions on graph regeneration
-4. **Smart positioning** - Auto-position only NEW diagrams
-5. **Layout versioning** - Track layout format version
+#### Features Implemented:
+1. ✅ **Layout persistence file** - `.bac4-graph-layout.json` in vault root
+2. ✅ **Position saving** - Store x, y, width, height for each diagram
+3. ✅ **Position restoration** - Restore saved positions on graph regeneration
+4. ✅ **Smart positioning** - Auto-position only NEW diagrams
+5. ✅ **Layout versioning** - Track layout format version (1.0.0)
+6. ✅ **Auto-save on Canvas edit** - Monitors __graph_view__.canvas for changes
+7. ✅ **Diagram rename handling** - Updates layout file when diagrams renamed
+8. ✅ **Diagram deletion handling** - Removes from layout when deleted
+9. ✅ **Reset command** - "Reset Graph Layout" command palette entry
 
 #### Layout File Format:
 ```json
@@ -93,18 +93,42 @@ Code (Layer 7)            [Node12] [Node13] [Node14]
 }
 ```
 
-#### Implementation Tasks:
-- [ ] Create `GraphLayoutService` class
-- [ ] `saveLayout()` - Write positions to file
-- [ ] `loadLayout()` - Read positions from file
-- [ ] Integrate into `generateGraph()` - Apply saved positions
-- [ ] Handle missing/renamed diagrams gracefully
-- [ ] Add "Reset Layout" command to clear saved positions
+#### Implementation:
+- ✅ Created `GraphLayoutService` class - Full CRUD operations
+- ✅ `saveLayout()` - Write positions to file
+- ✅ `loadLayout()` - Read positions from file
+- ✅ `resetLayout()` - Delete layout file
+- ✅ `handleDiagramRename()` - Update positions on rename
+- ✅ `handleDiagramDeletion()` - Remove positions on delete
+- ✅ Integrated into `generateGraph()` - Apply saved positions
+- ✅ Canvas modification listener - Save on edit (1s debounce)
+- ✅ File event listeners - Rename, delete handlers
+- ✅ "Reset Graph Layout" command in palette
 
-#### Files to Modify:
-- `src/services/graph-generation-service.ts` - Add layout restoration
-- `src/services/graph-layout-service.ts` - NEW FILE
-- `src/main.ts` - Add "Reset Graph Layout" command
+#### Files Modified/Created:
+- `src/services/graph-layout-service.ts` - NEW FILE (360 lines)
+- `src/services/graph-generation-service.ts` - Layout restoration logic
+- `src/main.ts` - Command + event listeners
+
+#### How It Works:
+1. User opens graph view → Loads saved layout
+2. New diagrams → Auto-positioned hierarchically
+3. Existing diagrams → Use saved positions
+4. User drags nodes in Canvas → Auto-saves after 1s
+5. User renames diagram → Layout file updates automatically
+6. User deletes diagram → Removed from layout file
+7. "Reset Graph Layout" → Deletes file, next view uses defaults
+
+#### Benefits:
+- ✅ Manual arrangements persist across sessions
+- ✅ Automatic save (no explicit "Save" button needed)
+- ✅ Handles diagram lifecycle (create, rename, delete)
+- ✅ Easy reset to defaults
+- ✅ No data loss on file operations
+
+---
+
+## Planned Features
 
 ---
 

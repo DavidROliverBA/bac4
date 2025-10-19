@@ -133,12 +133,49 @@ export default class BAC4Plugin extends Plugin {
       })
     );
 
+    // Register canvas modification listener (v2.0.1: Save graph layout when Canvas is edited)
+    this.registerEvent(
+      this.app.vault.on('modify', async (file) => {
+        if (!(file instanceof TFile)) return;
+
+        // Only care about graph view canvas file
+        if (file.path === 'BAC4/__graph_view__.canvas') {
+          console.log('BAC4: Graph view canvas modified, saving layout...');
+          // Debounce: wait 1 second before saving to avoid too many writes
+          clearTimeout((this as any).graphLayoutSaveTimeout);
+          (this as any).graphLayoutSaveTimeout = setTimeout(async () => {
+            await this.saveGraphLayoutFromCanvas(file);
+          }, 1000);
+        }
+      })
+    );
+
+    // Register file deletion listener (v2.0.1: Clean up graph layout)
+    this.registerEvent(
+      this.app.vault.on('delete', async (file) => {
+        if (!(file instanceof TFile)) return;
+
+        // Handle .bac4 file deletions in graph layout
+        if (file.extension === 'bac4') {
+          const { GraphLayoutService } = await import('./services/graph-layout-service');
+          await GraphLayoutService.handleDiagramDeletion(this.app.vault, file.path);
+        }
+      })
+    );
+
     // Register file rename listener (v0.6.0: Auto-update linkedDiagramPath and linkedMarkdownPath)
+    // v2.0.1: Also update graph layout file
     this.registerEvent(
       this.app.vault.on('rename', async (file, oldPath) => {
         if (!(file instanceof TFile)) return;
 
-        // Only care about .bac4 and .md file renames
+        // Handle .bac4 file renames in graph layout
+        if (file.extension === 'bac4') {
+          const { GraphLayoutService } = await import('./services/graph-layout-service');
+          await GraphLayoutService.handleDiagramRename(this.app.vault, oldPath, file.path);
+        }
+
+        // Only care about .bac4 and .md file renames for diagram references
         if (file.extension !== 'bac4' && file.extension !== 'md') return;
 
         console.log('BAC4: File renamed from', oldPath, 'to', file.path);
@@ -213,6 +250,11 @@ export default class BAC4Plugin extends Plugin {
 
   async onunload() {
     console.log('Unloading BAC4 Plugin...');
+
+    // Clear any pending graph layout save timeout
+    if ((this as any).graphLayoutSaveTimeout) {
+      clearTimeout((this as any).graphLayoutSaveTimeout);
+    }
 
     // Save settings
     await this.saveSettings();
@@ -612,6 +654,15 @@ export default class BAC4Plugin extends Plugin {
         return true;
       },
     });
+
+    // Reset Graph Layout Command (v2.0.1)
+    this.addCommand({
+      id: 'bac4-reset-graph-layout',
+      name: 'Reset Graph Layout',
+      callback: async () => {
+        await this.resetGraphLayout();
+      },
+    });
   }
 
   /**
@@ -795,5 +846,75 @@ export default class BAC4Plugin extends Plugin {
     await leaf.openFile(file as TFile);
 
     new Notice(`Graph View - ${nodes.length} diagrams found (Cmd+Shift+G)`);
+  }
+
+  /**
+   * Reset graph layout to default
+   *
+   * Deletes saved layout file, causing next graph view to use default hierarchical layout.
+   *
+   * v2.0.1: Phase 2 - Persistent Layout
+   */
+  private async resetGraphLayout(): Promise<void> {
+    console.log('BAC4: Resetting graph layout...');
+
+    const { GraphLayoutService } = await import('./services/graph-layout-service');
+
+    try {
+      await GraphLayoutService.resetLayout(this.app.vault);
+      new Notice('Graph layout reset to default. Reopen graph view to see changes.');
+    } catch (error) {
+      console.error('BAC4: Error resetting graph layout:', error);
+      new Notice('Failed to reset graph layout');
+    }
+  }
+
+  /**
+   * Save graph layout from Canvas file
+   *
+   * Reads node positions from __graph_view__.canvas and saves to layout file.
+   * Called when user manually arranges nodes in Canvas view.
+   *
+   * v2.0.1: Phase 2 - Persistent Layout
+   *
+   * @param canvasFile - The graph view canvas file
+   */
+  private async saveGraphLayoutFromCanvas(canvasFile: TFile): Promise<void> {
+    try {
+      console.log('BAC4: Saving graph layout from Canvas modifications...');
+
+      // Read canvas file
+      const content = await this.app.vault.read(canvasFile);
+      const canvasData = JSON.parse(content);
+
+      if (!canvasData.nodes || !Array.isArray(canvasData.nodes)) {
+        console.warn('BAC4: Canvas file has no nodes, skipping layout save');
+        return;
+      }
+
+      const { GraphLayoutService } = await import('./services/graph-layout-service');
+      const positions = new Map<string, { x: number; y: number; width: number; height: number }>();
+
+      // Extract positions from canvas nodes
+      // Canvas file nodes have 'file' property containing diagram path
+      for (const node of canvasData.nodes) {
+        if (node.type === 'file' && node.file) {
+          const diagramPath = node.file;
+          positions.set(diagramPath, {
+            x: node.x || 0,
+            y: node.y || 0,
+            width: node.width || 200,
+            height: node.height || 80,
+          });
+        }
+      }
+
+      if (positions.size > 0) {
+        await GraphLayoutService.saveLayout(this.app.vault, positions);
+        console.log(`BAC4: Saved ${positions.size} node positions from Canvas`);
+      }
+    } catch (error) {
+      console.error('BAC4: Error saving graph layout from Canvas:', error);
+    }
   }
 }
