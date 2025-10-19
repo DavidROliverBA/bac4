@@ -14,18 +14,20 @@
 
 import * as React from 'react';
 import type { Node, Edge } from 'reactflow';
-import { Menu } from 'obsidian';
+import { Menu, TFile } from 'obsidian';
 import type BAC4Plugin from '../../../main';
-import type { CanvasNodeData } from '../../../types/canvas-types';
+import type { CanvasNodeData, DiagramType } from '../../../types/canvas-types';
 import type { DiagramNavigationService } from '../../../services/diagram-navigation-service';
 import { canDrillDown, getChildDiagramType, getChildTypeLabel } from '../utils/canvas-utils';
 import { ErrorHandler } from '../../../utils/error-handling';
 import { MarkdownLinkService } from '../../../services/markdown-link-service';
+import { NodeRegistryService } from '../../../services/node-registry-service';
+import { DuplicateNodeWarningModal } from '../../components/DuplicateNodeWarningModal';
 
 export interface UseNodeHandlersProps {
   plugin: BAC4Plugin;
   filePath?: string;
-  diagramType: 'context' | 'container' | 'component';
+  diagramType: DiagramType;
   nodes: Node<CanvasNodeData>[];
   setNodes: React.Dispatch<React.SetStateAction<Node<CanvasNodeData>[]>>;
   setEdges: React.Dispatch<React.SetStateAction<Edge[]>>;
@@ -38,7 +40,7 @@ export interface NodeHandlers {
   onNodeDoubleClick: (event: React.MouseEvent, node: Node<CanvasNodeData>) => Promise<void>;
   onNodeContextMenu: (event: React.MouseEvent, node: Node<CanvasNodeData>) => Promise<void>;
   updateNodeLabel: (nodeId: string, newLabel: string) => Promise<void>;
-  updateNodeProperties: (nodeId: string, updates: Partial<CanvasNodeData>) => void;
+  updateNodeProperties: (nodeId: string, updates: Partial<CanvasNodeData>) => Promise<void>;
   handleCreateOrOpenChildDiagram: (node: Node<CanvasNodeData>) => Promise<void>;
   handleDeleteNode: (nodeId: string) => void;
   linkMarkdownFile: (nodeId: string, filePath: string) => void;
@@ -46,6 +48,8 @@ export interface NodeHandlers {
   createAndLinkMarkdownFile: (nodeId: string, filePath: string) => Promise<void>;
   openLinkedMarkdownFile: (nodeId: string) => Promise<void>;
   updateMarkdownImage: (nodeId: string) => Promise<void>;
+  bringNodeForward: (nodeId: string) => void;
+  sendNodeBackward: (nodeId: string) => void;
 }
 
 /**
@@ -204,6 +208,7 @@ export function useNodeHandlers(props: UseNodeHandlersProps): NodeHandlers {
    * Handle node double-click (v0.6.0: Unified navigation)
    *
    * Priority order:
+   * 0. Graph node → Open the diagram it represents
    * 1. linkedDiagramPath exists → Open child diagram (Context/Container drill-down)
    * 2. linkedMarkdownPath exists → Open markdown documentation
    * 3. Neither exists → Try to create/open child diagram (if node type allows)
@@ -213,6 +218,22 @@ export function useNodeHandlers(props: UseNodeHandlersProps): NodeHandlers {
     async (_event: React.MouseEvent, node: Node<CanvasNodeData>) => {
       console.log('=== BAC4 DOUBLE-CLICK START ===');
       console.log('Node:', { id: node.id, type: node.type, label: node.data.label });
+
+      // Priority 0: Check if this is a graph node - open the diagram it represents
+      if (node.type === 'graph' && 'diagramPath' in node.data) {
+        const graphDiagramPath = node.data.diagramPath as string;
+        console.log('BAC4: Graph node double-clicked, opening diagram:', graphDiagramPath);
+        try {
+          await plugin.openCanvasViewInNewTab(graphDiagramPath);
+          console.log('BAC4: ✅ Opened diagram from graph node');
+          console.log('=== BAC4 DOUBLE-CLICK END ===');
+          return;
+        } catch (error) {
+          console.error('BAC4: Error opening diagram from graph node:', error);
+          ErrorHandler.handleError(error, 'Failed to open diagram');
+          return;
+        }
+      }
 
       // Priority 1: Check if node has linkedDiagramPath (embedded in node data)
       if ('linkedDiagramPath' in node.data && node.data.linkedDiagramPath) {
@@ -306,6 +327,7 @@ export function useNodeHandlers(props: UseNodeHandlersProps): NodeHandlers {
 
   /**
    * Update node label and child diagram file name
+   * v1.0.1: Checks for duplicate names and creates cross-references
    */
   const updateNodeLabel = React.useCallback(
     async (nodeId: string, newLabel: string) => {
@@ -318,7 +340,77 @@ export function useNodeHandlers(props: UseNodeHandlersProps): NodeHandlers {
         return;
       }
 
-      // Update the node label
+      const oldLabel = node.data.label;
+      const registry = NodeRegistryService.getInstance();
+
+      // Check if new name already exists (excluding current diagram)
+      if (registry.isInitialized() && oldLabel !== newLabel) {
+        const existingRefs = registry.getReferencesExcludingDiagram(newLabel, filePath || '');
+
+        if (existingRefs.length > 0) {
+          // Name exists elsewhere - show warning modal
+          console.log('BAC4: Duplicate node name detected:', newLabel, existingRefs);
+
+          return new Promise<void>((resolve) => {
+            const modal = new DuplicateNodeWarningModal(
+              plugin.app,
+              newLabel,
+              existingRefs,
+              // On confirm - create cross-reference
+              () => {
+                console.log('BAC4: User confirmed duplicate - creating cross-reference');
+
+                // Collect cross-reference paths
+                const crossRefs = existingRefs.map((ref) => ref.diagramPath);
+
+                // Update the node label and mark as reference
+                setNodes((nds) => {
+                  const updated = nds.map((n) => {
+                    if (n.id === nodeId) {
+                      console.log('BAC4: Found node to update', { oldLabel, newLabel });
+                      return {
+                        ...n,
+                        data: {
+                          ...n.data,
+                          label: newLabel,
+                          isReference: true,
+                          crossReferences: crossRefs,
+                        },
+                      };
+                    }
+                    return n;
+                  });
+                  console.log('BAC4: Updated nodes with cross-reference');
+                  return updated;
+                });
+
+                // Update registry
+                if (filePath) {
+                  const diagramName = filePath.split('/').pop()?.replace('.bac4', '') || filePath;
+                  registry.updateNodeName(
+                    nodeId,
+                    oldLabel,
+                    newLabel,
+                    filePath,
+                    diagramName,
+                    node.type || 'unknown'
+                  );
+                }
+
+                resolve();
+              },
+              // On cancel - don't update
+              () => {
+                console.log('BAC4: User cancelled duplicate rename');
+                resolve();
+              }
+            );
+            modal.open();
+          });
+        }
+      }
+
+      // No duplicate - proceed with normal update
       setNodes((nds) => {
         const updated = nds.map((n) => {
           if (n.id === nodeId) {
@@ -333,6 +425,19 @@ export function useNodeHandlers(props: UseNodeHandlersProps): NodeHandlers {
         console.log('BAC4: Updated nodes');
         return updated;
       });
+
+      // Update registry
+      if (registry.isInitialized() && filePath) {
+        const diagramName = filePath.split('/').pop()?.replace('.bac4', '') || filePath;
+        registry.updateNodeName(
+          nodeId,
+          oldLabel,
+          newLabel,
+          filePath,
+          diagramName,
+          node.type || 'unknown'
+        );
+      }
 
       // v0.6.0: Check if node has a child diagram by querying navigation service
       if (filePath) {
@@ -353,24 +458,32 @@ export function useNodeHandlers(props: UseNodeHandlersProps): NodeHandlers {
             // Rename the child diagram file
             const newChildPath = await navigationService.renameDiagram(childPath, newLabel);
             console.log('BAC4: ✅ Renamed child diagram to:', newChildPath);
-
-            // Update relationship with new parent node label
-            await navigationService.updateParentNodeLabel(filePath, nodeId, newLabel);
-            console.log('BAC4: ✅ Updated relationship with new label');
           }
         } catch (error) {
           console.error('BAC4: Error renaming child diagram:', error);
         }
       }
     },
-    [setNodes, nodes, filePath, navigationService]
+    [setNodes, nodes, filePath, navigationService, plugin]
   );
 
   /**
    * Update node properties
+   * v1.0.1: Synchronizes shared properties across all diagrams with same node name
    */
   const updateNodeProperties = React.useCallback(
-    (nodeId: string, updates: Partial<CanvasNodeData>) => {
+    async (nodeId: string, updates: Partial<CanvasNodeData>) => {
+      // Find the node being updated
+      const currentNode = nodes.find((n) => n.id === nodeId);
+      if (!currentNode) {
+        console.error('BAC4: Node not found:', nodeId);
+        return;
+      }
+
+      const nodeLabel = currentNode.data.label;
+      console.log('BAC4: Updating node properties', { nodeId, nodeLabel, updates });
+
+      // Update local node first
       setNodes((nds) =>
         nds.map((node) => {
           if (node.id === nodeId) {
@@ -382,8 +495,112 @@ export function useNodeHandlers(props: UseNodeHandlersProps): NodeHandlers {
           return node;
         })
       );
+
+      // Sync across other diagrams if this is a shared node
+      const registry = NodeRegistryService.getInstance();
+      if (!registry.isInitialized() || !filePath) {
+        console.log('BAC4: Registry not initialized or no file path, skipping cross-diagram sync');
+        return;
+      }
+
+      // Find all other references to this node name
+      const references = registry.getReferencesExcludingDiagram(nodeLabel, filePath);
+
+      if (references.length === 0) {
+        console.log('BAC4: No other references found, skipping cross-diagram sync');
+        return;
+      }
+
+      console.log(`BAC4: Syncing properties to ${references.length} other diagram(s)`);
+
+      // Properties that should be synchronized across diagrams
+      const syncableProps = ['description', 'notes', 'linkedMarkdownPath', 'color'];
+      const propsToSync: Partial<CanvasNodeData> = {};
+
+      for (const key of syncableProps) {
+        if (key in updates) {
+          propsToSync[key] = updates[key];
+        }
+      }
+
+      if (Object.keys(propsToSync).length === 0) {
+        console.log('BAC4: No syncable properties in update, skipping cross-diagram sync');
+        return;
+      }
+
+      // Update each referenced diagram
+      for (const ref of references) {
+        try {
+          const diagramFile = plugin.app.vault.getAbstractFileByPath(ref.diagramPath);
+          if (!(diagramFile instanceof TFile)) {
+            console.error('BAC4: Diagram file not found or not a file:', ref.diagramPath);
+            continue;
+          }
+
+          // Read diagram file
+          const content = await plugin.app.vault.read(diagramFile);
+          const diagramData = JSON.parse(content);
+
+          let nodes: Node<CanvasNodeData>[] = [];
+          let nodesPath = '';
+
+          // v1.0.0 format: nodes are in timeline snapshots
+          if (diagramData.timeline?.snapshots && Array.isArray(diagramData.timeline.snapshots)) {
+            const currentSnapshotId = diagramData.timeline.currentSnapshotId;
+            const currentSnapshot = diagramData.timeline.snapshots.find((s: any) => s.id === currentSnapshotId);
+
+            if (currentSnapshot?.nodes && Array.isArray(currentSnapshot.nodes)) {
+              nodes = currentSnapshot.nodes;
+              nodesPath = 'timeline.snapshots[current].nodes';
+            }
+          }
+          // Legacy format: nodes at top level
+          else if (diagramData.nodes && Array.isArray(diagramData.nodes)) {
+            nodes = diagramData.nodes;
+            nodesPath = 'nodes';
+          }
+
+          // Find and update the matching node by ID
+          let updated = false;
+          const updatedNodes = nodes.map((node) => {
+            if (node.id === ref.nodeId) {
+              updated = true;
+              return {
+                ...node,
+                data: { ...node.data, ...propsToSync },
+              };
+            }
+            return node;
+          });
+
+          if (!updated) {
+            console.error('BAC4: Node not found in diagram:', ref.nodeId, ref.diagramPath);
+            continue;
+          }
+
+          // Update the diagram data structure
+          if (nodesPath === 'timeline.snapshots[current].nodes') {
+            const currentSnapshotId = diagramData.timeline.currentSnapshotId;
+            const snapshotIndex = diagramData.timeline.snapshots.findIndex((s: any) => s.id === currentSnapshotId);
+            if (snapshotIndex !== -1) {
+              diagramData.timeline.snapshots[snapshotIndex].nodes = updatedNodes;
+            }
+          } else {
+            diagramData.nodes = updatedNodes;
+          }
+
+          // Save the updated diagram
+          await plugin.app.vault.modify(diagramFile, JSON.stringify(diagramData, null, 2));
+          console.log('BAC4: ✅ Synced properties to:', ref.diagramPath);
+
+        } catch (error) {
+          console.error('BAC4: Error syncing to diagram:', ref.diagramPath, error);
+        }
+      }
+
+      console.log('BAC4: ✅ Cross-diagram sync complete');
     },
-    [setNodes]
+    [setNodes, nodes, filePath, plugin]
   );
 
   /**
@@ -515,6 +732,55 @@ export function useNodeHandlers(props: UseNodeHandlersProps): NodeHandlers {
     [nodes, plugin]
   );
 
+  /**
+   * Bring node forward (increase z-index)
+   */
+  const bringNodeForward = React.useCallback(
+    (nodeId: string) => {
+      console.log('BAC4: Bringing node forward', nodeId);
+      setNodes((nds) =>
+        nds.map((node) => {
+          if (node.id === nodeId) {
+            const currentZ = node.zIndex ?? 1;
+            const newZ = currentZ + 1;
+            console.log('BAC4: Node z-index:', currentZ, '→', newZ);
+            return { ...node, zIndex: newZ };
+          }
+          return node;
+        })
+      );
+    },
+    [setNodes]
+  );
+
+  /**
+   * Send node backward (decrease z-index)
+   * Minimum z-index is 0 for container nodes, 1 for regular nodes
+   */
+  const sendNodeBackward = React.useCallback(
+    (nodeId: string) => {
+      console.log('BAC4: Sending node backward', nodeId);
+      setNodes((nds) =>
+        nds.map((node) => {
+          if (node.id === nodeId) {
+            const currentZ = node.zIndex ?? 1;
+            // Check if this is a container node (has isContainer property)
+            const isContainer =
+              node.type === 'cloudComponent' &&
+              'isContainer' in node.data &&
+              node.data.isContainer === true;
+            const minZ = isContainer ? 0 : 1;
+            const newZ = Math.max(minZ, currentZ - 1);
+            console.log('BAC4: Node z-index:', currentZ, '→', newZ, '(min:', minZ, ')');
+            return { ...node, zIndex: newZ };
+          }
+          return node;
+        })
+      );
+    },
+    [setNodes]
+  );
+
   return {
     onNodeClick,
     onNodeDoubleClick,
@@ -528,5 +794,7 @@ export function useNodeHandlers(props: UseNodeHandlersProps): NodeHandlers {
     createAndLinkMarkdownFile,
     openLinkedMarkdownFile,
     updateMarkdownImage,
+    bringNodeForward,
+    sendNodeBackward,
   };
 }

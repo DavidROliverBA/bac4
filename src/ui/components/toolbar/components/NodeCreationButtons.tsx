@@ -10,6 +10,7 @@
 import * as React from 'react';
 import { SPACING } from '../../../../constants';
 import { ToolbarButton } from './ToolbarButton';
+import type { DiagramType } from '../../../../types/canvas-types';
 
 export interface NodeTool {
   type: string;
@@ -19,7 +20,7 @@ export interface NodeTool {
 
 export interface NodeCreationButtonsProps {
   /** Current diagram type */
-  diagramType: 'context' | 'container' | 'component';
+  diagramType: DiagramType;
   /** Callback when node should be added */
   onAddNode: (nodeType: string, nodeData: Record<string, unknown>) => void;
 }
@@ -31,12 +32,42 @@ export interface NodeCreationButtonsProps {
  * Add new diagram types and their corresponding node tools here.
  * Follow the existing pattern for consistency.
  *
+ * v2.0.0: Added Market, Organisation, and Code layers
+ *
  * @param diagramType - Current diagram type
  * @returns Array of node tool definitions
  */
-function getTools(diagramType: 'context' | 'container' | 'component'): NodeTool[] {
+function getTools(diagramType: DiagramType): NodeTool[] {
   switch (diagramType) {
+    case 'market':
+      // Layer 1: Market segments, customer types, trends
+      return [
+        {
+          type: 'market',
+          label: '+ Market',
+          data: { label: 'New Market Segment' },
+        },
+      ];
+    case 'organisation':
+      // Layer 2: Business units, departments, teams
+      return [
+        {
+          type: 'organisation',
+          label: '+ Organisation',
+          data: { label: 'New Business Unit' },
+        },
+      ];
+    case 'capability':
+      // Layer 3: Business/technical capabilities
+      return [
+        {
+          type: 'capability',
+          label: '+ Capability',
+          data: { label: 'New Capability', width: 180, height: 100 },
+        },
+      ];
     case 'context':
+      // Layer 4: C4 Level 1 - System landscape
       return [
         { type: 'system', label: '+ System', data: { label: 'New System', external: false } },
         { type: 'person', label: '+ Person', data: { label: 'New User' } },
@@ -47,6 +78,7 @@ function getTools(diagramType: 'context' | 'container' | 'component'): NodeTool[
         },
       ];
     case 'container':
+      // Layer 5: C4 Level 2 - Technical containers
       return [
         {
           type: 'container',
@@ -55,6 +87,7 @@ function getTools(diagramType: 'context' | 'container' | 'component'): NodeTool[
         },
       ];
     case 'component':
+      // Layer 6: C4 Level 3 - Internal components
       return [
         {
           type: 'c4',
@@ -62,11 +95,20 @@ function getTools(diagramType: 'context' | 'container' | 'component'): NodeTool[
           data: { label: 'New Component', type: 'component' },
         },
       ];
-    // Add new diagram types here:
-    // case 'yourDiagramType':
-    //   return [
-    //     { type: 'yourNodeType', label: '+ Your Node', data: { label: 'New Node' } },
-    //   ];
+    case 'code':
+      // Layer 7: Implementation artifacts
+      return [
+        {
+          type: 'code',
+          label: '+ Code',
+          data: { label: 'New Code Artifact', codeType: 'file' },
+        },
+      ];
+    case 'graph':
+      // Graph nodes are auto-generated from existing diagrams, not manually created
+      return [];
+    default:
+      return [];
   }
 }
 // </AI_MODIFIABLE>

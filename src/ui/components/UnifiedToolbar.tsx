@@ -19,13 +19,14 @@ import { ExportMenu } from './toolbar/components/ExportMenu';
 import { DiagramActions } from './toolbar/components/DiagramActions';
 import { useExport } from './toolbar/hooks/useExport';
 import type { Timeline } from '../../types/timeline';
+import type { DiagramType } from '../../types/canvas-types';
 import type { AnnotationType } from './AnnotationPalette';
 
 export interface UnifiedToolbarProps {
   /** Current diagram type */
-  currentType: 'context' | 'container' | 'component';
+  currentType: DiagramType;
   /** Callback when diagram type changes */
-  onTypeChange: (newType: 'context' | 'container' | 'component') => void;
+  onTypeChange: (newType: DiagramType) => void;
   /** Callback when node should be added */
   onAddNode: (nodeType: string, nodeData: Record<string, unknown>) => void;
   /** Callback when annotation should be added */
@@ -40,6 +41,10 @@ export interface UnifiedToolbarProps {
   onDeleteAnnotation: () => void;
   /** Optional callback to rename diagram */
   onRenameDiagram?: () => void;
+  /** Bring node forward (increase z-index) */
+  onBringNodeForward?: () => void;
+  /** Send node backward (decrease z-index) */
+  onSendNodeBackward?: () => void;
   /** Optional callback to add timeline snapshot */
   onAddSnapshot?: () => void;
   /** Diagram name for export filename */
@@ -89,6 +94,8 @@ export const UnifiedToolbar: React.FC<UnifiedToolbarProps> = ({
   onDeleteNode,
   onDeleteAnnotation,
   onRenameDiagram,
+  onBringNodeForward,
+  onSendNodeBackward,
   onAddSnapshot,
   diagramName = 'diagram',
   timeline,
@@ -131,6 +138,8 @@ export const UnifiedToolbar: React.FC<UnifiedToolbarProps> = ({
           onDeleteNode={onDeleteNode}
           onDeleteAnnotation={onDeleteAnnotation}
           onRenameDiagram={onRenameDiagram}
+          onBringNodeForward={onBringNodeForward}
+          onSendNodeBackward={onSendNodeBackward}
         />
 
         {/* Add Snapshot Button - Always visible */}

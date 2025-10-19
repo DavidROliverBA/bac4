@@ -43,6 +43,9 @@ esbuild
     entryPoints: ['src/main.ts'],
     bundle: true,
     plugins: [cssInjectPlugin],
+    loader: {
+      '.json': 'json',
+    },
     external: [
       'obsidian',
       'electron',

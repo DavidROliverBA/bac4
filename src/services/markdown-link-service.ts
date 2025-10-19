@@ -178,6 +178,10 @@ Brief description of this system and its purpose in the architecture.
 - Container diagram: [[]]
 - Context diagram: [[]]
 
+## Connected Diagrams
+*This node appears in the following diagrams:*
+- [[]]
+
 ## Interfaces
 ### Public APIs
 - API endpoint 1
@@ -253,6 +257,10 @@ Brief description of this container (application, service, database, etc.)
 - Component diagram: [[]]
 - Container diagram: [[]]
 
+## Connected Diagrams
+*This container appears in the following diagrams:*
+- [[]]
+
 ## Deployment
 - Environment: [staging/production]
 - Infrastructure: [cloud/on-prem]
@@ -323,6 +331,10 @@ Why this cloud service is used in the architecture.
 ## Related Diagrams
 - Component diagram: [[]]
 
+## Connected Diagrams
+*This cloud component appears in the following diagrams:*
+- [[]]
+
 ## Additional Notes
 Add any additional context, decisions, or considerations here.
 `;
@@ -369,6 +381,10 @@ Description of this user/actor and their role in the system.
 ## Related Diagrams
 - Context diagram: [[]]
 
+## Connected Diagrams
+*This person appears in the following diagrams:*
+- [[]]
+
 ## Additional Notes
 Add any additional context about this user/actor.
 `;
@@ -391,6 +407,10 @@ Description of this architectural element.
 - Detail 3
 
 ## Related Diagrams
+- [[]]
+
+## Connected Diagrams
+*This element appears in the following diagrams:*
 - [[]]
 
 ## Additional Notes

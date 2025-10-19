@@ -20,7 +20,7 @@ interface DiagramLinkingProps {
   label: string;
   linkedDiagram: DiagramNode | null;
   availableDiagrams: DiagramNode[];
-  diagramType: 'container' | 'component';
+  diagramType: 'context' | 'container' | 'component' | 'capability' | 'graph';
   loading: boolean;
   onChange: (selectedPath: string) => void;
   onOpenDiagram?: (path: string) => void;
@@ -51,7 +51,20 @@ export const DiagramLinking: React.FC<DiagramLinkingProps> = ({
   onChange,
   onOpenDiagram,
 }) => {
-  const displayType = diagramType === 'container' ? 'Container' : 'Component';
+  // Map diagram type to display name
+  const displayType = {
+    context: 'Context',
+    container: 'Container',
+    component: 'Component',
+    capability: 'Capability',
+    graph: 'Graph',
+  }[diagramType];
+
+  // Sort diagrams alphabetically by display name
+  const sortedDiagrams = React.useMemo(
+    () => [...availableDiagrams].sort((a, b) => a.displayName.localeCompare(b.displayName)),
+    [availableDiagrams]
+  );
 
   return (
     <div style={{ marginBottom: SPACING.container }}>
@@ -85,7 +98,7 @@ export const DiagramLinking: React.FC<DiagramLinkingProps> = ({
         }}
       >
         <option value="[NONE]">{loading ? 'Loading...' : '-- No Link --'}</option>
-        {availableDiagrams.map((diagram) => (
+        {sortedDiagrams.map((diagram) => (
           <option key={diagram.id} value={diagram.filePath}>
             {diagram.displayName} [{displayType} Diagram]
           </option>

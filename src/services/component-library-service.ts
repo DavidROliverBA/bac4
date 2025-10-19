@@ -43,14 +43,8 @@ import {
   CloudProvider,
   ComponentCategory,
 } from '../../component-library/types';
-import {
-  componentLibraries,
-  getAllComponents,
-  getComponentsByProvider,
-  getComponentsByCategory,
-  findComponentById,
-  searchComponents,
-} from '../../component-library';
+// Import components from JSON (v1.0.0 - JSON-based configuration)
+import componentsData from '../../component-library/components.json';
 
 export class ComponentLibraryService {
   private libraries: ComponentLibrary[];
@@ -64,7 +58,7 @@ export class ComponentLibraryService {
   /**
    * Initialize the service and load all component libraries
    *
-   * Loads component definitions from all providers and caches them for fast access.
+   * Loads component definitions from JSON configuration and caches them for fast access.
    * Should be called once during plugin initialization.
    *
    * @returns Promise that resolves when libraries are loaded
@@ -76,8 +70,31 @@ export class ComponentLibraryService {
    * ```
    */
   async initialize(): Promise<void> {
-    this.libraries = componentLibraries;
-    this.componentsCache = getAllComponents();
+    // Load components from JSON file (v1.0.0)
+    const components = componentsData.components as ComponentDefinition[];
+
+    // Group by provider to create libraries
+    const librariesMap = new Map<CloudProvider, ComponentDefinition[]>();
+
+    for (const component of components) {
+      if (!librariesMap.has(component.provider)) {
+        librariesMap.set(component.provider, []);
+      }
+      librariesMap.get(component.provider)!.push(component);
+    }
+
+    // Create library objects
+    this.libraries = Array.from(librariesMap.entries()).map(([provider, comps]) => ({
+      name: `${provider.toUpperCase()} Component Library`,
+      version: componentsData.version,
+      provider,
+      components: comps,
+    }));
+
+    // Cache all components for fast access
+    this.componentsCache = components;
+
+    console.log(`BAC4: Loaded ${this.componentsCache.length} components from JSON`);
   }
 
   /**
@@ -124,7 +141,7 @@ export class ComponentLibraryService {
    * ```
    */
   getComponentsByProvider(provider: CloudProvider): ComponentDefinition[] {
-    return getComponentsByProvider(provider);
+    return this.componentsCache.filter((comp) => comp.provider === provider);
   }
 
   /**
@@ -142,7 +159,7 @@ export class ComponentLibraryService {
    * ```
    */
   getComponentsByCategory(category: ComponentCategory): ComponentDefinition[] {
-    return getComponentsByCategory(category);
+    return this.componentsCache.filter((comp) => comp.category === category);
   }
 
   /**
@@ -157,7 +174,7 @@ export class ComponentLibraryService {
    * ```
    */
   findComponentById(id: string): ComponentDefinition | undefined {
-    return findComponentById(id);
+    return this.componentsCache.find((comp) => comp.id === id);
   }
 
   /**
@@ -175,7 +192,13 @@ export class ComponentLibraryService {
    * ```
    */
   searchComponents(query: string): ComponentDefinition[] {
-    return searchComponents(query);
+    const lowerQuery = query.toLowerCase();
+    return this.componentsCache.filter(
+      (comp) =>
+        comp.name.toLowerCase().includes(lowerQuery) ||
+        comp.description.toLowerCase().includes(lowerQuery) ||
+        comp.tags?.some((tag) => tag.toLowerCase().includes(lowerQuery))
+    );
   }
 
   /**

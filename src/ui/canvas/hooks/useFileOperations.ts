@@ -13,7 +13,7 @@
 import * as React from 'react';
 import type { Node, Edge } from 'reactflow';
 import type BAC4Plugin from '../../../main';
-import type { CanvasNodeData } from '../../../types/canvas-types';
+import type { CanvasNodeData, DiagramType } from '../../../types/canvas-types';
 import type { DiagramNavigationService } from '../../../services/diagram-navigation-service';
 import { AUTO_SAVE_DEBOUNCE_MS } from '../../../constants';
 import { normalizeEdges } from '../utils/canvas-utils';
@@ -25,7 +25,7 @@ import { TimelineService } from '../../../services/TimelineService';
 export interface UseFileOperationsProps {
   plugin: BAC4Plugin;
   filePath?: string;
-  diagramType: 'context' | 'container' | 'component';
+  diagramType: DiagramType;
   nodes: Node<CanvasNodeData>[];
   edges: Edge[];
   timeline: Timeline | null;
@@ -35,7 +35,7 @@ export interface UseFileOperationsProps {
   setEdges: React.Dispatch<React.SetStateAction<Edge[]>>;
   setTimeline: React.Dispatch<React.SetStateAction<Timeline | null>>;
   setAnnotations: React.Dispatch<React.SetStateAction<Annotation[]>>;
-  setDiagramType: (type: 'context' | 'container' | 'component') => void;
+  setDiagramType: (type: DiagramType) => void;
   nodeCounterRef: React.MutableRefObject<number>;
   navigationService: DiagramNavigationService;
 }
@@ -92,44 +92,79 @@ export function useFileOperations(props: UseFileOperationsProps): void {
 
         console.log('BAC4: Starting auto-save to', filePath);
 
+        // v1.0.1: Read file first to get latest cross-references
+        let diskData;
+        try {
+          diskData = await readBAC4File(plugin.app.vault, filePath);
+          console.log('BAC4: Read existing file to preserve cross-references');
+        } catch (readError) {
+          console.log('BAC4: Could not read file, will create new one');
+          diskData = null;
+        }
+
         // Auto-save to CURRENTLY SELECTED snapshot (v1.0.0 - all snapshots editable)
         const currentSnapshot = TimelineService.getCurrentSnapshot(timeline);
         const currentSnapshotId = timeline.currentSnapshotId;
 
+        // Get disk version of current snapshot for cross-reference preservation
+        const diskCurrentSnapshot = diskData?.timeline?.snapshots?.find(
+          (s: any) => s.id === currentSnapshotId
+        );
+
         console.log('BAC4: Auto-save to selected snapshot:', {
           currentSnapshotId: currentSnapshotId,
           currentSnapshotLabel: currentSnapshot.label,
+          hasDiskVersion: !!diskCurrentSnapshot,
         });
 
         // Update the currently selected snapshot with current canvas state
-        const updatedSnapshots = timeline.snapshots.map((snapshot) =>
-          snapshot.id === currentSnapshotId
-            ? {
-                ...snapshot,
-                // Use canvas state for updates
-                nodes: JSON.parse(JSON.stringify(nodes)),
-                edges: JSON.parse(JSON.stringify(edges)),
-                annotations: JSON.parse(JSON.stringify(annotations)),
+        // v1.0.1: Preserve cross-references from disk to avoid race conditions
+        const updatedSnapshots = timeline.snapshots.map((snapshot) => {
+          if (snapshot.id === currentSnapshotId) {
+            // For the current snapshot, merge in-memory nodes with on-disk cross-references
+            const mergedNodes = nodes.map((memNode) => {
+              // Find corresponding node in disk snapshot (latest version)
+              const diskNode = diskCurrentSnapshot?.nodes?.find((n: any) => n.id === memNode.id);
+
+              // If disk version has cross-references, preserve them
+              if (diskNode?.data?.isReference && diskNode?.data?.crossReferences) {
+                return {
+                  ...memNode,
+                  data: {
+                    ...memNode.data,
+                    isReference: diskNode.data.isReference,
+                    crossReferences: diskNode.data.crossReferences,
+                  },
+                };
               }
-            : snapshot
-        );
+
+              return memNode;
+            });
+
+            return {
+              ...snapshot,
+              nodes: JSON.parse(JSON.stringify(mergedNodes)),
+              edges: JSON.parse(JSON.stringify(edges)),
+              annotations: JSON.parse(JSON.stringify(annotations)),
+            };
+          }
+          return snapshot;
+        });
 
         const updatedTimeline: Timeline = {
           ...timeline,
           snapshots: updatedSnapshots,
         };
 
-        // Try to read existing file to preserve metadata
-        // If it fails (corrupted/missing), create new v1.0.0 structure
+        // Use already-read file data to preserve metadata
         let diagramData;
-        try {
-          const existingFile = await readBAC4File(plugin.app.vault, filePath);
+        if (diskData) {
           diagramData = {
-            ...existingFile,
+            ...diskData,
             timeline: updatedTimeline,
           };
-        } catch (readError) {
-          console.log('BAC4: Could not read existing file, creating new v1.0.0 structure');
+        } else {
+          console.log('BAC4: Creating new v1.0.0 file structure');
           // Create new v1.0.0 file structure
           const now = new Date().toISOString();
           diagramData = {

@@ -22,6 +22,11 @@ import { CloudComponentNode } from './nodes/CloudComponentNode';
 import { SystemNode } from './nodes/SystemNode';
 import { PersonNode } from './nodes/PersonNode';
 import { ContainerNode } from './nodes/ContainerNode';
+import { CapabilityNode } from './nodes/CapabilityNode';
+import { MarketNode } from './nodes/MarketNode';
+import { OrganisationNode } from './nodes/OrganisationNode';
+import { CodeNode } from './nodes/CodeNode';
+import { GraphNode } from './nodes/GraphNode';
 import { DirectionalEdge } from './edges/DirectionalEdge';
 import { ComponentPalette } from './components/ComponentPalette';
 import { PropertyPanel } from './components/PropertyPanel';
@@ -37,7 +42,9 @@ import { DiagramNavigationService } from '../services/diagram-navigation-service
 import { TimelineService } from '../services/TimelineService';
 import { ChangeDetectionService } from '../services/ChangeDetectionService';
 import { AnnotationService } from '../services/AnnotationService';
-import type { CanvasNodeData, ReactFlowInstance } from '../types/canvas-types';
+import { GraphGenerationService } from '../services/graph-generation-service';
+import { NodeRegistryService } from '../services/node-registry-service';
+import type { CanvasNodeData, ReactFlowInstance, DiagramType } from '../types/canvas-types';
 import type { Timeline, Annotation, ChangeSet } from '../types/timeline';
 import { getNavigationIconVisibility } from '../utils/navigation-utils';
 
@@ -70,6 +77,11 @@ const nodeTypes: NodeTypes = {
   system: SystemNode,
   person: PersonNode,
   container: ContainerNode,
+  capability: CapabilityNode,
+  market: MarketNode,              // v2.0.0: Layer 1 - Market segments
+  organisation: OrganisationNode,  // v2.0.0: Layer 2 - Business units
+  code: CodeNode,                   // v2.0.0: Layer 7 - Implementation
+  graph: GraphNode,
 };
 
 // Custom edge types mapping
@@ -92,9 +104,8 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath, view }) =
   const [reactFlowInstance, setReactFlowInstance] = React.useState<ReactFlowInstance | null>(null);
   const [selectedNode, setSelectedNode] = React.useState<Node<CanvasNodeData> | null>(null);
   const [selectedEdge, setSelectedEdge] = React.useState<Edge | null>(null);
-  const [diagramType, setDiagramType] = React.useState<'context' | 'container' | 'component'>(
-    'context'
-  );
+  const [mousePosition, setMousePosition] = React.useState<{ x: number; y: number } | null>(null);
+  const [diagramType, setDiagramType] = React.useState<DiagramType>('context');
   const nodeCounterRef = React.useRef(0);
 
   // Change detection state (v1.0.0)
@@ -137,6 +148,71 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath, view }) =
       }
     }
   }, [nodes, selectedNode]);
+
+  /**
+   * Automatically update edge handle connections based on node positions
+   * This ensures edges connect from the optimal side of each node
+   */
+  React.useEffect(() => {
+    if (nodes.length === 0 || edges.length === 0) return;
+
+    const updatedEdges = edges.map((edge) => {
+      const sourceNode = nodes.find((n) => n.id === edge.source);
+      const targetNode = nodes.find((n) => n.id === edge.target);
+
+      if (!sourceNode || !targetNode) return edge;
+
+      // Calculate center positions of nodes
+      const sourceX = sourceNode.position.x + (sourceNode.width || 150) / 2;
+      const sourceY = sourceNode.position.y + (sourceNode.height || 100) / 2;
+      const targetX = targetNode.position.x + (targetNode.width || 150) / 2;
+      const targetY = targetNode.position.y + (targetNode.height || 100) / 2;
+
+      // Calculate angle from source to target
+      const deltaX = targetX - sourceX;
+      const deltaY = targetY - sourceY;
+      const angle = Math.atan2(deltaY, deltaX) * (180 / Math.PI);
+      const normalizedAngle = angle < 0 ? angle + 360 : angle;
+
+      // Determine optimal handles based on angle
+      let sourceHandle: string;
+      let targetHandle: string;
+
+      if (normalizedAngle >= 315 || normalizedAngle < 45) {
+        // Target is to the right
+        sourceHandle = 'right';
+        targetHandle = 'left';
+      } else if (normalizedAngle >= 45 && normalizedAngle < 135) {
+        // Target is below
+        sourceHandle = 'bottom';
+        targetHandle = 'top';
+      } else if (normalizedAngle >= 135 && normalizedAngle < 225) {
+        // Target is to the left
+        sourceHandle = 'left';
+        targetHandle = 'right';
+      } else {
+        // Target is above
+        sourceHandle = 'top';
+        targetHandle = 'bottom';
+      }
+
+      // Only update if handles changed
+      if (edge.sourceHandle !== sourceHandle || edge.targetHandle !== targetHandle) {
+        return {
+          ...edge,
+          sourceHandle,
+          targetHandle,
+        };
+      }
+
+      return edge;
+    });
+
+    // Only update if something changed
+    if (JSON.stringify(edges) !== JSON.stringify(updatedEdges)) {
+      setEdges(updatedEdges);
+    }
+  }, [nodes, edges, setEdges]);
 
   /**
    * Create child diagram automatically for certain node types
@@ -195,6 +271,24 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath, view }) =
     setSelectedEdge(null);
   }, []);
 
+  /**
+   * Track mouse position for node placement (v1.0.0)
+   */
+  const handleMouseMove = React.useCallback(
+    (event: React.MouseEvent) => {
+      if (reactFlowInstance) {
+        // Use screenToFlowPosition (project is deprecated in React Flow 11+)
+        // Type assertion needed as TS types not yet updated
+        const position = (reactFlowInstance as any).screenToFlowPosition({
+          x: event.clientX,
+          y: event.clientY,
+        });
+        setMousePosition(position);
+      }
+    },
+    [reactFlowInstance]
+  );
+
   // Custom hooks for modular functionality
   const nodeHandlers = useNodeHandlers({
     plugin,
@@ -238,6 +332,7 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath, view }) =
     nodes,
     setNodes,
     nodeCounterRef,
+    mousePosition,
     onCreateChildDiagram: createChildDiagramIfNeeded,
     onPaneClickCallback: handlePaneClickCallback,
   });
@@ -260,6 +355,40 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath, view }) =
     nodeCounterRef,
     navigationService,
   });
+
+  /**
+   * Generate graph view when diagram type is 'graph'
+   * The graph view is a special meta-visualization showing all diagrams
+   */
+  React.useEffect(() => {
+    if (diagramType === 'graph') {
+      console.log('BAC4: Diagram type changed to graph, generating graph view...');
+
+      const generateGraphView = async () => {
+        try {
+          const { nodes: graphNodes, edges: graphEdges } = await GraphGenerationService.generateGraph(
+            plugin.app.vault
+          );
+
+          console.log('BAC4: Generated graph with', graphNodes.length, 'nodes and', graphEdges.length, 'edges');
+
+          setNodes(graphNodes);
+          setEdges(graphEdges);
+
+          // Fit view after a small delay to ensure nodes are rendered
+          setTimeout(() => {
+            if (reactFlowInstance) {
+              reactFlowInstance.fitView({ padding: 0.2 });
+            }
+          }, 100);
+        } catch (error) {
+          console.error('BAC4: Error generating graph view:', error);
+        }
+      };
+
+      generateGraphView();
+    }
+  }, [diagramType, plugin.app.vault, setNodes, setEdges]);
 
   /**
    * Handle navigation icon: drill down to child diagram
@@ -428,6 +557,20 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath, view }) =
     };
   }, [view, handleAddSnapshot]);
 
+  // Expose canvas state getters to view instance for export feature
+  React.useEffect(() => {
+    if (view) {
+      view['nodesGetter'] = () => nodes;
+      view['edgesGetter'] = () => edges;
+    }
+    return () => {
+      if (view) {
+        view['nodesGetter'] = null;
+        view['edgesGetter'] = null;
+      }
+    };
+  }, [view, nodes, edges]);
+
   const handleManageSnapshots = React.useCallback(() => {
     if (!timeline) return;
 
@@ -511,8 +654,10 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath, view }) =
       if (!timeline) return;
 
       // Create annotation at center of viewport
+      // Use screenToFlowPosition (project is deprecated in React Flow 11+)
+      // Type assertion needed as TS types not yet updated
       const viewportCenter = reactFlowInstance
-        ? reactFlowInstance.project({ x: window.innerWidth / 2, y: window.innerHeight / 2 })
+        ? (reactFlowInstance as any).screenToFlowPosition({ x: window.innerWidth / 2, y: window.innerHeight / 2 })
         : { x: 200, y: 200 };
 
       const annotation = AnnotationService.createAnnotation({
@@ -621,6 +766,8 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath, view }) =
         onDeleteNode={() => selectedNode && nodeHandlers.handleDeleteNode(selectedNode.id)}
         onDeleteAnnotation={handleDeleteAnnotation}
         onRenameDiagram={diagramActions.handleRenameDiagram}
+        onBringNodeForward={() => selectedNode && nodeHandlers.bringNodeForward(selectedNode.id)}
+        onSendNodeBackward={() => selectedNode && nodeHandlers.sendNodeBackward(selectedNode.id)}
         onAddSnapshot={timeline ? handleAddSnapshot : undefined}
         diagramName={filePath ? getDiagramName(filePath) : 'diagram'}
         timeline={timeline}
@@ -662,6 +809,7 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath, view }) =
           onNodeContextMenu={nodeHandlers.onNodeContextMenu}
           onEdgeClick={edgeHandlers.onEdgeClick}
           onPaneClick={canvasState.onPaneClick}
+          onMouseMove={handleMouseMove}
           onInit={canvasState.onReactFlowInit}
           onDrop={canvasState.onDrop}
           onDragOver={canvasState.onDragOver}
@@ -847,6 +995,9 @@ export class BAC4CanvasView extends ItemView {
   file?: TFile;
   // Handler for adding timeline snapshots (set by React component)
   handleAddSnapshot: (() => void) | null = null;
+  // Canvas state accessors (set by React component for export feature)
+  private nodesGetter: (() => Node<CanvasNodeData>[]) | null = null;
+  private edgesGetter: (() => Edge[]) | null = null;
 
   constructor(leaf: WorkspaceLeaf, plugin: BAC4Plugin, filePath?: string) {
     super(leaf);
@@ -864,6 +1015,27 @@ export class BAC4CanvasView extends ItemView {
 
   getIcon(): string {
     return 'layout-dashboard';
+  }
+
+  /**
+   * Get current nodes (for export feature)
+   */
+  getNodes(): Node<CanvasNodeData>[] | null {
+    return this.nodesGetter ? this.nodesGetter() : null;
+  }
+
+  /**
+   * Get current edges (for export feature)
+   */
+  getEdges(): Edge[] | null {
+    return this.edgesGetter ? this.edgesGetter() : null;
+  }
+
+  /**
+   * Get current file path (for export feature)
+   */
+  getFilePath(): string | undefined {
+    return this.filePath;
   }
 
   async setState(state: { file?: string; filePath?: string }, result: unknown): Promise<void> {

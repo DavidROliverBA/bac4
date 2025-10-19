@@ -65,25 +65,6 @@ export class DiagramNavigationService {
   constructor(private plugin: BAC4Plugin) {}
 
   /**
-   * Ensure relationships file exists (DEPRECATED in v0.6.0)
-   *
-   * v0.6.0: This method is deprecated and does nothing. Relationships file
-   * is no longer used - diagrams are self-contained with embedded links.
-   *
-   * @deprecated Use v0.6.0 architecture with embedded linkedDiagramPath
-   * @returns Promise that resolves immediately
-   */
-  async ensureRelationshipsFile(): Promise<void> {
-    // v0.6.0: No-op - relationships file is deprecated
-    console.log('BAC4: ensureRelationshipsFile() called (v0.6.0: deprecated, no-op)');
-  }
-
-  // v0.6.0: getRelationshipsData() removed - deprecated, no longer needed
-  // v0.6.0: saveRelationshipsData() removed - no longer needed
-  // v0.6.0: registerDiagram() removed - diagrams are self-contained
-  // v0.6.0: updateDiagramName() removed - names stored in diagram file metadata
-
-  /**
    * Update diagram type (v0.6.0: Updates file metadata directly)
    *
    * Updates the metadata.diagramType field in the diagram file.
@@ -450,24 +431,6 @@ export class DiagramNavigationService {
 
     console.log('BAC4: ✅ Rename complete:', newPath);
     return newPath;
-  }
-
-  /**
-   * Update parent node label in relationship (DEPRECATED in v0.6.0)
-   *
-   * @deprecated No longer needed - labels are stored in nodes, not relationships
-   */
-  async updateParentNodeLabel(
-    parentPath: string,
-    parentNodeId: string,
-    newLabel: string
-  ): Promise<void> {
-    // v0.6.0: No-op - labels stored in node data, not relationships file
-    console.log('BAC4: updateParentNodeLabel() called (v0.6.0: deprecated, no-op)', {
-      parentPath,
-      parentNodeId,
-      newLabel,
-    });
   }
 
   /**

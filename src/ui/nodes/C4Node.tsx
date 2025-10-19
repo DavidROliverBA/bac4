@@ -63,8 +63,8 @@ export const C4Node: React.FC<NodeProps<C4NodeData>> = ({ data, selected }) => {
       {data.changeIndicator && <NodeChangeBadge changeType={data.changeIndicator} />}
 
       {/* Connection handles - all four sides */}
-      <Handle type="target" position={Position.Top} id="top" style={{ background: color }} />
-      <Handle type="target" position={Position.Left} id="left" style={{ background: color }} />
+      <Handle type="source" position={Position.Top} id="top" style={{ background: color }} />
+      <Handle type="source" position={Position.Left} id="left" style={{ background: color }} />
 
       <div style={{ fontWeight: 600, marginBottom: SPACING.tiny, fontSize: FONT_SIZES.small }}>
         {data.label}

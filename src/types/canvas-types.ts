@@ -10,10 +10,32 @@
 import type { Node, Edge, NodeChange, EdgeChange, Connection } from 'reactflow';
 
 /**
+ * Diagram type union
+ * All possible diagram types in the BAC4 system
+ *
+ * v2.0.0: Added 4 new layers for enterprise architecture:
+ * - market: Market segments, customer needs, trends
+ * - organisation: Business units, departments, teams
+ * - capability: Business capabilities (already existed, now part of 7-layer model)
+ * - code: Implementation artifacts, GitHub links
+ */
+export type DiagramType =
+  | 'market'        // Layer 1: Market segments and customer needs
+  | 'organisation'  // Layer 2: Business units, departments, teams
+  | 'capability'    // Layer 3: Business capabilities and functions
+  | 'context'       // Layer 4: C4 Level 1 - System landscape
+  | 'container'     // Layer 5: C4 Level 2 - Technical containers
+  | 'component'     // Layer 6: C4 Level 3 - Internal components
+  | 'code'          // Layer 7: Implementation code and data
+  | 'graph';        // Meta-diagram: Visualization of diagram relationships
+
+/**
  * Base node data interface
  * All custom node types should extend this
  *
  * v0.6.0: All node types support markdown linking
+ * v0.9.0: Support for multiple child diagram links
+ * v1.0.1: Support for cross-references to same-named nodes
  */
 export interface BaseNodeData {
   label: string;
@@ -22,6 +44,9 @@ export interface BaseNodeData {
   description?: string;
   notes?: string;
   linkedMarkdownPath?: string; // Vault-relative path to linked markdown file (v0.6.0)
+  linkedDiagramPaths?: string[]; // v0.9.0: Multiple child diagram links (replaces single linkedDiagramPath)
+  crossReferences?: string[]; // v1.0.1: Paths to other diagrams with same-named nodes
+  isReference?: boolean; // v1.0.1: True if this node is a reference to an existing node
 }
 
 /**
@@ -64,6 +89,7 @@ export interface ContainerNodeData extends BaseNodeData {
 
 /**
  * Cloud component node data (C4 Level 3)
+ * v1.0.0: Supports container nodes with resize capability
  */
 export interface CloudComponentNodeData extends BaseNodeData {
   provider?: 'aws' | 'azure' | 'gcp' | 'saas';
@@ -72,11 +98,86 @@ export interface CloudComponentNodeData extends BaseNodeData {
   category?: string;
   icon?: string;
   properties?: Record<string, unknown>; // v1.0.0: Custom properties for cloud components
+  isContainer?: boolean; // v1.0.0: Whether this component can contain other components (VPC, Subnet, etc.)
   changeIndicator?: 'new' | 'modified' | 'removed' | null; // v1.0.0: Timeline change indicator
 }
 
 /**
+ * Market node data (Layer 1 - v2.0.0)
+ * Represents market segments, customer types, and market trends
+ */
+export interface MarketNodeData extends BaseNodeData {
+  marketSize?: string;      // e.g., "$50B", "500K customers"
+  growthRate?: string;      // e.g., "12% CAGR", "High growth"
+  competitors?: string[];   // Competitor names
+  trends?: string[];        // Market trends
+  linkedDiagramPath?: string; // Path to child Organisation diagram
+  changeIndicator?: 'new' | 'modified' | 'removed' | null;
+}
+
+/**
+ * Organisation node data (Layer 2 - v2.0.0)
+ * Represents business units, departments, and teams
+ */
+export interface OrganisationNodeData extends BaseNodeData {
+  businessUnit?: string;    // e.g., "Digital Health Division"
+  department?: string;      // e.g., "Engineering", "Product"
+  headcount?: number;       // Team size
+  location?: string;        // e.g., "London", "Remote"
+  linkedDiagramPath?: string; // Path to child Capability diagram
+  changeIndicator?: 'new' | 'modified' | 'removed' | null;
+}
+
+/**
+ * Capability node data (Layer 3)
+ * Represents business or technical capabilities with flexible styling and linking
+ *
+ * v2.0.0: Now part of 7-layer enterprise architecture model
+ */
+export interface CapabilityNodeData extends BaseNodeData {
+  maturityLevel?: 'initial' | 'developing' | 'defined' | 'managed' | 'optimizing'; // Capability maturity
+  criticalityLevel?: 'critical' | 'important' | 'supporting'; // Business criticality
+  investmentLevel?: 'high' | 'medium' | 'low'; // Investment priority
+  width?: number; // Custom width for resizing
+  height?: number; // Custom height for resizing
+  linkedDiagramPath?: string; // Path to linked diagram (usually context)
+  changeIndicator?: 'new' | 'modified' | 'removed' | null;
+}
+
+/**
+ * Code node data (Layer 7 - v2.0.0)
+ * Represents implementation artifacts, code files, and data models
+ * Includes GitHub integration for linking to actual code
+ */
+export interface CodeNodeData extends BaseNodeData {
+  githubUrl?: string;       // GitHub repository or file URL
+  language?: string;        // Programming language (e.g., "TypeScript", "Python")
+  codeType?: 'file' | 'class' | 'function' | 'schema' | 'table'; // Type of code artifact
+  repo?: string;            // Repository name (e.g., "org/repo")
+  branch?: string;          // Git branch (e.g., "main", "develop")
+  path?: string;            // File path within repo (e.g., "src/AuthController.ts")
+  lastCommit?: string;      // Last commit hash or message
+  authors?: string[];       // Code authors
+  linkedDiagramPath?: string; // Path to parent Component diagram
+  changeIndicator?: 'new' | 'modified' | 'removed' | null;
+}
+
+/**
+ * Graph node data (v0.9.0)
+ * Represents a diagram in the graph view (meta-diagram)
+ */
+export interface GraphNodeData extends BaseNodeData {
+  diagramPath: string; // Path to the diagram file this node represents
+  diagramType: Exclude<DiagramType, 'graph'>; // Type of the represented diagram (cannot be a graph itself)
+  parentCount?: number; // Number of parent diagrams
+  childCount?: number; // Number of child diagrams
+  changeIndicator?: 'new' | 'modified' | 'removed' | null; // Timeline change indicator
+}
+
+/**
  * Union type for all node data types
+ *
+ * v2.0.0: Added MarketNodeData, OrganisationNodeData, CodeNodeData
  */
 export type CanvasNodeData =
   | C4NodeData
@@ -84,6 +185,11 @@ export type CanvasNodeData =
   | PersonNodeData
   | ContainerNodeData
   | CloudComponentNodeData
+  | MarketNodeData          // v2.0.0: Layer 1
+  | OrganisationNodeData    // v2.0.0: Layer 2
+  | CapabilityNodeData      // Layer 3 (previously existing)
+  | CodeNodeData            // v2.0.0: Layer 7
+  | GraphNodeData
   | BaseNodeData;
 
 /**
@@ -184,7 +290,7 @@ export interface DiagramFile {
 export interface BAC4FileV06 {
   version: '0.6.0';
   metadata: {
-    diagramType: 'context' | 'container' | 'component';
+    diagramType: DiagramType;
     createdAt: string; // ISO 8601 timestamp
     updatedAt: string; // ISO 8601 timestamp
   };
@@ -218,7 +324,7 @@ export interface DiagramNode {
   id: string;
   filePath: string;
   displayName: string;
-  type: 'context' | 'container' | 'component';
+  type: DiagramType;
   createdAt: string;
   updatedAt: string;
 }

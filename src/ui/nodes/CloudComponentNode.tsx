@@ -2,10 +2,11 @@
  * Cloud Component Node
  * Custom node for cloud service components (AWS, Azure, GCP, SaaS)
  * v0.6.0: Supports linkedMarkdownPath for documentation
+ * v1.0.0: Supports container nodes with resize capability
  */
 
 import * as React from 'react';
-import { Handle, Position, NodeProps } from 'reactflow';
+import { Handle, Position, NodeProps, NodeResizer } from 'reactflow';
 import type { CloudComponentNodeData } from '../../types/canvas-types';
 import { FONT_SIZES, SPACING, UI_COLORS, BORDER_RADIUS, NODE_DIMENSIONS } from '../../constants';
 import { NodeChangeBadge } from '../components/ChangeBadge';
@@ -30,6 +31,9 @@ export const CloudComponentNode: React.FC<NodeProps<CloudComponentNodeData>> = (
   // Determine if node has linked markdown file (v0.6.0)
   const hasLinkedMarkdown = !!data.linkedMarkdownPath;
 
+  // Determine if this is a container node (v1.0.0)
+  const isContainer = data.isContainer || false;
+
   const getNodeStyles = () => {
     // Convert hex to rgba with alpha
     const hexToRgba = (hex: string, alpha: number) => {
@@ -40,20 +44,26 @@ export const CloudComponentNode: React.FC<NodeProps<CloudComponentNodeData>> = (
     };
 
     const baseStyles = {
-      padding: SPACING.padding.card,
+      padding: isContainer ? '16px' : SPACING.padding.card,
       borderRadius: BORDER_RADIUS.normal,
-      border: 'none',
-      minWidth: NODE_DIMENSIONS.minWidth,
-      maxWidth: NODE_DIMENSIONS.maxWidth,
-      textAlign: 'center' as const,
-      backgroundColor: hexToRgba(color, 0.15),
+      border: isContainer ? `2px dashed ${hexToRgba(color, 0.5)}` : 'none',
+      minWidth: isContainer ? 'auto' : NODE_DIMENSIONS.minWidth,
+      maxWidth: isContainer ? 'none' : NODE_DIMENSIONS.maxWidth,
+      width: '100%',
+      height: '100%',
+      textAlign: isContainer ? ('left' as const) : ('center' as const),
+      backgroundColor: hexToRgba(color, isContainer ? 0.08 : 0.15),
       color: UI_COLORS.textNormal,
       fontFamily: UI_COLORS.fontInterface,
       fontSize: FONT_SIZES.small,
       boxShadow: selected
         ? `0 0 0 3px ${UI_COLORS.interactiveAccent}`
+        : isContainer
+        ? `inset 0 0 10px ${hexToRgba(color, 0.2)}`
         : '0 2px 4px rgba(0,0,0,0.1)',
       position: 'relative' as const,
+      // Container nodes stay in background, regular nodes on top
+      zIndex: isContainer ? 0 : 1,
     };
 
     return baseStyles;
@@ -87,6 +97,21 @@ export const CloudComponentNode: React.FC<NodeProps<CloudComponentNodeData>> = (
 
   return (
     <div style={getNodeStyles()}>
+      {/* Resize handles for container nodes (v1.0.0) */}
+      {isContainer && (
+        <NodeResizer
+          color={color}
+          isVisible={selected}
+          minWidth={200}
+          minHeight={150}
+          handleStyle={{
+            width: 10,
+            height: 10,
+            borderRadius: '50%',
+          }}
+        />
+      )}
+
       {/* Change badge (v1.0.0 timeline) - positioned center-top to avoid other badges */}
       {data.changeIndicator && (
         <div style={{ position: 'absolute', top: '-10px', left: '50%', transform: 'translateX(-50%)' }}>
@@ -95,8 +120,8 @@ export const CloudComponentNode: React.FC<NodeProps<CloudComponentNodeData>> = (
       )}
 
       {/* Connection handles - all four sides */}
-      <Handle type="target" position={Position.Top} id="top" style={{ background: color }} />
-      <Handle type="target" position={Position.Left} id="left" style={{ background: color }} />
+      <Handle type="source" position={Position.Top} id="top" style={{ background: color }} />
+      <Handle type="source" position={Position.Left} id="left" style={{ background: color }} />
 
       {/* Component Type badge (left side) */}
       {data.componentType && (

@@ -59,15 +59,41 @@ export const ContainerNode: React.FC<NodeProps<ContainerNodeData>> = ({ data, se
       {/* Change badge (v1.0.0 timeline) */}
       {data.changeIndicator && <NodeChangeBadge changeType={data.changeIndicator} />}
 
+      {/* Cross-reference badge - shows when node exists in multiple diagrams */}
+      {data.isReference && data.crossReferences && data.crossReferences.length > 0 && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '-8px',
+            right: '-8px',
+            background: UI_COLORS.interactiveAccent,
+            color: 'white',
+            borderRadius: '50%',
+            width: '20px',
+            height: '20px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '10px',
+            fontWeight: 700,
+            boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+            zIndex: 10,
+          }}
+          title={`Shared across ${data.crossReferences.length + 1} diagrams:\n${data.crossReferences.map(path => path.split('/').pop()?.replace('.bac4', '')).join('\n')}`}
+        >
+          {data.crossReferences.length + 1}
+        </div>
+      )}
+
       {/* Connection handles - all four sides */}
       <Handle
-        type="target"
+        type="source"
         position={Position.Top}
         id="top"
         style={{ background: color, width: '12px', height: '12px' }}
       />
       <Handle
-        type="target"
+        type="source"
         position={Position.Left}
         id="left"
         style={{ background: color, width: '12px', height: '12px' }}

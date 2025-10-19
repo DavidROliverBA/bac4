@@ -1,7 +1,8 @@
 /**
  * Diagram Type Selector Component
  *
- * Dropdown selector for switching between Context, Container, and Component diagram types.
+ * Dropdown selector for switching between all 7 enterprise architecture layers.
+ * v2.0.0: Extended to support full 7-layer model.
  * Part of the unified toolbar.
  *
  * @module DiagramTypeSelector
@@ -9,12 +10,13 @@
 
 import * as React from 'react';
 import { FONT_SIZES, SPACING, UI_COLORS, BORDER_RADIUS } from '../../../../constants';
+import type { DiagramType } from '../../../../types/canvas-types';
 
 export interface DiagramTypeSelectorProps {
   /** Current diagram type */
-  currentType: 'context' | 'container' | 'component';
+  currentType: DiagramType;
   /** Callback when type changes */
-  onTypeChange: (newType: 'context' | 'container' | 'component') => void;
+  onTypeChange: (newType: DiagramType) => void;
 }
 
 /**
@@ -33,7 +35,7 @@ export const DiagramTypeSelector: React.FC<DiagramTypeSelectorProps> = ({
   onTypeChange,
 }) => {
   const handleChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const newType = event.target.value as 'context' | 'container' | 'component';
+    const newType = event.target.value as DiagramType;
     onTypeChange(newType);
   };
 
@@ -47,7 +49,7 @@ export const DiagramTypeSelector: React.FC<DiagramTypeSelectorProps> = ({
           textTransform: 'uppercase',
         }}
       >
-        Type:
+        Layer:
       </label>
       <select
         value={currentType}
@@ -64,9 +66,15 @@ export const DiagramTypeSelector: React.FC<DiagramTypeSelectorProps> = ({
           fontFamily: 'var(--font-interface)',
         }}
       >
-        <option value="context">Context</option>
-        <option value="container">Container</option>
-        <option value="component">Component</option>
+        {/* 7-Layer Enterprise Architecture Model (v2.0.0) */}
+        <option value="market">Layer 1: Market</option>
+        <option value="organisation">Layer 2: Organisation</option>
+        <option value="capability">Layer 3: Capability</option>
+        <option value="context">Layer 4: Context</option>
+        <option value="container">Layer 5: Container</option>
+        <option value="component">Layer 6: Component</option>
+        <option value="code">Layer 7: Code</option>
+        <option value="graph">Meta: Graph View</option>
       </select>
     </div>
   );

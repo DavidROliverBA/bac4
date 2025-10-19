@@ -1,0 +1,117 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "BAC4 Component Library Schema",
+  "description": "Schema for cloud component definitions in BAC4",
+  "type": "object",
+  "required": ["version", "components"],
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "Schema version (semver)",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "components": {
+      "type": "array",
+      "description": "Array of component definitions",
+      "items": {
+        "$ref": "#/definitions/component"
+      }
+    }
+  },
+  "definitions": {
+    "component": {
+      "type": "object",
+      "required": ["id", "name", "provider", "category", "type", "description", "icon"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier (e.g., 'aws-vpc', 'azure-vnet')",
+          "pattern": "^[a-z0-9-]+$"
+        },
+        "name": {
+          "type": "string",
+          "description": "Display name"
+        },
+        "provider": {
+          "type": "string",
+          "description": "Cloud provider",
+          "enum": ["aws", "azure", "gcp", "saas", "it", "other"]
+        },
+        "category": {
+          "type": "string",
+          "description": "Component category",
+          "enum": [
+            "compute",
+            "storage",
+            "database",
+            "networking",
+            "security",
+            "analytics",
+            "integration",
+            "container",
+            "serverless",
+            "messaging",
+            "cdn",
+            "monitoring",
+            "other"
+          ]
+        },
+        "type": {
+          "type": "string",
+          "description": "Component type (more specific than category)"
+        },
+        "description": {
+          "type": "string",
+          "description": "Short description of the component"
+        },
+        "defaultNoteText": {
+          "type": "string",
+          "description": "Default markdown text for documentation notes"
+        },
+        "icon": {
+          "type": "string",
+          "description": "Icon path relative to plugin root or Lucide icon name"
+        },
+        "isContainer": {
+          "type": "boolean",
+          "description": "Whether this component can contain other components (e.g., VPC, Subnet)",
+          "default": false
+        },
+        "defaultWidth": {
+          "type": "number",
+          "description": "Default width in pixels",
+          "minimum": 50,
+          "default": 160
+        },
+        "defaultHeight": {
+          "type": "number",
+          "description": "Default height in pixels",
+          "minimum": 50,
+          "default": 90
+        },
+        "color": {
+          "type": "string",
+          "description": "Default color (hex, rgb, or CSS color name)",
+          "pattern": "^(#[0-9A-Fa-f]{6}|#[0-9A-Fa-f]{3}|rgb\\(|rgba\\(|[a-z]+).*$"
+        },
+        "defaultProps": {
+          "type": "object",
+          "description": "Default properties for this component type",
+          "additionalProperties": true
+        },
+        "tags": {
+          "type": "array",
+          "description": "Tags for search and filtering",
+          "items": {
+            "type": "string"
+          }
+        },
+        "docsUrl": {
+          "type": "string",
+          "description": "Official documentation URL",
+          "format": "uri"
+        }
+      }
+    }
+  }
+}

@@ -19,7 +19,7 @@ import type { ComponentDefinition } from '../../component-library/types';
 export interface BreadcrumbItem {
   label: string;
   path: string;
-  type: 'context' | 'container' | 'component';
+  type: 'context' | 'container' | 'component' | 'capability' | 'graph';
   id: string;
 }
 
@@ -38,21 +38,21 @@ export interface PropertyPanelProps {
   onEdgeDelete: (edgeId: string) => void;
   currentDiagramPath: string;
   plugin: BAC4Plugin;
-  diagramType: 'context' | 'container' | 'component';
-  onDiagramTypeChange?: (newType: 'context' | 'container' | 'component') => void;
+  diagramType: 'context' | 'container' | 'component' | 'capability' | 'graph';
+  onDiagramTypeChange?: (newType: 'context' | 'container' | 'component' | 'capability' | 'graph') => void;
 }
 
 /**
  * Unified Toolbar props
  */
 export interface UnifiedToolbarProps {
-  diagramType: 'context' | 'container' | 'component';
+  diagramType: 'context' | 'container' | 'component' | 'capability' | 'graph';
   onAddNode: (nodeType: string, nodeData: Record<string, unknown>) => void;
   onExportPNG: () => void;
   onExportJPEG: () => void;
   currentDiagramPath: string;
   plugin: BAC4Plugin;
-  onDiagramTypeChange: (newType: 'context' | 'container' | 'component') => void;
+  onDiagramTypeChange: (newType: 'context' | 'container' | 'component' | 'capability' | 'graph') => void;
   breadcrumbs: BreadcrumbItemType[];
   onBreadcrumbClick: (path: string) => void;
   onRenameDiagram: () => void;
@@ -80,7 +80,7 @@ export interface BreadcrumbsProps {
  * Diagram Toolbar props
  */
 export interface DiagramToolbarProps {
-  diagramType: 'context' | 'container' | 'component';
+  diagramType: 'context' | 'container' | 'component' | 'capability' | 'graph';
   onAddNode: (nodeType: string, nodeData: Record<string, unknown>) => void;
 }
 
@@ -88,8 +88,8 @@ export interface DiagramToolbarProps {
  * Diagram Type Switcher props
  */
 export interface DiagramTypeSwitcherProps {
-  currentType: 'context' | 'container' | 'component';
-  onTypeChange: (newType: 'context' | 'container' | 'component') => void;
+  currentType: 'context' | 'container' | 'component' | 'capability' | 'graph';
+  onTypeChange: (newType: 'context' | 'container' | 'component' | 'capability' | 'graph') => void;
   disabled?: boolean;
 }
 
@@ -151,7 +151,7 @@ export interface ExportOptions {
  * Diagram metadata
  */
 export interface DiagramMetadata {
-  diagramType: 'context' | 'container' | 'component';
+  diagramType: 'context' | 'container' | 'component' | 'capability' | 'graph';
   createdAt: string;
   updatedAt: string;
   parentDiagramId?: string;

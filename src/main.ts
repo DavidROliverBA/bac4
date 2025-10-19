@@ -11,6 +11,7 @@ import { BAC4SettingsTab } from './ui/settings-tab';
 import { BAC4CanvasView } from './ui/canvas-view';
 import { hasBac4Diagram } from './utils/frontmatter-parser';
 import { TimelineService } from './services/TimelineService';
+import { NodeRegistryService } from './services/node-registry-service';
 import './styles.css';
 
 /**
@@ -39,7 +40,7 @@ import './styles.css';
  * @example
  * ```ts
  * // Plugin is automatically instantiated by Obsidian
- * // Access via: this.app.plugins.plugins['bac4-plugin']
+ * // Access via: this.app.plugins.plugins['bac4']
  * ```
  */
 export default class BAC4Plugin extends Plugin {
@@ -50,6 +51,11 @@ export default class BAC4Plugin extends Plugin {
 
     // Load settings
     await this.loadSettings();
+
+    // Initialize Node Registry (v1.0.1: Track node names across all diagrams)
+    const registry = NodeRegistryService.getInstance();
+    await registry.initialize(this.app.vault);
+    console.log('BAC4: Node registry initialized with', registry.getUniqueNodeCount(), 'unique node names');
 
     // Register canvas view
     this.registerView(VIEW_TYPE_CANVAS, (leaf: WorkspaceLeaf) => new BAC4CanvasView(leaf, this));
@@ -80,7 +86,7 @@ export default class BAC4Plugin extends Plugin {
     this.addSettingTab(new BAC4SettingsTab(this.app, this));
 
     // Register ribbon icon - using '4' for BAC4
-    this.addRibbonIcon('dice-4', 'BAC4 Dashboard', async () => {
+    this.addRibbonIcon('dice-4', 'BAC4', async () => {
       await this.openDashboard();
     });
 
@@ -413,19 +419,27 @@ export default class BAC4Plugin extends Plugin {
 
     // If no file path provided, create a new diagram file
     if (!filePath) {
-      // Always create a new diagram file
-      // Use simple "Untitled" name, add number if file exists
-      let fileName = 'Untitled.bac4';
-      let counter = 1;
-
-      while (this.app.vault.getAbstractFileByPath(fileName)) {
-        counter++;
-        fileName = `Untitled ${counter}.bac4`;
+      // Ensure BAC4 directory exists
+      if (!(await this.app.vault.adapter.exists('BAC4'))) {
+        console.log('BAC4: Creating BAC4 directory');
+        await this.app.vault.createFolder('BAC4');
       }
 
-      console.log('BAC4: Creating new diagram file:', fileName);
+      // Always create a new diagram file in BAC4 folder
+      // Use simple "Untitled" name, add number if file exists
+      let fileName = 'Untitled.bac4';
+      let fullPath = `BAC4/${fileName}`;
+      let counter = 1;
 
-      // Create in default location (root of vault)
+      while (this.app.vault.getAbstractFileByPath(fullPath)) {
+        counter++;
+        fileName = `Untitled ${counter}.bac4`;
+        fullPath = `BAC4/${fileName}`;
+      }
+
+      console.log('BAC4: Creating new diagram file:', fullPath);
+
+      // Create in BAC4 folder
       // v1.0.0 format with timeline
       const now = new Date().toISOString();
       const initialTimeline = TimelineService.createInitialTimeline([], [], 'Current');
@@ -439,7 +453,7 @@ export default class BAC4Plugin extends Plugin {
         timeline: initialTimeline,
       };
 
-      const file = await this.app.vault.create(fileName, JSON.stringify(initialData, null, 2));
+      const file = await this.app.vault.create(fullPath, JSON.stringify(initialData, null, 2));
 
       // Open the file directly (v0.6.0: No registration needed, self-contained diagrams)
       const leaf = workspace.getLeaf(false);
@@ -550,6 +564,92 @@ export default class BAC4Plugin extends Plugin {
           } else {
             new Notice('Timeline not initialized yet. Please wait a moment and try again.');
           }
+        }
+
+        return true;
+      },
+    });
+
+    // Diagram Creation Commands (v2.0.0: Extended to 7 layers)
+    this.addCommand({
+      id: 'bac4-create-market-diagram',
+      name: 'Create New Market Diagram (Layer 1)',
+      callback: async () => {
+        await this.createNewDiagram('market');
+      },
+    });
+
+    this.addCommand({
+      id: 'bac4-create-organisation-diagram',
+      name: 'Create New Organisation Diagram (Layer 2)',
+      callback: async () => {
+        await this.createNewDiagram('organisation');
+      },
+    });
+
+    this.addCommand({
+      id: 'bac4-create-capability-diagram',
+      name: 'Create New Capability Diagram (Layer 3)',
+      callback: async () => {
+        await this.createNewDiagram('capability');
+      },
+    });
+
+    this.addCommand({
+      id: 'bac4-create-context-diagram',
+      name: 'Create New Context Diagram (Layer 4)',
+      callback: async () => {
+        await this.createNewDiagram('context');
+      },
+    });
+
+    this.addCommand({
+      id: 'bac4-create-container-diagram',
+      name: 'Create New Container Diagram (Layer 5)',
+      callback: async () => {
+        await this.createNewDiagram('container');
+      },
+    });
+
+    this.addCommand({
+      id: 'bac4-create-component-diagram',
+      name: 'Create New Component Diagram (Layer 6)',
+      callback: async () => {
+        await this.createNewDiagram('component');
+      },
+    });
+
+    this.addCommand({
+      id: 'bac4-create-code-diagram',
+      name: 'Create New Code Diagram (Layer 7)',
+      callback: async () => {
+        await this.createNewDiagram('code');
+      },
+    });
+
+    // Graph View Command (Cmd+Shift+G)
+    this.addCommand({
+      id: 'bac4-open-graph-view',
+      name: 'Open Graph View',
+      hotkeys: [{ modifiers: ['Mod', 'Shift'], key: 'g' }],
+      callback: async () => {
+        await this.openGraphView();
+      },
+    });
+
+    // Export to Canvas Command
+    this.addCommand({
+      id: 'bac4-export-to-canvas',
+      name: 'Export Diagram to Canvas',
+      checkCallback: (checking: boolean) => {
+        // Only enable if a BAC4 diagram is open
+        const activeView = this.app.workspace.getActiveViewOfType(BAC4CanvasView);
+        if (!activeView) {
+          return false;
+        }
+
+        if (!checking) {
+          this.exportDiagramToCanvas(activeView);
         }
 
         return true;
@@ -725,5 +825,186 @@ export default class BAC4Plugin extends Plugin {
     await this.openCanvasView(mostRecent.path);
 
     new Notice(`Imported ${mostRecent.basename}`);
+  }
+
+  /**
+   * Create a new diagram of a specific type
+   *
+   * @param diagramType - Type of diagram to create
+   */
+  private async createNewDiagram(
+    diagramType: 'market' | 'organisation' | 'capability' | 'context' | 'container' | 'component' | 'code'
+  ): Promise<void> {
+    console.log('BAC4: Creating new diagram:', diagramType);
+
+    // Ensure BAC4 directory exists
+    if (!(await this.app.vault.adapter.exists('BAC4'))) {
+      console.log('BAC4: Creating BAC4 directory');
+      await this.app.vault.createFolder('BAC4');
+    }
+
+    // Generate unique file name in BAC4 folder
+    const typeLabel = diagramType.charAt(0).toUpperCase() + diagramType.slice(1);
+    let fileName = `New ${typeLabel}.bac4`;
+    let filePath = `BAC4/${fileName}`;
+    let counter = 1;
+
+    while (this.app.vault.getAbstractFileByPath(filePath)) {
+      counter++;
+      fileName = `New ${typeLabel} ${counter}.bac4`;
+      filePath = `BAC4/${fileName}`;
+    }
+
+    console.log('BAC4: Creating diagram file:', filePath);
+
+    // Create diagram with v1.0.0 format
+    const now = new Date().toISOString();
+    const initialTimeline = TimelineService.createInitialTimeline([], [], 'Current');
+    const diagramData = {
+      version: '1.0.0',
+      metadata: {
+        diagramType,
+        createdAt: now,
+        updatedAt: now,
+      },
+      timeline: initialTimeline,
+    };
+
+    const file = await this.app.vault.create(filePath, JSON.stringify(diagramData, null, 2));
+    console.log('BAC4: Diagram created:', file.path);
+
+    // Open the new diagram
+    await this.openCanvasView(file.path);
+
+    new Notice(`Created ${fileName}`);
+  }
+
+  /**
+   * Export current diagram to JSONCanvas format
+   *
+   * Creates a .canvas file from the current BAC4 diagram for viewing in
+   * Obsidian's native Canvas. This is a lossy export (loses timeline, C4 styling,
+   * annotations) but allows viewing in native Canvas.
+   *
+   * @param view - Active BAC4 canvas view
+   */
+  private async exportDiagramToCanvas(view: BAC4CanvasView): Promise<void> {
+    try {
+      console.log('BAC4: Exporting diagram to Canvas format...');
+
+      // Get nodes and edges from view
+      const nodes = view.getNodes();
+      const edges = view.getEdges();
+
+      if (!nodes || !edges) {
+        new Notice('No diagram data to export');
+        return;
+      }
+
+      // Get current file path
+      const filePath = view.getFilePath();
+      if (!filePath) {
+        new Notice('Please save the diagram first');
+        return;
+      }
+
+      // Generate export path
+      const exportPath = filePath.replace('.bac4', '.canvas');
+
+      // Check if export already exists
+      const existingFile = this.app.vault.getAbstractFileByPath(exportPath);
+      if (existingFile) {
+        new Notice('Canvas export already exists. Delete it first to re-export.');
+        return;
+      }
+
+      // Import exporter
+      const { JSONCanvasExporter } = await import('./services/jsoncanvas-exporter');
+
+      // Convert to Canvas format
+      const canvasData = JSONCanvasExporter.exportDiagramToCanvas(nodes, edges);
+
+      // Validate before saving
+      if (!JSONCanvasExporter.validate(canvasData)) {
+        console.error('BAC4: Generated invalid canvas data during export');
+        new Notice('Failed to export - invalid canvas data');
+        return;
+      }
+
+      const canvasJson = JSONCanvasExporter.serialize(canvasData, true);
+
+      // Create .canvas file
+      await this.app.vault.create(exportPath, canvasJson);
+
+      console.log('BAC4: Exported to', exportPath);
+      new Notice(`✅ Exported to ${exportPath.split('/').pop()}`);
+
+    } catch (error) {
+      console.error('BAC4: Export to Canvas failed:', error);
+      new Notice('Failed to export diagram to Canvas');
+    }
+  }
+
+  /**
+   * Open the graph view
+   *
+   * The graph view is a special meta-visualization that shows all diagrams
+   * in the vault and their relationships. As of v1.0.1, this uses Obsidian's
+   * native Canvas format (.canvas) for better UX and interoperability.
+   *
+   * **Features:**
+   * - Native Obsidian Canvas view (editable, better performance)
+   * - File nodes link to .bac4 diagrams (click to open)
+   * - Auto-regenerated each time (always fresh)
+   * - User can manually rearrange layout
+   */
+  private async openGraphView(): Promise<void> {
+    console.log('BAC4: Opening graph view (native Canvas format)...');
+
+    // Ensure BAC4 directory exists
+    if (!(await this.app.vault.adapter.exists('BAC4'))) {
+      console.log('BAC4: Creating BAC4 directory');
+      await this.app.vault.createFolder('BAC4');
+    }
+
+    // Use .canvas extension for native Obsidian Canvas
+    const filePath = 'BAC4/__graph_view__.canvas';
+
+    // Check if temp file exists and delete it (always regenerate fresh)
+    const existingFile = this.app.vault.getAbstractFileByPath(filePath);
+    if (existingFile) {
+      console.log('BAC4: Deleting existing graph view to regenerate');
+      await this.app.vault.delete(existingFile as TFile);
+    }
+
+    // Generate graph data
+    const { GraphGenerationService } = await import('./services/graph-generation-service');
+    const { JSONCanvasExporter } = await import('./services/jsoncanvas-exporter');
+
+    console.log('BAC4: Generating graph data...');
+    const { nodes, edges } = await GraphGenerationService.generateGraph(this.app.vault);
+    console.log(`BAC4: Generated ${nodes.length} nodes, ${edges.length} edges`);
+
+    // Convert to JSONCanvas format
+    const canvasData = JSONCanvasExporter.exportGraphToCanvas(nodes, edges);
+
+    // Validate before saving
+    if (!JSONCanvasExporter.validate(canvasData)) {
+      console.error('BAC4: Generated invalid canvas data');
+      new Notice('Failed to generate graph view - invalid data');
+      return;
+    }
+
+    const canvasJson = JSONCanvasExporter.serialize(canvasData, true);
+
+    // Create .canvas file
+    const file = await this.app.vault.create(filePath, canvasJson);
+    console.log('BAC4: Graph view .canvas file created');
+
+    // Open in native Obsidian Canvas view
+    const leaf = this.app.workspace.getLeaf(false);
+    await leaf.openFile(file as TFile);
+
+    new Notice(`Graph View - ${nodes.length} diagrams found (Cmd+Shift+G)`);
   }
 }

@@ -229,6 +229,8 @@ export const C4_TYPE_COLORS = {
   context: '#4A90E2',
   container: '#7ED321',
   component: '#F5A623',
+  capability: '#9B59B6',
+  graph: '#E91E63',
 } as const;
 
 /**

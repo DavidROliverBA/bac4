@@ -1,7 +1,7 @@
 {
   "name": "bac4",
-  "version": "0.8.0",
-  "description": "bac4 - The Solution Architects Toolbox (v0.8.0: Automatic diagram screenshots in markdown docs)",
+  "version": "2.0.0",
+  "description": "bac4 - The Solution Architects Toolbox (v2.0.0: 7-layer enterprise architecture model)",
   "main": "main.js",
   "scripts": {
     "dev": "node esbuild.config.mjs",

@@ -22,6 +22,10 @@ import type {
   SystemNodeData,
   PersonNodeData,
   ContainerNodeData,
+  CapabilityNodeData,
+  MarketNodeData,
+  OrganisationNodeData,
+  CodeNodeData,
   DiagramNode,
 } from '../../types/canvas-types';
 import { DiagramNavigationService } from '../../services/diagram-navigation-service';
@@ -53,7 +57,11 @@ type CanvasNodeData =
   | CloudComponentNodeData
   | SystemNodeData
   | PersonNodeData
-  | ContainerNodeData;
+  | ContainerNodeData
+  | CapabilityNodeData
+  | MarketNodeData
+  | OrganisationNodeData
+  | CodeNodeData;
 
 interface PropertyPanelProps {
   node: Node<CanvasNodeData> | null;
@@ -67,7 +75,7 @@ interface PropertyPanelProps {
   // New props for diagram linking
   plugin?: BAC4Plugin;
   currentDiagramPath?: string;
-  currentDiagramType?: 'context' | 'container' | 'component';
+  currentDiagramType?: 'context' | 'container' | 'component' | 'capability';
   navigationService?: DiagramNavigationService;
   onOpenDiagram?: (path: string) => void;
   onCreateAndLinkChild?: (nodeId: string) => Promise<void>;
@@ -124,6 +132,10 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
   const isSystemNode = node?.type === 'system';
   const isPersonNode = node?.type === 'person';
   const isContainerNode = node?.type === 'container';
+  const isCapabilityNode = node?.type === 'capability';
+  const isMarketNode = node?.type === 'market';
+  const isOrganisationNode = node?.type === 'organisation';
+  const isCodeNode = node?.type === 'code';
 
   // State for diagram linking
   const [availableDiagrams, setAvailableDiagrams] = React.useState<DiagramNode[]>([]);
@@ -145,13 +157,19 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
   // Determine if this node can have child diagrams
   const canHaveChildren =
     (isSystemNode && currentDiagramType === 'context') ||
-    (isContainerNode && currentDiagramType === 'container');
+    (isContainerNode && currentDiagramType === 'container') ||
+    isCapabilityNode; // Capability nodes can always link to diagrams
 
   // Determine target diagram type
-  const targetDiagramType: 'container' | 'component' | null = canHaveChildren
+  // For capability nodes, we'll load all diagram types (handled in the effect)
+  const targetDiagramType: 'container' | 'component' | 'capability' | 'context' | null = canHaveChildren
     ? isSystemNode
       ? 'container'
-      : 'component'
+      : isContainerNode
+      ? 'component'
+      : isCapabilityNode
+      ? 'capability' // Placeholder, we'll load all types
+      : null
     : null;
 
   // Load available diagrams and existing link
@@ -169,9 +187,22 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
     const loadData = async () => {
       setLoading(true);
       try {
-        // Get all diagrams of target type
-        const diagrams = await navigationService.getDiagramsByType(targetDiagramType);
-        setAvailableDiagrams(diagrams);
+        // For capability nodes, load all diagram types (context, container, component, capability)
+        if (isCapabilityNode) {
+          const [contextDiagrams, containerDiagrams, componentDiagrams, capabilityDiagrams] = await Promise.all([
+            navigationService.getDiagramsByType('context'),
+            navigationService.getDiagramsByType('container'),
+            navigationService.getDiagramsByType('component'),
+            navigationService.getDiagramsByType('capability'),
+          ]);
+          // Combine all diagrams (DiagramLinking component already sorts alphabetically)
+          const allDiagrams = [...contextDiagrams, ...containerDiagrams, ...componentDiagrams, ...capabilityDiagrams];
+          setAvailableDiagrams(allDiagrams);
+        } else {
+          // For other nodes (system, container), load only the target type
+          const diagrams = await navigationService.getDiagramsByType(targetDiagramType);
+          setAvailableDiagrams(diagrams);
+        }
 
         // Get existing link
         const existing = await navigationService.getExistingLink(currentDiagramPath, node.id);
@@ -184,7 +215,7 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
     };
 
     loadData();
-  }, [canHaveChildren, node?.id, navigationService, currentDiagramPath, targetDiagramType]);
+  }, [canHaveChildren, node?.id, navigationService, currentDiagramPath, targetDiagramType, isCapabilityNode]);
 
   // Check if linked markdown file exists
   React.useEffect(() => {
@@ -798,6 +829,228 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
               </>
             )}
 
+            {/* Capability Node specific properties */}
+            {isCapabilityNode && (
+              <>
+                <FormField
+                  label="Description"
+                  value={'description' in node.data ? node.data.description || '' : ''}
+                  onChange={(value) => handlePropertyChange('description', value)}
+                  type="textarea"
+                  placeholder="Capability description"
+                  rows={3}
+                />
+
+                <FormField
+                  label="Width"
+                  value={String('width' in node.data ? node.data.width || 180 : 180)}
+                  onChange={(value) => handlePropertyChange('width', Number(value) || 180)}
+                  type="number"
+                  placeholder="180"
+                />
+
+                <FormField
+                  label="Height"
+                  value={String('height' in node.data ? node.data.height || 100 : 100)}
+                  onChange={(value) => handlePropertyChange('height', Number(value) || 100)}
+                  type="number"
+                  placeholder="100"
+                />
+
+                {/* Linked Diagram Dropdown - Can link to any diagram type */}
+                {canHaveChildren && navigationService && (
+                  <DiagramLinking
+                    label="Linked Diagram"
+                    linkedDiagram={linkedDiagram}
+                    availableDiagrams={availableDiagrams}
+                    diagramType="capability"
+                    loading={loading}
+                    onChange={handleLinkChange}
+                    onOpenDiagram={onOpenDiagram}
+                  />
+                )}
+              </>
+            )}
+
+            {/* Market Node specific properties (v2.0.0 - Layer 1) */}
+            {isMarketNode && (
+              <>
+                <FormField
+                  label="Market Size"
+                  value={'marketSize' in node.data ? node.data.marketSize || '' : ''}
+                  onChange={(value) => handlePropertyChange('marketSize', value)}
+                  placeholder="e.g., $50B, 500K customers"
+                />
+
+                <FormField
+                  label="Growth Rate"
+                  value={'growthRate' in node.data ? node.data.growthRate || '' : ''}
+                  onChange={(value) => handlePropertyChange('growthRate', value)}
+                  placeholder="e.g., 12% CAGR, High growth"
+                />
+
+                <FormField
+                  label="Description"
+                  value={'description' in node.data ? node.data.description || '' : ''}
+                  onChange={(value) => handlePropertyChange('description', value)}
+                  type="textarea"
+                  placeholder="Market segment description"
+                  rows={3}
+                />
+
+                <FormField
+                  label="Competitors"
+                  value={'competitors' in node.data && node.data.competitors ? node.data.competitors.join(', ') : ''}
+                  onChange={(value) => {
+                    const competitors = value.split(',').map(c => c.trim()).filter(c => c.length > 0);
+                    handlePropertyChange('competitors', competitors);
+                  }}
+                  placeholder="Comma-separated list (e.g., Company A, Company B)"
+                />
+
+                <FormField
+                  label="Trends"
+                  value={'trends' in node.data && node.data.trends ? node.data.trends.join(', ') : ''}
+                  onChange={(value) => {
+                    const trends = value.split(',').map(t => t.trim()).filter(t => t.length > 0);
+                    handlePropertyChange('trends', trends);
+                  }}
+                  placeholder="Comma-separated list (e.g., AI adoption, Cloud migration)"
+                />
+              </>
+            )}
+
+            {/* Organisation Node specific properties (v2.0.0 - Layer 2) */}
+            {isOrganisationNode && (
+              <>
+                <FormField
+                  label="Business Unit"
+                  value={'businessUnit' in node.data ? node.data.businessUnit || '' : ''}
+                  onChange={(value) => handlePropertyChange('businessUnit', value)}
+                  placeholder="e.g., Digital Health Division"
+                />
+
+                <FormField
+                  label="Department"
+                  value={'department' in node.data ? node.data.department || '' : ''}
+                  onChange={(value) => handlePropertyChange('department', value)}
+                  placeholder="e.g., Engineering, Product"
+                />
+
+                <FormField
+                  label="Headcount"
+                  value={String('headcount' in node.data ? node.data.headcount || '' : '')}
+                  onChange={(value) => handlePropertyChange('headcount', Number(value) || 0)}
+                  type="number"
+                  placeholder="Team size"
+                />
+
+                <FormField
+                  label="Location"
+                  value={'location' in node.data ? node.data.location || '' : ''}
+                  onChange={(value) => handlePropertyChange('location', value)}
+                  placeholder="e.g., London, Remote"
+                />
+
+                <FormField
+                  label="Description"
+                  value={'description' in node.data ? node.data.description || '' : ''}
+                  onChange={(value) => handlePropertyChange('description', value)}
+                  type="textarea"
+                  placeholder="Organisation unit description"
+                  rows={3}
+                />
+              </>
+            )}
+
+            {/* Code Node specific properties (v2.0.0 - Layer 7) */}
+            {isCodeNode && (
+              <>
+                <FormField
+                  label="GitHub URL"
+                  value={'githubUrl' in node.data ? node.data.githubUrl || '' : ''}
+                  onChange={(value) => handlePropertyChange('githubUrl', value)}
+                  placeholder="https://github.com/org/repo"
+                />
+
+                <FormField
+                  label="Language"
+                  value={'language' in node.data ? node.data.language || '' : ''}
+                  onChange={(value) => handlePropertyChange('language', value)}
+                  placeholder="e.g., TypeScript, Python, Java"
+                />
+
+                <FormSection label="Code Type">
+                  <select
+                    value={'codeType' in node.data ? node.data.codeType || 'file' : 'file'}
+                    onChange={(e) => handlePropertyChange('codeType', e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: SPACING.padding.input,
+                      background: UI_COLORS.backgroundSecondary,
+                      border: `1px solid ${UI_COLORS.backgroundModifierBorder}`,
+                      borderRadius: BORDER_RADIUS.normal,
+                      color: UI_COLORS.textNormal,
+                      fontSize: FONT_SIZES.normal,
+                    }}
+                  >
+                    <option value="file">File</option>
+                    <option value="class">Class</option>
+                    <option value="function">Function</option>
+                    <option value="schema">Schema</option>
+                    <option value="table">Table</option>
+                  </select>
+                </FormSection>
+
+                <FormField
+                  label="Repository"
+                  value={'repo' in node.data ? node.data.repo || '' : ''}
+                  onChange={(value) => handlePropertyChange('repo', value)}
+                  placeholder="e.g., org/repo"
+                />
+
+                <FormField
+                  label="Branch"
+                  value={'branch' in node.data ? node.data.branch || '' : ''}
+                  onChange={(value) => handlePropertyChange('branch', value)}
+                  placeholder="e.g., main, develop"
+                />
+
+                <FormField
+                  label="File Path"
+                  value={'path' in node.data ? node.data.path || '' : ''}
+                  onChange={(value) => handlePropertyChange('path', value)}
+                  placeholder="e.g., src/services/AuthService.ts"
+                />
+
+                <FormField
+                  label="Description"
+                  value={'description' in node.data ? node.data.description || '' : ''}
+                  onChange={(value) => handlePropertyChange('description', value)}
+                  type="textarea"
+                  placeholder="Code artifact description"
+                  rows={3}
+                />
+
+                <FormField
+                  label="Last Commit"
+                  value={'lastCommit' in node.data ? node.data.lastCommit || '' : ''}
+                  onChange={(value) => handlePropertyChange('lastCommit', value)}
+                  placeholder="e.g., abc123 - Fixed authentication bug"
+                />
+
+                <FormField
+                  label="Authors"
+                  value={'authors' in node.data && node.data.authors ? node.data.authors.join(', ') : ''}
+                  onChange={(value) => {
+                    const authors = value.split(',').map(a => a.trim()).filter(a => a.length > 0);
+                    handlePropertyChange('authors', authors);
+                  }}
+                  placeholder="Comma-separated list (e.g., Alice Smith, Bob Jones)"
+                />
+              </>
+            )}
+
             {/* Linked Markdown Documentation */}
             {app && vault && workspace && (
               <FormSection label="Linked Documentation">
@@ -955,6 +1208,93 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
                   </>
                 )}
               </FormSection>
+            )}
+
+            {/* Cross-References Section (v1.0.1) */}
+            {node.data.crossReferences && node.data.crossReferences.length > 0 && (
+              <FormSection label="Cross-References">
+                <div
+                  style={{
+                    background: 'rgba(138, 180, 248, 0.1)',
+                    border: `1px solid ${UI_COLORS.interactiveAccent}`,
+                    borderRadius: BORDER_RADIUS.normal,
+                    padding: SPACING.padding.input,
+                    marginBottom: SPACING.small,
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: FONT_SIZES.small,
+                      color: UI_COLORS.textMuted,
+                      marginBottom: SPACING.small,
+                    }}
+                  >
+                    🔗 This node shares its name with nodes in other diagrams:
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: SPACING.small }}>
+                    {node.data.crossReferences.map((path, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => {
+                          if (onOpenDiagram) {
+                            onOpenDiagram(path);
+                          }
+                        }}
+                        style={{
+                          padding: SPACING.padding.button,
+                          background: UI_COLORS.backgroundSecondary,
+                          border: `1px solid ${UI_COLORS.backgroundModifierBorder}`,
+                          borderRadius: BORDER_RADIUS.small,
+                          color: UI_COLORS.textNormal,
+                          cursor: 'pointer',
+                          fontSize: FONT_SIZES.small,
+                          textAlign: 'left',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: SPACING.small,
+                        }}
+                        title={`Open ${path}`}
+                      >
+                        <span>📄</span>
+                        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {path.split('/').pop()?.replace('.bac4', '') || path}
+                        </span>
+                        <span style={{ fontSize: FONT_SIZES.tiny }}>→</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div
+                  style={{
+                    fontSize: FONT_SIZES.tiny,
+                    color: UI_COLORS.textFaint,
+                    fontStyle: 'italic',
+                  }}
+                >
+                  Changes to this node may affect the linked diagrams above
+                </div>
+              </FormSection>
+            )}
+
+            {/* Reference Badge (v1.0.1) */}
+            {node.data.isReference && (
+              <div
+                style={{
+                  background: 'rgba(138, 180, 248, 0.15)',
+                  border: `1px solid ${UI_COLORS.interactiveAccent}`,
+                  borderRadius: BORDER_RADIUS.normal,
+                  padding: SPACING.padding.input,
+                  marginBottom: SPACING.container,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: SPACING.small,
+                }}
+              >
+                <span style={{ fontSize: FONT_SIZES.normal }}>🔗</span>
+                <span style={{ fontSize: FONT_SIZES.small, color: UI_COLORS.textMuted }}>
+                  This is a cross-referenced node
+                </span>
+              </div>
             )}
 
             {/* Node ID (read-only) */}

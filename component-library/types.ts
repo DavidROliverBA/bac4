@@ -48,11 +48,26 @@ export interface ComponentDefinition {
   /** Component category */
   category: ComponentCategory;
 
+  /** Component type (more specific than category) */
+  type: string;
+
   /** Short description */
   description: string;
 
+  /** Default markdown text for documentation notes */
+  defaultNoteText?: string;
+
   /** Icon name or SVG path */
   icon: string;
+
+  /** Whether this component can contain other components (e.g., VPC, Subnet) */
+  isContainer?: boolean;
+
+  /** Default width in pixels */
+  defaultWidth?: number;
+
+  /** Default height in pixels */
+  defaultHeight?: number;
 
   /** Default color for visual representation */
   color: string;

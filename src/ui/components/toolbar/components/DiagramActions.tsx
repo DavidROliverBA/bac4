@@ -23,6 +23,10 @@ export interface DiagramActionsProps {
   onDeleteAnnotation: () => void;
   /** Optional rename diagram callback */
   onRenameDiagram?: () => void;
+  /** Bring node forward (increase z-index) */
+  onBringNodeForward?: () => void;
+  /** Send node backward (decrease z-index) */
+  onSendNodeBackward?: () => void;
 }
 
 /**
@@ -45,6 +49,8 @@ export const DiagramActions: React.FC<DiagramActionsProps> = ({
   onDeleteNode,
   onDeleteAnnotation,
   onRenameDiagram,
+  onBringNodeForward,
+  onSendNodeBackward,
 }) => {
   // Determine what's selected and what to delete
   const hasSelection = selectedNode || selectedAnnotationId;
@@ -86,6 +92,24 @@ export const DiagramActions: React.FC<DiagramActionsProps> = ({
           label="Rename"
           onClick={onRenameDiagram}
           title="Rename this diagram"
+        />
+      )}
+
+      {/* Z-Order Controls - only show when node selected */}
+      {isNodeSelected && onBringNodeForward && (
+        <ToolbarButton
+          icon="⬆️"
+          label="Forward"
+          onClick={onBringNodeForward}
+          title="Bring node forward (increase z-index)"
+        />
+      )}
+      {isNodeSelected && onSendNodeBackward && (
+        <ToolbarButton
+          icon="⬇️"
+          label="Backward"
+          onClick={onSendNodeBackward}
+          title="Send node backward (decrease z-index)"
         />
       )}
 

@@ -3,53 +3,81 @@
  *
  * Generates automatic names for nodes based on their type and existing nodes.
  * Implements sequential numbering (e.g., "System 1", "System 2", etc.).
+ * v1.0.1: Uses NodeRegistryService to ensure unique names across all diagrams.
  *
  * @module auto-naming
  */
 
 import type { Node } from 'reactflow';
 import type { CanvasNodeData } from '../../../types/canvas-types';
+import { NodeRegistryService } from '../../../services/node-registry-service';
 
 // <AI_MODIFIABLE>
 /**
  * Generate automatic name for a node based on its type
  *
  * Counts existing nodes of the same type and assigns the next sequential number.
+ * v1.0.1: Checks NodeRegistryService to ensure unique names across ALL diagrams.
  * Add new node types here to support auto-naming.
  *
  * @param nodeType - The type of node (system, container, person, c4, cloudComponent)
  * @param existingNodes - Array of all existing nodes on the canvas
- * @returns Auto-generated name with sequential number
+ * @returns Auto-generated name with sequential number, guaranteed unique across vault
  *
  * @example
  * ```ts
  * const name = getAutoName('system', nodes);
- * // Returns "System 1" if no system nodes exist
- * // Returns "System 3" if 2 system nodes already exist
+ * // Returns "System 1" if no system nodes exist anywhere
+ * // Returns "System 3" if 2 system nodes already exist (in any diagram)
  * ```
  */
 export function getAutoName(nodeType: string, existingNodes: Node<CanvasNodeData>[]): string {
-  // Count existing nodes of the same type
+  const registry = NodeRegistryService.getInstance();
+
+  // Count existing nodes of the same type on current canvas
   const sameTypeNodes = existingNodes.filter((n) => n.type === nodeType);
   const nextNumber = sameTypeNodes.length + 1;
 
+  // Generate base name by type
+  let baseName: string;
   switch (nodeType) {
     case 'system':
-      return `System ${nextNumber}`;
+      baseName = 'System';
+      break;
     case 'container':
-      return `Container ${nextNumber}`;
+      baseName = 'Container';
+      break;
     case 'person':
-      return `Person ${nextNumber}`;
+      baseName = 'Person';
+      break;
     case 'c4':
-      return `Component ${nextNumber}`;
+      baseName = 'Component';
+      break;
     case 'cloudComponent':
-      return `Cloud Component ${nextNumber}`;
+      baseName = 'Cloud Component';
+      break;
+    case 'capability':
+      baseName = 'Capability';
+      break;
     // Add new node types here:
     // case 'yourNodeType':
-    //   return `Your Node ${nextNumber}`;
+    //   baseName = 'Your Node';
+    //   break;
     default:
-      return `Node ${nextNumber}`;
+      baseName = 'Node';
+      break;
   }
+
+  // Generate candidate name
+  const candidateName = `${baseName} ${nextNumber}`;
+
+  // If registry is initialized, ensure globally unique name
+  if (registry.isInitialized()) {
+    return registry.generateUniqueName(candidateName);
+  }
+
+  // Fallback to local numbering if registry not initialized
+  return candidateName;
 }
 // </AI_MODIFIABLE>
 

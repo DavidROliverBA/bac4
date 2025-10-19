@@ -15,6 +15,8 @@ import type {
   SystemNodeData,
   PersonNodeData,
   ContainerNodeData,
+  CapabilityNodeData,
+  GraphNodeData,
 } from '../../../types/canvas-types';
 import type { ComponentDefinition } from '../../../../component-library/types';
 
@@ -78,6 +80,7 @@ export function createC4Node(
       technology: '',
       description: '',
     },
+    zIndex: 1, // Regular nodes on top
   };
 }
 
@@ -105,6 +108,7 @@ export function createSystemNode(
       external,
       // v0.6.0: hasChildDiagram removed, use linkedDiagramPath instead
     },
+    zIndex: 1, // Regular nodes on top
   };
 }
 
@@ -131,6 +135,7 @@ export function createPersonNode(
       label,
       role,
     },
+    zIndex: 1, // Regular nodes on top
   };
 }
 
@@ -162,11 +167,13 @@ export function createContainerNode(
       type,
       // v0.6.0: hasChildDiagram removed, use linkedDiagramPath instead
     },
+    zIndex: 1, // Regular nodes on top
   };
 }
 
 /**
  * Create a cloud component node
+ * v1.0.0: Supports container nodes with sizing from component definition
  *
  * @param id - Unique node ID
  * @param position - Node position on canvas
@@ -180,7 +187,8 @@ export function createCloudComponentNode(
   label: string,
   component: ComponentDefinition
 ): Node<CloudComponentNodeData> {
-  return {
+  // Build the node
+  const node: Node<CloudComponentNodeData> = {
     id,
     type: 'cloudComponent',
     position,
@@ -191,7 +199,90 @@ export function createCloudComponentNode(
       provider: component.provider as 'aws' | 'azure' | 'gcp' | 'saas',
       category: component.category,
       icon: component.icon,
+      isContainer: component.isContainer || false, // v1.0.0: Container support
+      color: component.color, // Use component's defined color
     },
+    // Container nodes stay in background (z-index 0), regular nodes on top (z-index 1)
+    zIndex: component.isContainer ? 0 : 1,
+  };
+
+  // Set dimensions for container nodes (v1.0.0)
+  if (component.isContainer && component.defaultWidth && component.defaultHeight) {
+    node.style = {
+      width: component.defaultWidth,
+      height: component.defaultHeight,
+    };
+  }
+
+  return node;
+}
+
+/**
+ * Create a capability node
+ *
+ * @param id - Unique node ID
+ * @param position - Node position on canvas
+ * @param label - Node label
+ * @param width - Optional custom width (default: 180)
+ * @param height - Optional custom height (default: 100)
+ * @returns Configured capability node
+ */
+export function createCapabilityNode(
+  id: string,
+  position: { x: number; y: number },
+  label: string,
+  width?: number,
+  height?: number
+): Node<CapabilityNodeData> {
+  return {
+    id,
+    type: 'capability',
+    position,
+    data: {
+      label,
+      width,
+      height,
+    },
+    zIndex: 1, // Regular nodes on top
+  };
+}
+
+/**
+ * Create a graph node (v0.9.0)
+ *
+ * Represents a diagram in the graph view (meta-diagram).
+ * Used to visualize all parent-child relationships between diagrams.
+ *
+ * @param id - Unique node ID
+ * @param position - Node position on canvas
+ * @param label - Diagram name
+ * @param diagramPath - Path to the diagram file this node represents
+ * @param diagramType - Type of the represented diagram
+ * @param parentCount - Optional number of parent diagrams
+ * @param childCount - Optional number of child diagrams
+ * @returns Configured graph node
+ */
+export function createGraphNode(
+  id: string,
+  position: { x: number; y: number },
+  label: string,
+  diagramPath: string,
+  diagramType: 'context' | 'container' | 'component' | 'capability',
+  parentCount?: number,
+  childCount?: number
+): Node<GraphNodeData> {
+  return {
+    id,
+    type: 'graph',
+    position,
+    data: {
+      label,
+      diagramPath,
+      diagramType,
+      parentCount,
+      childCount,
+    },
+    zIndex: 1, // Regular nodes on top
   };
 }
 
@@ -217,5 +308,6 @@ export function createGenericNode(
     type,
     position,
     data,
+    zIndex: 1, // Regular nodes on top by default
   };
 }
