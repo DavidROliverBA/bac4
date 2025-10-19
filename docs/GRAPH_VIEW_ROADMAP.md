@@ -1,7 +1,7 @@
 # BAC4 Graph View Enhancement Roadmap
 
-**Status:** Phase 3 Complete ✅
-**Version:** v2.0.2
+**Status:** Phase 5 Complete ✅
+**Version:** v2.1.0
 **Last Updated:** 2025-10-19
 
 ---
@@ -140,6 +140,106 @@ Code (Layer 7)            [Node12] [Node13] [Node14]
 
 ---
 
+### ✅ Phase 4: Filtering & Search (COMPLETE - v2.1.0)
+
+**Implementation Date:** 2025-10-19
+**Actual Effort:** 1.5 hours
+
+**Problem:** Graph view shows all diagrams, making it hard to focus on specific areas in large vaults.
+
+**Solution:** Command-based filtering for layers and connections.
+
+#### Features Implemented:
+1. ✅ **GraphFilter settings** - Persistent filter state in settings
+2. ✅ **Layer filtering commands** - 7 commands for each layer
+   - "Graph View: Show Only Market Layer"
+   - "Graph View: Show Only Organisation Layer"
+   - "Graph View: Show Only Capability Layer"
+   - "Graph View: Show Only Context Layer"
+   - "Graph View: Show Only Container Layer"
+   - "Graph View: Show Only Component Layer"
+   - "Graph View: Show Only Code Layer"
+3. ✅ **Connection filtering commands**
+   - "Graph View: Show Isolated Diagrams" (0 connections)
+   - "Graph View: Show Hub Diagrams (5+ connections)"
+4. ✅ **Reset filters command** - "Graph View: Reset Filters"
+5. ✅ **Filter persistence** - Filters saved across sessions
+
+#### Implementation:
+- ✅ Extended `graph-generation-service.ts` - Apply filters before layout
+- ✅ Updated `constants.ts` - Added `graphFilter` to DEFAULT_SETTINGS
+- ✅ Added `setGraphFilter()` method - Apply filter and reopen graph
+- ✅ Added `resetGraphFilters()` method - Clear all filters
+- ✅ Added `describeFilter()` helper - Human-readable filter descriptions
+
+#### How It Works:
+1. User selects filter via command palette
+2. Filter saved to settings (persists across sessions)
+3. Graph view regenerates with filtered diagrams
+4. Notice shows which filter is active
+
+#### Benefits:
+- ✅ Focus on specific layers (e.g., only Context + Container + Component)
+- ✅ Find isolated diagrams that need connections
+- ✅ Identify hub diagrams with many relationships
+- ✅ Simple command-based workflow (no custom UI needed)
+- ✅ Filter state persists across Obsidian restarts
+
+---
+
+### ✅ Phase 5: Statistics & Analytics (COMPLETE - v2.1.0)
+
+**Implementation Date:** 2025-10-19
+**Actual Effort:** 0.5 hours
+
+**Problem:** Users don't have visibility into architecture documentation coverage and connectivity.
+
+**Solution:** Statistical analysis with console display and clipboard export.
+
+#### Features Implemented:
+1. ✅ **Layer distribution** - Count and percentage by layer
+2. ✅ **Connection statistics** - Most connected, isolated, average
+3. ✅ **Console display** - Formatted statistics in console
+4. ✅ **Clipboard export** - Copy statistics to clipboard
+5. ✅ **Command palette** - "Graph View: Show Statistics"
+
+#### Statistics Displayed:
+```
+BAC4 Graph Statistics
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Layer Distribution:
+├─ Market          3 diagrams (  4.2%)
+├─ Organisation    5 diagrams (  6.9%)
+├─ Capability     12 diagrams ( 16.7%)
+├─ Context         8 diagrams ( 11.1%)
+├─ Container      15 diagrams ( 20.8%)
+├─ Component      23 diagrams ( 31.9%)
+├─ Code            6 diagrams (  8.3%)
+└─ Total:         72 diagrams
+
+Connection Statistics:
+├─ Most connected: System_API (18 connections)
+├─ Isolated:       4 diagrams
+└─ Average:        6.3 connections
+```
+
+#### Implementation:
+- ✅ Added `showGraphStatistics()` method - Generate and display stats
+- ✅ Uses `GraphFilterService.getLayerDistribution()`
+- ✅ Uses `GraphFilterService.getConnectionStatistics()`
+- ✅ Formats output with box-drawing characters
+- ✅ Copies to clipboard for sharing
+
+#### Benefits:
+- ✅ Understand architecture documentation coverage
+- ✅ Identify under-documented layers
+- ✅ Find isolated diagrams that need connections
+- ✅ Share statistics in reports or documentation
+- ✅ No custom UI required (console + clipboard)
+
+---
+
 ## Completed Features (Continued)
 
 ### ✅ Phase 2: Persistent Layout (COMPLETE - v2.0.1)
@@ -207,29 +307,6 @@ Code (Layer 7)            [Node12] [Node13] [Node14]
 ## Planned Features
 
 ---
-
-### 🔧 Phase 4: Filtering & Search (FOUNDATION READY)
-
-**Estimated Effort:** 3-4 hours (requires custom UI)
-**Target:** v2.1.0
-**Status:** Filter service created, awaiting UI implementation
-
-**Goal:** Filter and search graph to focus on specific areas.
-
-**Note:** The filtering service (`graph-filter-service.ts`) has been created with full functionality for layer filtering, search, and connection filtering. However, interactive filtering (checkboxes, search input) requires a custom UI overlay on the Canvas view, which is deferred to a future version. The service can be used programmatically or via future commands.
-
-#### Filter Service Features (Ready):
-1. ✅ **GraphFilterService** - Complete filtering implementation
-2. ✅ **Layer filtering** - Filter by diagram type
-3. ✅ **Search filtering** - Filter by diagram name/path
-4. ✅ **Connection filtering** - Isolated, hub, connected-to modes
-5. ✅ **Statistics** - Layer distribution, connection stats
-
-#### Pending UI Implementation:
-1. **Graph toolbar component** - Overlay on Canvas view
-2. **Layer checkboxes** - Interactive layer selection
-3. **Search input** - Live diagram search
-4. **Filter state persistence** - Session storage
 
 ### ~🎨 Phase 3: Layout Options (COMPLETE - v2.0.2)~
 
@@ -442,16 +519,18 @@ These features don't align with BAC4's use case:
 
 ## Implementation Priority
 
-### Immediate (v2.0.2)
+### Immediate (v2.1.0)
 1. ✅ **Hierarchical Layout** - DONE
 2. ✅ **Dynamic Node Sizing** - DONE
 3. ✅ **Persistent Layout** - DONE
 4. ✅ **Layout Options** - DONE
+5. ✅ **Filtering (command-based)** - DONE
+6. ✅ **Statistics** - DONE
 
-### Short-term (v2.1.0)
-5. Filtering UI (custom Canvas overlay)
-6. Diagram Search UI
-7. Statistics Panel
+### Short-term (v2.2.0+)
+7. Filtering UI enhancement (custom Canvas overlay - optional)
+8. Diagram Search UI (live search with highlighting - optional)
+9. Statistics Panel UI (modal or sidebar - optional)
 
 ### Long-term (v2.2.0+)
 8. Multi-select nodes
@@ -546,6 +625,14 @@ These features don't align with BAC4's use case:
 ---
 
 ## Changelog
+
+**2025-10-19 (v2.1.0):**
+- ✅ Implemented Phase 4: Filtering & Search (command-based)
+- ✅ Implemented Phase 5: Statistics & Analytics
+- ✅ Added 10 filter commands (7 layers + isolated + hub + reset)
+- ✅ Added statistics command with clipboard export
+- ✅ Filter persistence in settings
+- Bundle size: 727.3kb → 733.1kb (+5.8kb)
 
 **2025-10-19 (v2.0.2):**
 - ✅ Implemented Phase 3: Layout Options

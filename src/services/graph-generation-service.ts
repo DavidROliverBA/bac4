@@ -24,6 +24,7 @@ import { ForceDirectedLayout } from './layout/ForceDirectedLayout';
 import { CircularLayout } from './layout/CircularLayout';
 import type { LayoutEngine } from './layout/LayoutEngine';
 import { countRelationships } from './layout/LayoutEngine';
+import { GraphFilterService, type GraphFilter } from './graph-filter-service';
 
 export class GraphGenerationService {
   /**
@@ -145,18 +146,21 @@ export class GraphGenerationService {
    * v2.0.0: Uses hierarchical layout optimized for 7-layer architecture model.
    * v2.0.1: Persistent layout - Restores user-customized node positions.
    * v2.0.2: Multiple layout engines - Supports Grid, Hierarchical, Force-Directed, Circular
+   * v2.1.0: Filtering support - Filter by layer, connections, search term
    *
    * **Layout Algorithm:**
    * 1. Load saved layout from .bac4-graph-layout.json
    * 2. Parse all diagram metadata
-   * 3. Use selected layout engine to calculate positions
-   * 4. For each diagram:
+   * 3. Apply filters (layer, connection, search)
+   * 4. Use selected layout engine to calculate positions
+   * 5. For each diagram:
    *    - If saved position exists → Use saved position
    *    - If new diagram → Use layout engine position
-   * 5. Generate edges based on relationships
+   * 6. Generate edges based on relationships
    *
    * @param vault - Obsidian vault instance to scan
    * @param layoutType - Layout algorithm to use (default: 'hierarchical')
+   * @param filter - Optional filter criteria to apply
    * @returns Promise resolving to object containing nodes and edges arrays
    *
    * @example
@@ -169,7 +173,8 @@ export class GraphGenerationService {
    */
   static async generateGraph(
     vault: Vault,
-    layoutType: string = 'hierarchical'
+    layoutType: string = 'hierarchical',
+    filter?: GraphFilter
   ): Promise<{ nodes: CanvasNode[]; edges: CanvasEdge[] }> {
     console.log(`BAC4: Generating graph view with ${layoutType} layout...`);
 
@@ -194,17 +199,24 @@ export class GraphGenerationService {
 
     console.log(`BAC4: Parsed ${allMetadata.length} diagram metadata entries`);
 
+    // Apply filters if provided (v2.1.0)
+    let filteredMetadata = allMetadata;
+    if (filter) {
+      filteredMetadata = GraphFilterService.filterDiagrams(allMetadata, filter);
+      console.log(`BAC4: Applied filters, ${filteredMetadata.length}/${allMetadata.length} diagrams match`);
+    }
+
     // Get layout engine and calculate positions (v2.0.2)
     const layoutEngine = this.getLayoutEngine(layoutType);
     console.log(`BAC4: Using ${layoutEngine.name} layout engine`);
-    const layoutResult = layoutEngine.calculateLayout(allMetadata);
+    const layoutResult = layoutEngine.calculateLayout(filteredMetadata);
 
     // Generate nodes using layout engine positions
     const nodes: CanvasNode[] = [];
     const pathToNodeId = new Map<string, string>(); // Map diagram path to node ID
     let nodeIndex = 0;
 
-    allMetadata.forEach((metadata) => {
+    filteredMetadata.forEach((metadata) => {
       // Get position from layout engine
       const layoutPosition = layoutResult.positions.get(metadata.path);
       if (!layoutPosition) {

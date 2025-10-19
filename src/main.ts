@@ -696,6 +696,96 @@ export default class BAC4Plugin extends Plugin {
         await this.setGraphLayout('circular');
       },
     });
+
+    // Graph Filter Commands (v2.1.0: Phase 4)
+    this.addCommand({
+      id: 'bac4-filter-only-market',
+      name: 'Graph View: Show Only Market Layer',
+      callback: async () => {
+        await this.setGraphFilter({ layers: ['market'] });
+      },
+    });
+
+    this.addCommand({
+      id: 'bac4-filter-only-organisation',
+      name: 'Graph View: Show Only Organisation Layer',
+      callback: async () => {
+        await this.setGraphFilter({ layers: ['organisation'] });
+      },
+    });
+
+    this.addCommand({
+      id: 'bac4-filter-only-capability',
+      name: 'Graph View: Show Only Capability Layer',
+      callback: async () => {
+        await this.setGraphFilter({ layers: ['capability'] });
+      },
+    });
+
+    this.addCommand({
+      id: 'bac4-filter-only-context',
+      name: 'Graph View: Show Only Context Layer',
+      callback: async () => {
+        await this.setGraphFilter({ layers: ['context'] });
+      },
+    });
+
+    this.addCommand({
+      id: 'bac4-filter-only-container',
+      name: 'Graph View: Show Only Container Layer',
+      callback: async () => {
+        await this.setGraphFilter({ layers: ['container'] });
+      },
+    });
+
+    this.addCommand({
+      id: 'bac4-filter-only-component',
+      name: 'Graph View: Show Only Component Layer',
+      callback: async () => {
+        await this.setGraphFilter({ layers: ['component'] });
+      },
+    });
+
+    this.addCommand({
+      id: 'bac4-filter-only-code',
+      name: 'Graph View: Show Only Code Layer',
+      callback: async () => {
+        await this.setGraphFilter({ layers: ['code'] });
+      },
+    });
+
+    this.addCommand({
+      id: 'bac4-filter-isolated',
+      name: 'Graph View: Show Isolated Diagrams',
+      callback: async () => {
+        await this.setGraphFilter({ connectionFilter: 'isolated' });
+      },
+    });
+
+    this.addCommand({
+      id: 'bac4-filter-hub',
+      name: 'Graph View: Show Hub Diagrams (5+ connections)',
+      callback: async () => {
+        await this.setGraphFilter({ connectionFilter: 'hub', minConnections: 5 });
+      },
+    });
+
+    this.addCommand({
+      id: 'bac4-filter-reset',
+      name: 'Graph View: Reset Filters',
+      callback: async () => {
+        await this.resetGraphFilters();
+      },
+    });
+
+    // Graph Statistics Command (v2.1.0: Phase 5)
+    this.addCommand({
+      id: 'bac4-show-graph-stats',
+      name: 'Graph View: Show Statistics',
+      callback: async () => {
+        await this.showGraphStatistics();
+      },
+    });
   }
 
   /**
@@ -856,7 +946,8 @@ export default class BAC4Plugin extends Plugin {
 
     console.log('BAC4: Generating graph data...');
     const layoutType = this.settings.graphLayout || 'hierarchical';
-    const { nodes, edges } = await GraphGenerationService.generateGraph(this.app.vault, layoutType);
+    const filter = this.settings.graphFilter;
+    const { nodes, edges } = await GraphGenerationService.generateGraph(this.app.vault, layoutType, filter);
     console.log(`BAC4: Generated ${nodes.length} nodes, ${edges.length} edges with ${layoutType} layout`);
 
     // Convert to JSONCanvas format
@@ -922,6 +1013,138 @@ export default class BAC4Plugin extends Plugin {
     // Reopen graph view with new layout
     new Notice(`Graph layout set to ${layoutType}. Reopening graph view...`);
     await this.openGraphView();
+  }
+
+  /**
+   * Set graph filter
+   *
+   * Applies filter to graph view and reopens it.
+   *
+   * v2.1.0: Phase 4 - Filtering & Search
+   *
+   * @param filter - Partial filter to apply (merged with existing)
+   */
+  private async setGraphFilter(filter: Partial<typeof this.settings.graphFilter>): Promise<void> {
+    console.log('BAC4: Setting graph filter:', filter);
+
+    // Merge with existing filter
+    this.settings.graphFilter = { ...this.settings.graphFilter, ...filter };
+    await this.saveSettings();
+
+    // Reopen graph view with new filter
+    const filterDesc = this.describeFilter(filter);
+    new Notice(`Graph filter set: ${filterDesc}. Reopening graph view...`);
+    await this.openGraphView();
+  }
+
+  /**
+   * Reset graph filters
+   *
+   * Clears all filters and reopens graph view.
+   *
+   * v2.1.0: Phase 4 - Filtering & Search
+   */
+  private async resetGraphFilters(): Promise<void> {
+    console.log('BAC4: Resetting graph filters');
+
+    // Reset to defaults
+    this.settings.graphFilter = {
+      layers: [],
+      connectionFilter: 'all',
+      minConnections: 5,
+    };
+    await this.saveSettings();
+
+    // Reopen graph view
+    new Notice('Graph filters reset. Showing all diagrams...');
+    await this.openGraphView();
+  }
+
+  /**
+   * Describe filter in human-readable format
+   *
+   * @param filter - Filter to describe
+   * @returns Human-readable description
+   * @private
+   */
+  private describeFilter(filter: Partial<typeof this.settings.graphFilter>): string {
+    if (filter.layers && filter.layers.length > 0) {
+      return `${filter.layers.join(', ')} layer`;
+    }
+    if (filter.connectionFilter === 'isolated') {
+      return 'isolated diagrams';
+    }
+    if (filter.connectionFilter === 'hub') {
+      return `hub diagrams (${filter.minConnections}+ connections)`;
+    }
+    return 'custom filter';
+  }
+
+  /**
+   * Show graph statistics
+   *
+   * Displays statistics about diagram distribution and connections.
+   *
+   * v2.1.0: Phase 5 - Statistics & Analytics
+   */
+  private async showGraphStatistics(): Promise<void> {
+    console.log('BAC4: Generating graph statistics...');
+
+    const { GraphGenerationService } = await import('./services/graph-generation-service');
+    const { GraphFilterService } = await import('./services/graph-filter-service');
+
+    // Get all diagrams
+    const diagramFiles = await GraphGenerationService.getAllDiagrams(this.app.vault);
+    const allMetadata = [];
+    for (const file of diagramFiles) {
+      const metadata = await GraphGenerationService.parseDiagramMetadata(this.app.vault, file);
+      if (metadata) {
+        allMetadata.push(metadata);
+      }
+    }
+
+    // Calculate statistics
+    const layerDist = GraphFilterService.getLayerDistribution(allMetadata);
+    const connStats = GraphFilterService.getConnectionStatistics(allMetadata);
+
+    // Format layer distribution
+    const layerOrder = ['market', 'organisation', 'capability', 'context', 'container', 'component', 'code'];
+    const layerLines = layerOrder.map((layer) => {
+      const count = layerDist.get(layer as any) || 0;
+      const pct = allMetadata.length > 0 ? ((count / allMetadata.length) * 100).toFixed(1) : '0.0';
+      const layerName = layer.charAt(0).toUpperCase() + layer.slice(1);
+      return `├─ ${layerName.padEnd(14)} ${count.toString().padStart(2)} diagrams (${pct.padStart(5)}%)`;
+    });
+
+    // Build statistics message
+    const stats = `
+BAC4 Graph Statistics
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Layer Distribution:
+${layerLines.join('\n')}
+└─ Total:         ${allMetadata.length} diagrams
+
+Connection Statistics:
+├─ Most connected: ${connStats.mostConnected?.displayName || 'None'} (${connStats.mostConnections} connections)
+├─ Isolated:       ${connStats.isolatedCount} diagrams
+└─ Average:        ${connStats.averageConnections.toFixed(1)} connections
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+`.trim();
+
+    // Create modal to display statistics
+    const modal = document.createElement('div');
+    modal.style.cssText = 'white-space: pre; font-family: monospace; font-size: 12px; padding: 20px;';
+    modal.textContent = stats;
+
+    // Show in notice (for simplicity - could be a custom modal later)
+    console.log(stats);
+    new Notice('Graph statistics generated - see console', 10000);
+
+    // Also copy to clipboard
+    navigator.clipboard.writeText(stats);
+    new Notice('Statistics copied to clipboard', 3000);
   }
 
   /**
