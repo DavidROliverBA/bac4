@@ -160,11 +160,42 @@ export class GraphGenerationService {
   }
 
   /**
+   * Calculate dynamic node size based on connection count
+   *
+   * Nodes with more connections are larger, helping identify central/important diagrams.
+   *
+   * @param connectionCount - Total parent + child connections
+   * @returns Object with width and height in pixels
+   *
+   * @example
+   * ```ts
+   * const size = GraphGenerationService.calculateNodeSize(10);
+   * // { width: 250, height: 120 } - larger than base size
+   * ```
+   */
+  static calculateNodeSize(connectionCount: number): { width: number; height: number } {
+    const baseWidth = 200;
+    const baseHeight = 80;
+    const scaleFactor = 10; // 10px per connection
+
+    const width = baseWidth + Math.min(connectionCount * scaleFactor, 200); // Max 400px wide
+    const height = baseHeight + Math.min(connectionCount * (scaleFactor / 2), 100); // Max 180px tall
+
+    return { width, height };
+  }
+
+  /**
    * Generate graph nodes and edges from all diagrams in vault
    *
-   * Creates a meta-visualization showing all diagrams as nodes and their
-   * relationships as edges. Nodes are positioned in a grid layout and colored
-   * by diagram type. Edges support both exact path matching and basename matching.
+   * v2.0.0: Uses hierarchical layout optimized for 7-layer architecture model.
+   * Arranges nodes by layer (Market → Code) with dynamic sizing based on connections.
+   *
+   * **Layout Algorithm:**
+   * - Groups diagrams by layer (Market, Organisation, Capability, etc.)
+   * - Arranges layers vertically (top to bottom)
+   * - Arranges diagrams within each layer horizontally
+   * - Sizes nodes based on connection count (more connections = larger node)
+   * - Centers each layer horizontally
    *
    * @param vault - Obsidian vault instance to scan
    * @returns Promise resolving to object containing nodes and edges arrays
@@ -195,61 +226,119 @@ export class GraphGenerationService {
 
     console.log(`BAC4: Parsed ${allMetadata.length} diagram metadata entries`);
 
-    // Generate nodes - position in a grid layout
+    // Group diagrams by layer for hierarchical layout
+    const layerOrder: DiagramType[] = [
+      'market',
+      'organisation',
+      'capability',
+      'context',
+      'container',
+      'component',
+      'code',
+    ];
+
+    const diagramsByLayer = new Map<DiagramType, DiagramMetadata[]>();
+    layerOrder.forEach((layer) => diagramsByLayer.set(layer, []));
+
+    allMetadata.forEach((metadata) => {
+      const layer = metadata.diagramType;
+      if (diagramsByLayer.has(layer)) {
+        diagramsByLayer.get(layer)!.push(metadata);
+      }
+    });
+
+    // Generate nodes with hierarchical layout
     const nodes: CanvasNode[] = [];
-    const gridColumns = Math.ceil(Math.sqrt(allMetadata.length));
-    const gridSpacing = 250; // Space between nodes
+    const pathToNodeId = new Map<string, string>(); // Map diagram path to node ID
+    const verticalSpacing = 300; // Space between layers
+    const horizontalSpacing = 250; // Space between nodes in same layer
+    const startY = 100;
+    let nodeIndex = 0;
 
-    allMetadata.forEach((metadata, index) => {
-      const row = Math.floor(index / gridColumns);
-      const col = index % gridColumns;
-      const x = col * gridSpacing + 100;
-      const y = row * gridSpacing + 100;
+    let currentY = startY;
 
-      const { parentCount, childCount } = this.countRelationships(metadata.path, allMetadata);
+    layerOrder.forEach((layer) => {
+      const layerDiagrams = diagramsByLayer.get(layer) || [];
 
-      // Get color based on diagram type
-      const color = C4_TYPE_COLORS[metadata.diagramType] || C4_TYPE_COLORS.context;
+      if (layerDiagrams.length === 0) {
+        // Skip empty layers
+        return;
+      }
 
-      const node = createGraphNode(
-        `graph-${index}`,
-        { x, y },
-        metadata.displayName,
-        metadata.path,
-        metadata.diagramType,
-        parentCount,
-        childCount
-      );
+      // Calculate total width of this layer to center it
+      const totalWidth = layerDiagrams.length * horizontalSpacing;
+      const startX = -totalWidth / 2 + horizontalSpacing / 2;
 
-      // Set color
-      node.data.color = color;
+      layerDiagrams.forEach((metadata, indexInLayer) => {
+        const { parentCount, childCount } = this.countRelationships(metadata.path, allMetadata);
+        const totalConnections = parentCount + childCount;
 
-      nodes.push(node);
+        // Calculate dynamic node size based on connections
+        const { width, height } = this.calculateNodeSize(totalConnections);
+
+        // Position horizontally within layer
+        const x = startX + indexInLayer * horizontalSpacing;
+        const y = currentY;
+
+        // Get color based on diagram type
+        const color = C4_TYPE_COLORS[metadata.diagramType] || C4_TYPE_COLORS.context;
+
+        const nodeId = `graph-${nodeIndex++}`;
+        const node = createGraphNode(
+          nodeId,
+          { x, y },
+          metadata.displayName,
+          metadata.path,
+          metadata.diagramType,
+          parentCount,
+          childCount
+        );
+
+        // Set color and size
+        node.data.color = color;
+        node.width = width;
+        node.height = height;
+
+        nodes.push(node);
+
+        // Map path to node ID for edge creation
+        pathToNodeId.set(metadata.path, nodeId);
+      });
+
+      // Move to next layer
+      currentY += verticalSpacing;
     });
 
     // Generate edges based on linkedDiagramPaths
     const edges: CanvasEdge[] = [];
     let edgeId = 0;
 
-    allMetadata.forEach((metadata, index) => {
+    allMetadata.forEach((metadata) => {
+      const sourceNodeId = pathToNodeId.get(metadata.path);
+      if (!sourceNodeId) return;
+
       metadata.linkedDiagramPaths.forEach((linkedPath) => {
-        // Find the target node - try exact match first
-        let targetIndex = allMetadata.findIndex((m) => m.path === linkedPath);
+        // Try to find target node by exact path match
+        let targetNodeId = pathToNodeId.get(linkedPath);
 
         // If no exact match, try basename match
-        if (targetIndex === -1) {
+        if (!targetNodeId) {
           const linkedBasename = linkedPath.split('/').pop()?.replace('.bac4', '') || linkedPath;
-          targetIndex = allMetadata.findIndex((m) => {
-            const metadataBasename = m.path.split('/').pop()?.replace('.bac4', '') || m.path;
-            return metadataBasename === linkedBasename;
-          });
+
+          for (const [path, nodeId] of pathToNodeId.entries()) {
+            const pathBasename = path.split('/').pop()?.replace('.bac4', '') || path;
+            if (pathBasename === linkedBasename) {
+              targetNodeId = nodeId;
+              break;
+            }
+          }
         }
 
-        if (targetIndex !== -1) {
+        if (targetNodeId) {
           edges.push({
             id: `edge-${edgeId++}`,
-            source: `graph-${index}`,
-            target: `graph-${targetIndex}`,
+            source: sourceNodeId,
+            target: targetNodeId,
             type: 'directional',
             data: {
               direction: 'right',
