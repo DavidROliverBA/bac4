@@ -663,6 +663,39 @@ export default class BAC4Plugin extends Plugin {
         await this.resetGraphLayout();
       },
     });
+
+    // Graph Layout Selection Commands (v2.0.2: Phase 3)
+    this.addCommand({
+      id: 'bac4-set-layout-hierarchical',
+      name: 'Graph View: Set Hierarchical Layout',
+      callback: async () => {
+        await this.setGraphLayout('hierarchical');
+      },
+    });
+
+    this.addCommand({
+      id: 'bac4-set-layout-grid',
+      name: 'Graph View: Set Grid Layout',
+      callback: async () => {
+        await this.setGraphLayout('grid');
+      },
+    });
+
+    this.addCommand({
+      id: 'bac4-set-layout-force-directed',
+      name: 'Graph View: Set Force-Directed Layout',
+      callback: async () => {
+        await this.setGraphLayout('force-directed');
+      },
+    });
+
+    this.addCommand({
+      id: 'bac4-set-layout-circular',
+      name: 'Graph View: Set Circular Layout',
+      callback: async () => {
+        await this.setGraphLayout('circular');
+      },
+    });
   }
 
   /**
@@ -822,8 +855,9 @@ export default class BAC4Plugin extends Plugin {
     const { JSONCanvasExporter } = await import('./services/jsoncanvas-exporter');
 
     console.log('BAC4: Generating graph data...');
-    const { nodes, edges } = await GraphGenerationService.generateGraph(this.app.vault);
-    console.log(`BAC4: Generated ${nodes.length} nodes, ${edges.length} edges`);
+    const layoutType = this.settings.graphLayout || 'hierarchical';
+    const { nodes, edges } = await GraphGenerationService.generateGraph(this.app.vault, layoutType);
+    console.log(`BAC4: Generated ${nodes.length} nodes, ${edges.length} edges with ${layoutType} layout`);
 
     // Convert to JSONCanvas format
     const canvasData = JSONCanvasExporter.exportGraphToCanvas(nodes, edges);
@@ -867,6 +901,27 @@ export default class BAC4Plugin extends Plugin {
       console.error('BAC4: Error resetting graph layout:', error);
       new Notice('Failed to reset graph layout');
     }
+  }
+
+  /**
+   * Set graph layout algorithm
+   *
+   * Changes the layout algorithm used for graph view and reopens it.
+   *
+   * v2.0.2: Phase 3 - Layout Options
+   *
+   * @param layoutType - Layout algorithm to use
+   */
+  private async setGraphLayout(layoutType: string): Promise<void> {
+    console.log('BAC4: Setting graph layout to:', layoutType);
+
+    // Update settings
+    this.settings.graphLayout = layoutType;
+    await this.saveSettings();
+
+    // Reopen graph view with new layout
+    new Notice(`Graph layout set to ${layoutType}. Reopening graph view...`);
+    await this.openGraphView();
   }
 
   /**

@@ -1,7 +1,7 @@
 # BAC4 Graph View Enhancement Roadmap
 
-**Status:** Phase 2 Complete ✅
-**Version:** v2.0.1
+**Status:** Phase 3 Complete ✅
+**Version:** v2.0.2
 **Last Updated:** 2025-10-19
 
 ---
@@ -70,6 +70,82 @@ Code (Layer 7)            [Node12] [Node13] [Node14]
 
 **Solution:** Save and restore user-customized node positions.
 
+### ✅ Phase 3: Layout Options (COMPLETE - v2.0.2)
+
+**Implementation Date:** 2025-10-19
+**Actual Effort:** 2 hours
+
+**Problem:** Single hierarchical layout doesn't suit all use cases (exploration, overview, comparison).
+
+**Solution:** Multiple layout algorithms with command palette selection.
+
+#### Features Implemented:
+1. ✅ **LayoutEngine interface** - Abstract interface for all layout algorithms
+2. ✅ **Hierarchical Layout** - Layer-based vertical arrangement (Market → Code)
+3. ✅ **Grid Layout** - Simple √n × √n grid pattern
+4. ✅ **Force-Directed Layout** - Physics-based with attractive/repulsive forces
+5. ✅ **Circular Layout** - Concentric circles by layer
+6. ✅ **Layout preference in settings** - `graphLayout` setting (default: 'hierarchical')
+7. ✅ **Command palette commands** - Switch layouts via commands
+   - "Graph View: Set Hierarchical Layout"
+   - "Graph View: Set Grid Layout"
+   - "Graph View: Set Force-Directed Layout"
+   - "Graph View: Set Circular Layout"
+
+#### Layout Algorithms:
+
+**Hierarchical Layout:** (Default)
+- Groups by architectural layer
+- Top-to-bottom flow (Market → Code)
+- Centered alignment per layer
+- Best for: Understanding architectural flow
+
+**Grid Layout:**
+- Simple √n × √n grid
+- No layer awareness
+- Best for: Small vaults (<20 diagrams)
+
+**Force-Directed Layout:**
+- Physics simulation (100 iterations)
+- Attractive forces for connected nodes
+- Repulsive forces for all nodes
+- Best for: Discovering relationships, clustering
+
+**Circular Layout:**
+- Concentric circles by layer
+- Market (center) → Code (outer ring)
+- Best for: High-level overview
+
+#### Implementation:
+- ✅ Created `src/services/layout/LayoutEngine.ts` - Interface & helpers
+- ✅ Created `src/services/layout/HierarchicalLayout.ts` - Hierarchical algorithm
+- ✅ Created `src/services/layout/GridLayout.ts` - Grid algorithm
+- ✅ Created `src/services/layout/ForceDirectedLayout.ts` - Physics simulation
+- ✅ Created `src/services/layout/CircularLayout.ts` - Circular algorithm
+- ✅ Refactored `src/services/graph-generation-service.ts` - Use layout engines
+- ✅ Updated `src/core/constants.ts` - Added `graphLayout` setting
+- ✅ Updated `src/main.ts` - Layout selection commands
+
+#### How It Works:
+1. User selects layout via command palette
+2. Setting saved to `data.json`
+3. Next graph view uses selected layout
+4. Manual node arrangements still persist (saved positions override layout)
+
+#### Benefits:
+- ✅ Multiple visualization options for different use cases
+- ✅ Easy switching via command palette
+- ✅ Layout preference persists across sessions
+- ✅ Works with existing persistent layout system
+
+---
+
+## Completed Features (Continued)
+
+### ✅ Phase 2: Persistent Layout (COMPLETE - v2.0.1)
+
+**Implementation Date:** 2025-10-19
+
 #### Features Implemented:
 1. ✅ **Layout persistence file** - `.bac4-graph-layout.json` in vault root
 2. ✅ **Position saving** - Store x, y, width, height for each diagram
@@ -132,19 +208,43 @@ Code (Layer 7)            [Node12] [Node13] [Node14]
 
 ---
 
-### 🎨 Phase 3: Layout Options (MEDIUM PRIORITY)
+### 🔧 Phase 4: Filtering & Search (FOUNDATION READY)
+
+**Estimated Effort:** 3-4 hours (requires custom UI)
+**Target:** v2.1.0
+**Status:** Filter service created, awaiting UI implementation
+
+**Goal:** Filter and search graph to focus on specific areas.
+
+**Note:** The filtering service (`graph-filter-service.ts`) has been created with full functionality for layer filtering, search, and connection filtering. However, interactive filtering (checkboxes, search input) requires a custom UI overlay on the Canvas view, which is deferred to a future version. The service can be used programmatically or via future commands.
+
+#### Filter Service Features (Ready):
+1. ✅ **GraphFilterService** - Complete filtering implementation
+2. ✅ **Layer filtering** - Filter by diagram type
+3. ✅ **Search filtering** - Filter by diagram name/path
+4. ✅ **Connection filtering** - Isolated, hub, connected-to modes
+5. ✅ **Statistics** - Layer distribution, connection stats
+
+#### Pending UI Implementation:
+1. **Graph toolbar component** - Overlay on Canvas view
+2. **Layer checkboxes** - Interactive layer selection
+3. **Search input** - Live diagram search
+4. **Filter state persistence** - Session storage
+
+### ~🎨 Phase 3: Layout Options (COMPLETE - v2.0.2)~
 
 **Estimated Effort:** 2-3 hours
 **Target:** v2.0.2
+**Status:** ✅ COMPLETE
 
 **Goal:** Provide multiple layout algorithms for different use cases.
 
 #### Features:
-1. **Layout selector UI** - Toggle between layouts
-2. **Grid layout** - Original grid arrangement (fallback)
-3. **Hierarchical layout** - Current implementation (default)
-4. **Force-directed layout** - Physics-based automatic arrangement
-5. **Circular layout** - Arrange by layer in concentric circles
+1. ✅ **Layout selector commands** - Switch via command palette
+2. ✅ **Grid layout** - Simple grid arrangement
+3. ✅ **Hierarchical layout** - Layer-based (default)
+4. ✅ **Force-directed layout** - Physics-based automatic arrangement
+5. ✅ **Circular layout** - Arrange by layer in concentric circles
 
 #### Layout Types:
 
@@ -342,15 +442,15 @@ These features don't align with BAC4's use case:
 
 ## Implementation Priority
 
-### Immediate (v2.0.1)
+### Immediate (v2.0.2)
 1. ✅ **Hierarchical Layout** - DONE
 2. ✅ **Dynamic Node Sizing** - DONE
-3. 🔄 **Persistent Layout** - Next up
+3. ✅ **Persistent Layout** - DONE
+4. ✅ **Layout Options** - DONE
 
-### Short-term (v2.0.2 - v2.1.0)
-4. Layout Options (Grid, Force-Directed, Circular)
-5. Layer Filtering
-6. Diagram Search
+### Short-term (v2.1.0)
+5. Filtering UI (custom Canvas overlay)
+6. Diagram Search UI
 7. Statistics Panel
 
 ### Long-term (v2.2.0+)
@@ -447,19 +547,37 @@ These features don't align with BAC4's use case:
 
 ## Changelog
 
-**2025-10-19:**
+**2025-10-19 (v2.0.2):**
+- ✅ Implemented Phase 3: Layout Options
+- ✅ Created 4 layout engines (Hierarchical, Grid, Force-Directed, Circular)
+- ✅ Added command palette layout selection
+- ✅ Created GraphFilterService (foundation for Phase 4)
+- Bundle size: 726.4kb → 727.3kb (+0.9kb)
+
+**2025-10-19 (v2.0.1):**
+- ✅ Implemented Phase 2: Persistent Layout
+- ✅ Created GraphLayoutService
+- ✅ Auto-save layout on Canvas edit
+- ✅ File rename/delete handling
+- Bundle size: 717.5kb → 722.2kb (+4.7kb)
+
+**2025-10-19 (v2.0.0):**
 - ✅ Implemented Phase 1: Hierarchical Layout
 - ✅ Implemented Dynamic Node Sizing
 - Created comprehensive roadmap for Phases 2-6
 - Deployed to test vault for validation
+- Bundle size: 794.7kb → 717.5kb (-77.2kb after command cleanup)
 
 ---
 
 ## Next Steps
 
-1. **Test hierarchical layout** in real vault with diverse diagrams
-2. **Gather user feedback** on layout effectiveness
-3. **Implement Phase 2** (Persistent Layout) if feedback is positive
+1. **Test all 4 layouts** in real vault with diverse diagrams
+2. **Gather user feedback** on layout options
+3. **Decide on Phase 4 UI approach:**
+   - Option A: Custom Canvas overlay for filters
+   - Option B: Command-based filtering (simpler, less interactive)
+   - Option C: Separate filter configuration view
 4. **Iterate** based on actual usage patterns
 
 ---

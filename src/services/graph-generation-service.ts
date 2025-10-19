@@ -7,6 +7,8 @@
  * The graph view is a special meta-diagram that provides an overview of
  * the entire architecture documentation structure.
  *
+ * v2.0.2: Phase 3 - Multiple layout engines supported
+ *
  * @module graph-generation-service
  */
 
@@ -15,15 +17,35 @@ import type { CanvasNode, CanvasEdge, DiagramNode, DiagramType } from '../types/
 import { createGraphNode } from '../ui/canvas/utils/node-factory';
 import { C4_TYPE_COLORS } from '../constants/ui-constants';
 import { GraphLayoutService, type NodeLayout } from './graph-layout-service';
-
-interface DiagramMetadata {
-  path: string;
-  displayName: string;
-  diagramType: Exclude<DiagramType, 'graph'>;
-  linkedDiagramPaths: string[];
-}
+import type { DiagramMetadata } from './layout/LayoutEngine';
+import { HierarchicalLayout } from './layout/HierarchicalLayout';
+import { GridLayout } from './layout/GridLayout';
+import { ForceDirectedLayout } from './layout/ForceDirectedLayout';
+import { CircularLayout } from './layout/CircularLayout';
+import type { LayoutEngine } from './layout/LayoutEngine';
+import { countRelationships } from './layout/LayoutEngine';
 
 export class GraphGenerationService {
+  /**
+   * Available layout engines
+   */
+  private static readonly layoutEngines: Record<string, LayoutEngine> = {
+    hierarchical: new HierarchicalLayout(),
+    grid: new GridLayout(),
+    'force-directed': new ForceDirectedLayout(),
+    circular: new CircularLayout(),
+  };
+
+  /**
+   * Get layout engine by name
+   *
+   * @param layoutType - Layout type identifier
+   * @returns LayoutEngine instance
+   */
+  static getLayoutEngine(layoutType: string): LayoutEngine {
+    return this.layoutEngines[layoutType] || this.layoutEngines.hierarchical;
+  }
+
   /**
    * Get all .bac4 files in the vault
    *
@@ -116,103 +138,40 @@ export class GraphGenerationService {
     }
   }
 
-  /**
-   * Count parent and child relationships for a diagram
-   *
-   * Counts how many diagrams link to this one (parents) and how many
-   * diagrams this one links to (children).
-   *
-   * @param diagramPath - Path to the diagram to analyze
-   * @param allMetadata - Array of all diagram metadata to search
-   * @returns Object containing parentCount and childCount
-   *
-   * @example
-   * ```ts
-   * const {parentCount, childCount} = GraphGenerationService.countRelationships(
-   *   'BAC4/System_1.bac4',
-   *   allMetadata
-   * );
-   * console.log(`Parents: ${parentCount}, Children: ${childCount}`);
-   * ```
-   */
-  static countRelationships(
-    diagramPath: string,
-    allMetadata: DiagramMetadata[]
-  ): { parentCount: number; childCount: number } {
-    let parentCount = 0;
-    let childCount = 0;
-
-    const diagram = allMetadata.find((d) => d.path === diagramPath);
-    if (!diagram) {
-      return { parentCount: 0, childCount: 0 };
-    }
-
-    // Count children (diagrams this one links to)
-    childCount = diagram.linkedDiagramPaths.length;
-
-    // Count parents (diagrams that link to this one)
-    for (const otherDiagram of allMetadata) {
-      if (otherDiagram.linkedDiagramPaths.includes(diagramPath)) {
-        parentCount++;
-      }
-    }
-
-    return { parentCount, childCount };
-  }
-
-  /**
-   * Calculate dynamic node size based on connection count
-   *
-   * Nodes with more connections are larger, helping identify central/important diagrams.
-   *
-   * @param connectionCount - Total parent + child connections
-   * @returns Object with width and height in pixels
-   *
-   * @example
-   * ```ts
-   * const size = GraphGenerationService.calculateNodeSize(10);
-   * // { width: 250, height: 120 } - larger than base size
-   * ```
-   */
-  static calculateNodeSize(connectionCount: number): { width: number; height: number } {
-    const baseWidth = 200;
-    const baseHeight = 80;
-    const scaleFactor = 10; // 10px per connection
-
-    const width = baseWidth + Math.min(connectionCount * scaleFactor, 200); // Max 400px wide
-    const height = baseHeight + Math.min(connectionCount * (scaleFactor / 2), 100); // Max 180px tall
-
-    return { width, height };
-  }
 
   /**
    * Generate graph nodes and edges from all diagrams in vault
    *
    * v2.0.0: Uses hierarchical layout optimized for 7-layer architecture model.
    * v2.0.1: Persistent layout - Restores user-customized node positions.
+   * v2.0.2: Multiple layout engines - Supports Grid, Hierarchical, Force-Directed, Circular
    *
    * **Layout Algorithm:**
    * 1. Load saved layout from .bac4-graph-layout.json
-   * 2. Groups diagrams by layer (Market, Organisation, Capability, etc.)
-   * 3. For each diagram:
+   * 2. Parse all diagram metadata
+   * 3. Use selected layout engine to calculate positions
+   * 4. For each diagram:
    *    - If saved position exists → Use saved position
-   *    - If new diagram → Auto-position in hierarchical layout
-   * 4. Sizes nodes based on connection count (more connections = larger node)
-   * 5. Centers each layer horizontally
+   *    - If new diagram → Use layout engine position
+   * 5. Generate edges based on relationships
    *
    * @param vault - Obsidian vault instance to scan
+   * @param layoutType - Layout algorithm to use (default: 'hierarchical')
    * @returns Promise resolving to object containing nodes and edges arrays
    *
    * @example
    * ```ts
-   * const { nodes, edges } = await GraphGenerationService.generateGraph(vault);
+   * const { nodes, edges } = await GraphGenerationService.generateGraph(vault, 'hierarchical');
    * setNodes(nodes);
    * setEdges(edges);
    * reactFlowInstance.fitView({ padding: 0.2 });
    * ```
    */
-  static async generateGraph(vault: Vault): Promise<{ nodes: CanvasNode[]; edges: CanvasEdge[] }> {
-    console.log('BAC4: Generating graph view...');
+  static async generateGraph(
+    vault: Vault,
+    layoutType: string = 'hierarchical'
+  ): Promise<{ nodes: CanvasNode[]; edges: CanvasEdge[] }> {
+    console.log(`BAC4: Generating graph view with ${layoutType} layout...`);
 
     // Load saved layout positions (v2.0.1)
     const savedLayout = await GraphLayoutService.loadLayout(vault);
@@ -235,102 +194,76 @@ export class GraphGenerationService {
 
     console.log(`BAC4: Parsed ${allMetadata.length} diagram metadata entries`);
 
-    // Group diagrams by layer for hierarchical layout
-    const layerOrder: DiagramType[] = [
-      'market',
-      'organisation',
-      'capability',
-      'context',
-      'container',
-      'component',
-      'code',
-    ];
+    // Get layout engine and calculate positions (v2.0.2)
+    const layoutEngine = this.getLayoutEngine(layoutType);
+    console.log(`BAC4: Using ${layoutEngine.name} layout engine`);
+    const layoutResult = layoutEngine.calculateLayout(allMetadata);
 
-    const diagramsByLayer = new Map<DiagramType, DiagramMetadata[]>();
-    layerOrder.forEach((layer) => diagramsByLayer.set(layer, []));
-
-    allMetadata.forEach((metadata) => {
-      const layer = metadata.diagramType;
-      if (diagramsByLayer.has(layer)) {
-        diagramsByLayer.get(layer)!.push(metadata);
-      }
-    });
-
-    // Generate nodes with hierarchical layout
+    // Generate nodes using layout engine positions
     const nodes: CanvasNode[] = [];
     const pathToNodeId = new Map<string, string>(); // Map diagram path to node ID
-    const verticalSpacing = 300; // Space between layers
-    const horizontalSpacing = 250; // Space between nodes in same layer
-    const startY = 100;
     let nodeIndex = 0;
 
-    let currentY = startY;
-
-    layerOrder.forEach((layer) => {
-      const layerDiagrams = diagramsByLayer.get(layer) || [];
-
-      if (layerDiagrams.length === 0) {
-        // Skip empty layers
+    allMetadata.forEach((metadata) => {
+      // Get position from layout engine
+      const layoutPosition = layoutResult.positions.get(metadata.path);
+      if (!layoutPosition) {
+        console.warn(`BAC4: No layout position for ${metadata.path}`);
         return;
       }
 
-      // Calculate total width of this layer to center it
-      const totalWidth = layerDiagrams.length * horizontalSpacing;
-      const startX = -totalWidth / 2 + horizontalSpacing / 2;
+      // Check if this diagram has a saved position (v2.0.1)
+      // Saved positions override layout engine positions
+      const savedPosition = GraphLayoutService.getSavedPosition(savedLayout, metadata.path);
 
-      layerDiagrams.forEach((metadata, indexInLayer) => {
-        const { parentCount, childCount } = this.countRelationships(metadata.path, allMetadata);
-        const totalConnections = parentCount + childCount;
+      let x: number;
+      let y: number;
+      let width: number;
+      let height: number;
 
-        // Calculate dynamic node size based on connections
-        const { width, height } = this.calculateNodeSize(totalConnections);
-
-        // Check if this diagram has a saved position (v2.0.1)
-        const savedPosition = GraphLayoutService.getSavedPosition(savedLayout, metadata.path);
-
-        let x: number;
-        let y: number;
-
-        if (savedPosition) {
-          // Use saved position (user has manually arranged this node)
-          x = savedPosition.x;
-          y = savedPosition.y;
-          console.log(
-            `BAC4: Using saved position for ${metadata.displayName}: (${x}, ${y})`
-          );
-        } else {
-          // Auto-position in hierarchical layout
-          x = startX + indexInLayer * horizontalSpacing;
-          y = currentY;
-        }
-
-        // Get color based on diagram type
-        const color = C4_TYPE_COLORS[metadata.diagramType] || C4_TYPE_COLORS.context;
-
-        const nodeId = `graph-${nodeIndex++}`;
-        const node = createGraphNode(
-          nodeId,
-          { x, y },
-          metadata.displayName,
-          metadata.path,
-          metadata.diagramType,
-          parentCount,
-          childCount
+      if (savedPosition) {
+        // Use saved position (user has manually arranged this node)
+        x = savedPosition.x;
+        y = savedPosition.y;
+        width = savedPosition.width;
+        height = savedPosition.height;
+        console.log(
+          `BAC4: Using saved position for ${metadata.displayName}: (${x}, ${y})`
         );
+      } else {
+        // Use layout engine position
+        x = layoutPosition.x;
+        y = layoutPosition.y;
+        width = layoutPosition.width;
+        height = layoutPosition.height;
+      }
 
-        // Set color and size (use saved size if available)
-        node.data.color = color;
-        node.width = savedPosition?.width ?? width;
-        node.height = savedPosition?.height ?? height;
+      // Get color based on diagram type
+      const color = C4_TYPE_COLORS[metadata.diagramType] || C4_TYPE_COLORS.context;
 
-        nodes.push(node);
+      // Count relationships for node metadata
+      const { parentCount, childCount } = countRelationships(metadata.path, allMetadata);
 
-        // Map path to node ID for edge creation
-        pathToNodeId.set(metadata.path, nodeId);
-      });
+      const nodeId = `graph-${nodeIndex++}`;
+      const node = createGraphNode(
+        nodeId,
+        { x, y },
+        metadata.displayName,
+        metadata.path,
+        metadata.diagramType,
+        parentCount,
+        childCount
+      );
 
-      // Move to next layer
-      currentY += verticalSpacing;
+      // Set color and size
+      node.data.color = color;
+      node.width = width;
+      node.height = height;
+
+      nodes.push(node);
+
+      // Map path to node ID for edge creation
+      pathToNodeId.set(metadata.path, nodeId);
     });
 
     // Generate edges based on linkedDiagramPaths

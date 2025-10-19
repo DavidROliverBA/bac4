@@ -14,12 +14,14 @@ export const COMMAND_OPEN_SETTINGS = 'bac4-open-settings';
 /**
  * Default settings
  * v2.0.0: Simplified for 7-layer architecture model
+ * v2.0.2: Added graph layout preferences
  */
 export const DEFAULT_SETTINGS = {
   defaultProjectLocation: 'projects',
   enableAIFeatures: false,  // Reserved for future AI integration
   autoSaveInterval: 30000,  // 30 seconds
   dashboardPath: 'BAC4/Context.bac4', // Default dashboard path
+  graphLayout: 'hierarchical',  // Layout algorithm: 'hierarchical', 'grid', 'force-directed', 'circular'
   mcp: {
     enabled: false,         // Reserved for future AI integration (v2.2.0+)
     apiKey: '',
