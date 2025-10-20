@@ -126,19 +126,29 @@ export function useFileOperations(props: UseFileOperationsProps): void {
               // Find corresponding node in disk snapshot (latest version)
               const diskNode = diskCurrentSnapshot?.nodes?.find((n: any) => n.id === memNode.id);
 
+              // Transform from React Flow format back to .bac4 file format
+              // React Flow uses: {position: {x, y}, ...}
+              // .bac4 files need: {x, y, ...}
+              const { position, ...restNode } = memNode as any;
+              const fileFormatNode = {
+                ...restNode,
+                x: position?.x || 0,
+                y: position?.y || 0,
+              };
+
               // If disk version has cross-references, preserve them
               if (diskNode?.data?.isReference && diskNode?.data?.crossReferences) {
                 return {
-                  ...memNode,
+                  ...fileFormatNode,
                   data: {
-                    ...memNode.data,
+                    ...fileFormatNode.data,
                     isReference: diskNode.data.isReference,
                     crossReferences: diskNode.data.crossReferences,
                   },
                 };
               }
 
-              return memNode;
+              return fileFormatNode;
             });
 
             return {
@@ -293,13 +303,24 @@ export function useFileOperations(props: UseFileOperationsProps): void {
             validatedNodes = await validateLinkedFiles(validatedNodes);
           }
 
+          // Transform node format from .bac4 file format to React Flow format
+          // .bac4 files store: {id, type, x, y, width, height, data}
+          // React Flow expects: {id, type, position: {x, y}, width, height, data}
+          const transformedNodes = validatedNodes.map((node: any) => {
+            const { x, y, ...rest } = node;
+            return {
+              ...rest,
+              position: { x: x || 0, y: y || 0 },
+            };
+          });
+
           // Load nodes from current snapshot
           console.log(
             'BAC4: Loading nodes from current snapshot:',
-            validatedNodes.length,
+            transformedNodes.length,
             'nodes'
           );
-          setNodes(validatedNodes);
+          setNodes(transformedNodes);
 
           // Initialize node counter based on existing nodes
           nodeCounterRef.current = initializeNodeCounter(validatedNodes);
