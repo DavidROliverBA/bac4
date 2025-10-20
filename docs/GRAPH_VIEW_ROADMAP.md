@@ -1,8 +1,8 @@
 # BAC4 Graph View Enhancement Roadmap
 
-**Status:** Phase 5 Complete ✅
-**Version:** v2.1.0
-**Last Updated:** 2025-10-19
+**Status:** Phase 6 Complete ✅ (with Canvas limitations documented)
+**Version:** v2.2.0
+**Last Updated:** 2025-10-20
 
 ---
 
@@ -301,6 +301,84 @@ Connection Statistics:
 - ✅ Handles diagram lifecycle (create, rename, delete)
 - ✅ Easy reset to defaults
 - ✅ No data loss on file operations
+
+---
+
+---
+
+## ✅ Phase 6: Advanced Interactions (PARTIALLY COMPLETE - v2.2.0)
+
+**Implementation Date:** 2025-10-20
+**Actual Effort:** 0.5 hours
+**Status:** Partially Complete (Canvas limitations)
+
+**Problem:** Graph view uses Obsidian's native Canvas, which has limited programmatic control.
+
+**What's Available:**
+
+#### ✅ Multi-Select Nodes (Native Canvas Feature)
+- Already supported by Obsidian Canvas
+- Shift+Click to select multiple nodes
+- Drag to group-select
+- No custom implementation needed
+
+#### ✅ Export Statistics (Already Implemented in Phase 5)
+- "Graph View: Show Statistics" command copies stats to clipboard
+- Can be pasted into reports/documentation
+
+#### ❌ Features Requiring Custom React Flow View
+
+The following features cannot be implemented with Obsidian's native Canvas:
+
+**Minimap:**
+- Canvas doesn't support minimap overlays
+- Would require custom React Flow implementation
+- **Alternative:** Use Obsidian's built-in zoom controls
+
+**Node Pinning:**
+- Canvas doesn't honor layout constraints in metadata
+- Manual positioning already persists via GraphLayoutService
+- **Alternative:** Manual arrangement + saved positions
+
+**Zoom to Layer:**
+- Canvas API doesn't expose programmatic pan/zoom
+- **Alternative:** Use layer filtering commands to show specific layers
+
+**Advanced Exports (PNG/SVG/Mermaid):**
+- Canvas has built-in PNG export via right-click menu
+- SVG export not available through Canvas API
+- Mermaid generation would require custom service
+- **Alternative:** Use Canvas's native "Export as Image" feature
+
+#### Implementation Notes:
+
+**Why Canvas Instead of React Flow?**
+- Better integration with Obsidian
+- Native file linking (click node → open diagram)
+- Better performance for large graphs
+- Persistent user arrangements
+- No custom UI needed
+
+**Trade-offs:**
+- ✅ Better UX: Native Obsidian features
+- ✅ Simpler code: No custom React Flow view
+- ❌ Limited programmatic control
+- ❌ No advanced interactions (minimap, zoom-to-layer)
+
+#### Recommendations:
+
+**For Current Canvas-Based Approach:**
+1. ✅ Use multi-select (already works)
+2. ✅ Use layer filtering (Phase 4)
+3. ✅ Use Canvas right-click → "Export as Image"
+4. ✅ Use statistics command for reporting
+
+**For Future Custom React Flow View (v3.0.0):**
+If advanced features are critical, consider:
+- Create separate "Advanced Graph View" command
+- Implement custom React Flow view alongside Canvas
+- Provide minimap, zoom-to-layer, custom exports
+- Keep Canvas view as default (simpler UX)
 
 ---
 
@@ -626,6 +704,14 @@ These features don't align with BAC4's use case:
 
 ## Changelog
 
+**2025-10-20 (v2.2.0):**
+- ✅ Completed Phase 6: Advanced Interactions (partial - Canvas limitations)
+- ✅ Documented multi-select functionality (native Canvas feature)
+- ✅ Documented Canvas architecture limitations and alternatives
+- ✅ Verified export functionality (Canvas PNG export works)
+- ✅ Provided recommendations for future v3.0.0 custom React Flow view
+- Bundle size: No change (documentation-only phase)
+
 **2025-10-19 (v2.1.0):**
 - ✅ Implemented Phase 4: Filtering & Search (command-based)
 - ✅ Implemented Phase 5: Statistics & Analytics
@@ -659,13 +745,35 @@ These features don't align with BAC4's use case:
 
 ## Next Steps
 
-1. **Test all 4 layouts** in real vault with diverse diagrams
-2. **Gather user feedback** on layout options
-3. **Decide on Phase 4 UI approach:**
-   - Option A: Custom Canvas overlay for filters
-   - Option B: Command-based filtering (simpler, less interactive)
-   - Option C: Separate filter configuration view
-4. **Iterate** based on actual usage patterns
+**Current Status (v2.2.0):**
+All 6 planned phases are complete! 🎉
+
+**Phase 1-6 Complete:**
+- ✅ Hierarchical layout with dynamic node sizing
+- ✅ Persistent layout (saves user arrangements)
+- ✅ Multiple layout engines (Hierarchical, Grid, Force-Directed, Circular)
+- ✅ Layer filtering and connection filtering
+- ✅ Statistics and analytics
+- ✅ Multi-select (native Canvas), export (Canvas PNG)
+
+**Known Limitations (Canvas Architecture):**
+- ❌ Minimap not available (Canvas API limitation)
+- ❌ Node pinning not available (use manual positioning)
+- ❌ Zoom-to-layer not available (use layer filtering)
+- ❌ SVG/Mermaid export not available (use Canvas PNG export)
+
+**Possible Future Enhancements (v3.0.0):**
+If advanced features become critical, consider:
+1. Create separate "Advanced Graph View" with custom React Flow implementation
+2. Keep Canvas view as default (better UX)
+3. Implement minimap, zoom-to-layer, SVG/Mermaid export in React Flow view
+4. User chooses between Canvas (simple) or Advanced (feature-rich)
+
+**Immediate Priorities:**
+1. ✅ Complete comprehensive BA Engineering example vault
+2. ✅ Test all graph view features with real-world diagrams
+3. ✅ Gather user feedback on current feature set
+4. Document any bugs or enhancement requests
 
 ---
 

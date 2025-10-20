@@ -1,7 +1,7 @@
 {
   "name": "bac4",
-  "version": "2.0.0",
-  "description": "bac4 - The Solution Architects Toolbox (v2.0.0: 7-layer enterprise architecture model)",
+  "version": "2.2.0",
+  "description": "bac4 - The Solution Architects Toolbox (v2.2.0: 7-layer enterprise architecture model with advanced graph view)",
   "main": "main.js",
   "scripts": {
     "dev": "node esbuild.config.mjs",
