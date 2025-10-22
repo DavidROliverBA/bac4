@@ -1,0 +1,13 @@
+/**
+ * BAC4 Styles Index
+ *
+ * Main stylesheet that imports all component styles
+ *
+ * @version 2.3.0
+ */
+
+/* Navigation styles (v2.3.0) */
+@import './navigation.css';
+
+/* Accessibility styles (v2.3.0) */
+@import './accessibility.css';

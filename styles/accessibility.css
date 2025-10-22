@@ -1,0 +1,353 @@
+/**
+ * Accessibility Enhancements
+ *
+ * WCAG 2.1 AA compliance styles
+ * Focus indicators, keyboard navigation, screen reader support
+ *
+ * @version 2.3.0
+ */
+
+/* ============================================================================
+   Focus Management
+   ========================================================================= */
+
+/* Global focus styles */
+*:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+/* Remove default focus for mouse users */
+*:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Button focus */
+button:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
+}
+
+/* Input focus */
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 0;
+  border-color: var(--interactive-accent);
+}
+
+/* ============================================================================
+   Keyboard Navigation
+   ========================================================================= */
+
+/* Skip to main content link */
+.bac4-skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  padding: 8px 16px;
+  text-decoration: none;
+  z-index: 9999;
+  border-radius: 0 0 4px 0;
+  font-weight: 500;
+}
+
+.bac4-skip-link:focus {
+  top: 0;
+}
+
+/* Focusable elements in canvas */
+.react-flow__node:focus-visible {
+  outline: 3px solid var(--interactive-accent);
+  outline-offset: 2px;
+}
+
+.react-flow__edge:focus-visible {
+  stroke: var(--interactive-accent);
+  stroke-width: 3;
+}
+
+/* ============================================================================
+   Screen Reader Support
+   ========================================================================= */
+
+/* Screen reader only */
+.sr-only,
+.bac4-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Screen reader only focusable */
+.sr-only-focusable:focus,
+.bac4-sr-only-focusable:focus {
+  position: static;
+  width: auto;
+  height: auto;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+}
+
+/* ============================================================================
+   Color Contrast
+   ========================================================================= */
+
+/* Ensure minimum contrast ratios (WCAG AA) */
+.bac4-text-contrast {
+  color: var(--text-normal);
+  background-color: var(--background-primary);
+}
+
+/* Link contrast */
+a {
+  color: var(--link-color);
+  text-decoration-color: var(--link-color);
+}
+
+a:hover {
+  color: var(--link-color-hover);
+}
+
+a:focus-visible {
+  outline: 2px solid var(--link-color);
+  outline-offset: 2px;
+}
+
+/* ============================================================================
+   High Contrast Mode
+   ========================================================================= */
+
+@media (prefers-contrast: high) {
+  /* Enhanced borders */
+  button,
+  input,
+  select,
+  textarea {
+    border-width: 2px;
+    border-color: currentColor;
+  }
+
+  /* Stronger focus indicators */
+  *:focus-visible {
+    outline-width: 3px;
+    outline-offset: 3px;
+  }
+
+  /* Higher contrast backgrounds */
+  .bac4-nav-button,
+  .bac4-breadcrumb-item {
+    border: 2px solid currentColor;
+  }
+
+  /* Ensure text contrast */
+  * {
+    color: var(--text-normal);
+  }
+}
+
+/* ============================================================================
+   Reduced Motion
+   ========================================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ============================================================================
+   Touch Target Size (Mobile Accessibility)
+   ========================================================================= */
+
+/* Ensure minimum 44x44px touch targets */
+@media (hover: none) and (pointer: coarse) {
+  button,
+  a,
+  input[type="checkbox"],
+  input[type="radio"],
+  .bac4-toolbar-button,
+  .bac4-nav-button,
+  .bac4-breadcrumb-item {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 12px;
+  }
+}
+
+/* ============================================================================
+   Text Sizing and Spacing
+   ========================================================================= */
+
+/* Respect user font size preferences */
+html {
+  font-size: 16px;
+}
+
+/* Ensure readable line height */
+p,
+li,
+td,
+.bac4-text {
+  line-height: 1.5;
+}
+
+/* Sufficient spacing between interactive elements */
+button + button,
+a + a {
+  margin-left: 8px;
+}
+
+/* ============================================================================
+   Error States
+   ========================================================================= */
+
+/* Accessible error messages */
+.bac4-error,
+[aria-invalid="true"] {
+  border-color: var(--text-error);
+  outline-color: var(--text-error);
+}
+
+.bac4-error-message {
+  color: var(--text-error);
+  font-weight: 500;
+  padding: 4px 0;
+}
+
+/* Include icon for non-color indicators */
+.bac4-error-message::before {
+  content: "⚠️ ";
+  margin-right: 4px;
+}
+
+/* ============================================================================
+   Loading States
+   ========================================================================= */
+
+/* Loading indicator with animation */
+.bac4-loading {
+  position: relative;
+}
+
+.bac4-loading::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--background-primary);
+  opacity: 0.7;
+}
+
+/* Announce to screen readers */
+[aria-busy="true"] {
+  cursor: wait;
+}
+
+/* ============================================================================
+   Disabled States
+   ========================================================================= */
+
+/* Clear disabled state */
+button:disabled,
+input:disabled,
+select:disabled,
+textarea:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Ensure disabled is announced */
+[aria-disabled="true"] {
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+/* ============================================================================
+   Modal and Dialog Accessibility
+   ========================================================================= */
+
+/* Trap focus in modals */
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+}
+
+/* Backdrop with proper aria */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+/* Dialog focus trap */
+.modal-content:focus {
+  outline: none;
+}
+
+/* ============================================================================
+   Landmarks and Regions
+   ========================================================================= */
+
+/* Ensure proper ARIA landmarks */
+[role="navigation"],
+[role="main"],
+[role="complementary"],
+[role="contentinfo"] {
+  /* Landmarks for screen readers */
+}
+
+/* ============================================================================
+   Tables and Lists
+   ========================================================================= */
+
+/* Table headers association */
+th[scope] {
+  font-weight: 600;
+}
+
+/* List semantics */
+ul,
+ol {
+  list-style-position: outside;
+  padding-left: 1.5em;
+}
+
+/* ============================================================================
+   Print Accessibility
+   ========================================================================= */
+
+@media print {
+  /* Ensure URLs are visible */
+  a[href]::after {
+    content: " (" attr(href) ")";
+  }
+
+  /* Remove navigation for print */
+  .bac4-navigation-controls,
+  .bac4-breadcrumbs {
+    display: none;
+  }
+
+  /* Ensure contrast in print */
+  * {
+    color: #000 !important;
+    background: #fff !important;
+  }
+}

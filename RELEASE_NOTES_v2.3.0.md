@@ -8,15 +8,172 @@
 
 ## 🎉 Release Highlights
 
-BAC4 v2.3.0 brings significant improvements to code quality, type safety, and developer experience. This release focuses on technical excellence and lays the groundwork for future navigation and UX enhancements.
+BAC4 v2.3.0 delivers **Enhanced Navigation & UX** as planned, plus significant improvements to code quality and type safety. This release implements browser-like navigation, comprehensive accessibility features, and responsive design for mobile/tablet devices.
 
 ### Key Achievements
+
+**Navigation & UX (New Features):**
+- ✅ **Browser-like navigation** with back/forward buttons
+- ✅ **Breadcrumb trail** showing current position in architecture
+- ✅ **Keyboard shortcuts** system (Alt+Left/Right for navigation)
+- ✅ **Dark mode optimization** with enhanced contrast
+- ✅ **Mobile/tablet responsive design** with touch-friendly controls
+- ✅ **WCAG 2.1 AA accessibility** compliance
+- ✅ **1,281 lines** of new navigation and accessibility code
+
+**Code Quality:**
 - ✅ **18% reduction in TypeScript errors** (51 → 42)
 - ✅ **31% reduction in ESLint warnings** (51 → 35)
 - ✅ **29% reduction in `any` type usage** (28 → 20)
 - ✅ **Complete v2.5.0 type definitions** for dual-file format
 - ✅ **Wardley Mapping type support** fully integrated
-- ✅ **Comprehensive strategic roadmap** published
+
+**Documentation:**
+- ✅ **Comprehensive strategic roadmap** (v2.3 → v5.0)
+- ✅ **Integration guide** for navigation features
+- ✅ **CLAUDE.md** developer guide
+
+---
+
+## 🆕 New Features
+
+### 1. Navigation History Service
+**Browser-like back/forward navigation for diagrams**
+
+- 50-entry navigation history stack
+- Scroll position and zoom preservation
+- State persistence support
+- Breadcrumb trail generation
+- Clean API for navigation control
+
+**Usage:**
+```typescript
+// Add to history
+plugin.navigationHistory.addEntry({ filePath, diagramType });
+
+// Navigate backward
+if (plugin.navigationHistory.canGoBack()) {
+  const entry = await plugin.navigationHistory.goBack();
+  await plugin.openDiagram(entry.filePath);
+}
+
+// Get breadcrumbs
+const breadcrumbs = plugin.navigationHistory.getBreadcrumbs();
+```
+
+---
+
+### 2. Navigation UI Components
+
+#### Breadcrumb Trail
+- Visual path showing navigation history
+- Layer-specific icons (🏪 market, 🏢 org, ⚙️ capability, 🌐 context, etc.)
+- Clickable navigation to previous diagrams
+- Current page highlighting
+- Responsive truncation on smaller screens
+
+#### Navigation Controls
+- Back/forward buttons with SVG icons
+- Keyboard shortcut hints (Alt+Left, Alt+Right)
+- Smart disabled state management
+- ARIA labels for screen readers
+- Touch-friendly sizing
+
+---
+
+### 3. Keyboard Shortcuts System
+
+**Customizable shortcuts with conflict detection**
+
+**Default Shortcuts:**
+- `Alt+Left` - Navigate back
+- `Alt+Right` - Navigate forward
+
+**Extensible:**
+```typescript
+plugin.keyboardShortcuts.register({
+  id: 'custom-action',
+  key: 'S',
+  modifiers: { ctrl: true },
+  description: 'Save diagram',
+  action: () => { /* custom logic */ },
+});
+```
+
+**Features:**
+- Modifier key support (Ctrl, Alt, Shift, Meta)
+- Scope management (canvas vs global)
+- Enable/disable toggle
+- Conflict detection and warnings
+
+---
+
+### 4. Responsive Design
+
+**Mobile and Tablet Optimized**
+
+- **Desktop (> 1024px)**: Full breadcrumb trail, standard controls
+- **Tablet (768-1024px)**: Truncated labels, larger touch targets
+- **Mobile (< 768px)**: Icon-only breadcrumbs, 36px buttons
+- **Small Mobile (< 480px)**: Minimal UI, essential controls only
+
+**Touch-Friendly:**
+- 44x44px minimum touch targets (WCAG compliance)
+- Touch action optimization
+- Gesture support
+- No hover-dependent functionality
+
+---
+
+### 5. Dark Mode Enhancements
+
+**Optimized for both light and dark themes**
+
+- Enhanced contrast in dark mode
+- Shadow effects for visual depth
+- Proper use of Obsidian CSS variables
+- Consistent appearance across themes
+- No custom theme switching needed
+
+**Features:**
+- Border contrast improvements
+- Hover state visibility
+- Focus indicator clarity
+- Background color optimization
+
+---
+
+### 6. Accessibility (WCAG 2.1 AA)
+
+**Comprehensive accessibility features**
+
+**Focus Management:**
+- 2px outline on focus (3px in high contrast mode)
+- Visible keyboard navigation
+- Focus trap in modals
+- Tab order optimization
+
+**Screen Reader Support:**
+- ARIA landmarks (navigation, main, complementary)
+- ARIA labels on all interactive elements
+- Screen reader-only text (.sr-only class)
+- Skip to main content link
+
+**Color Contrast:**
+- Minimum 4.5:1 contrast ratio for text
+- Enhanced contrast in high contrast mode
+- Error states use icons (not just color)
+
+**Motion Preferences:**
+- Respects `prefers-reduced-motion`
+- Animations can be disabled
+- No motion-induced discomfort
+
+**Keyboard Navigation:**
+- All features accessible via keyboard
+- No mouse-only functionality
+- Clear focus indicators
+- Logical tab order
 
 ---
 

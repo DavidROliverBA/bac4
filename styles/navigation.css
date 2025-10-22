@@ -1,0 +1,308 @@
+/**
+ * Navigation Styles
+ *
+ * Styles for navigation controls, breadcrumbs, and history
+ * Includes dark mode, responsive design, and accessibility
+ *
+ * @version 2.3.0
+ */
+
+/* ============================================================================
+   Navigation Controls (Back/Forward Buttons)
+   ========================================================================= */
+
+.bac4-navigation-controls {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  margin-right: 8px;
+}
+
+.bac4-nav-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 4px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  background-color: var(--background-primary);
+  color: var(--text-normal);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.bac4-nav-button:hover:not(:disabled) {
+  background-color: var(--background-modifier-hover);
+  border-color: var(--interactive-accent);
+}
+
+.bac4-nav-button:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.bac4-nav-button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.bac4-nav-button:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
+}
+
+.bac4-nav-button svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* ============================================================================
+   Breadcrumbs
+   ========================================================================= */
+
+.bac4-breadcrumbs {
+  flex: 1;
+  min-width: 0;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background-color: var(--background-secondary);
+}
+
+.bac4-breadcrumbs-container {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+/* Hide scrollbar but keep functionality */
+.bac4-breadcrumbs-container::-webkit-scrollbar {
+  height: 4px;
+}
+
+.bac4-breadcrumbs-container::-webkit-scrollbar-thumb {
+  background-color: var(--background-modifier-border);
+  border-radius: 2px;
+}
+
+.bac4-breadcrumb-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border: none;
+  border-radius: 3px;
+  background-color: transparent;
+  color: var(--text-muted);
+  font-size: 13px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.bac4-breadcrumb-item:hover:not(:disabled) {
+  background-color: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.bac4-breadcrumb-item:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
+}
+
+.bac4-breadcrumb-item:disabled {
+  cursor: default;
+}
+
+.bac4-breadcrumb-current {
+  color: var(--text-normal);
+  font-weight: 500;
+  background-color: var(--background-primary-alt);
+}
+
+.bac4-breadcrumb-icon {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.bac4-breadcrumb-separator {
+  color: var(--text-faint);
+  font-size: 12px;
+  padding: 0 2px;
+}
+
+/* ============================================================================
+   Dark Mode Optimizations
+   ========================================================================= */
+
+.theme-dark .bac4-navigation-controls,
+.theme-dark .bac4-breadcrumbs {
+  /* Enhanced contrast for dark mode */
+}
+
+.theme-dark .bac4-nav-button {
+  border-color: var(--background-modifier-border-hover);
+}
+
+.theme-dark .bac4-nav-button:hover:not(:disabled) {
+  background-color: var(--background-modifier-hover);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.theme-dark .bac4-breadcrumb-item:hover:not(:disabled) {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* ============================================================================
+   Responsive Design (Mobile/Tablet)
+   ========================================================================= */
+
+/* Tablet (< 1024px) */
+@media (max-width: 1024px) {
+  .bac4-breadcrumbs {
+    max-width: 400px;
+  }
+
+  .bac4-breadcrumb-label {
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .bac4-nav-button {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+/* Mobile (< 768px) */
+@media (max-width: 768px) {
+  .bac4-breadcrumbs {
+    max-width: 250px;
+  }
+
+  .bac4-breadcrumb-label {
+    max-width: 80px;
+  }
+
+  .bac4-breadcrumb-item {
+    padding: 6px 10px;
+    font-size: 14px;
+  }
+
+  .bac4-nav-button {
+    width: 36px;
+    height: 36px;
+    touch-action: manipulation;
+  }
+
+  .bac4-nav-button svg {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+/* Small Mobile (< 480px) */
+@media (max-width: 480px) {
+  .bac4-breadcrumbs {
+    max-width: 180px;
+  }
+
+  .bac4-breadcrumb-label {
+    max-width: 60px;
+  }
+
+  /* Show only icon on small screens */
+  .bac4-breadcrumb-icon {
+    font-size: 16px;
+  }
+}
+
+/* ============================================================================
+   Accessibility Enhancements
+   ========================================================================= */
+
+/* High contrast focus indicators */
+@media (prefers-contrast: high) {
+  .bac4-nav-button:focus-visible,
+  .bac4-breadcrumb-item:focus-visible {
+    outline-width: 3px;
+    outline-offset: 3px;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .bac4-nav-button,
+  .bac4-breadcrumb-item,
+  .bac4-breadcrumbs-container {
+    transition: none;
+  }
+
+  .bac4-nav-button:active:not(:disabled) {
+    transform: none;
+  }
+}
+
+/* Touch device optimization */
+@media (hover: none) and (pointer: coarse) {
+  .bac4-nav-button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .bac4-breadcrumb-item {
+    min-height: 44px;
+    padding: 8px 12px;
+  }
+}
+
+/* Keyboard navigation enhancements */
+.bac4-nav-button:focus,
+.bac4-breadcrumb-item:focus {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
+  z-index: 1;
+}
+
+/* Screen reader only content */
+.bac4-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* ============================================================================
+   Animation and Transitions
+   ========================================================================= */
+
+@keyframes bac4-breadcrumb-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.bac4-breadcrumb-item {
+  animation: bac4-breadcrumb-slide-in 0.2s ease-out;
+}
+
+/* Disable animation for reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .bac4-breadcrumb-item {
+    animation: none;
+  }
+}
