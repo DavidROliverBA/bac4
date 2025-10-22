@@ -1,13 +1,11 @@
 /**
- * File Operations Hook
+ * File Operations Hook v2.5.0
  *
- * Custom React hook that manages file I/O operations:
- * - Loading diagram data from .bac4 files
- * - Auto-saving diagram changes with debounce
- * - Node counter initialization
- * - Linked file validation (v0.6.0)
+ * Refactored to use dual-file format:
+ * - .bac4 files: Nodes (semantic data)
+ * - .bac4-graph files: Relationships + layout (presentation data)
  *
- * @module useFileOperations
+ * @version 2.5.0
  */
 
 import * as React from 'react';
@@ -15,12 +13,21 @@ import type { Node, Edge } from 'reactflow';
 import type BAC4Plugin from '../../../main';
 import type { CanvasNodeData, DiagramType } from '../../../types/canvas-types';
 import type { DiagramNavigationService } from '../../../services/diagram-navigation-service';
+import type { BAC4FileV2, BAC4GraphFileV2 } from '../../../types/bac4-v2-types';
 import { AUTO_SAVE_DEBOUNCE_MS } from '../../../constants';
 import { normalizeEdges } from '../utils/canvas-utils';
 import { initializeNodeCounter } from '../utils/auto-naming';
 import { Timeline, Annotation } from '../../../types/timeline';
-import { readBAC4File, writeBAC4File } from '../../../data/file-io';
-import { TimelineService } from '../../../services/TimelineService';
+import {
+  readDiagram,
+  writeDiagram,
+  mergeNodesAndLayout,
+  getEdgesFromGraph,
+  splitNodesAndEdges,
+  getGraphFilePath,
+  fileExists,
+} from '../../../services/file-io-service';
+import { Notice } from 'obsidian';
 
 export interface UseFileOperationsProps {
   plugin: BAC4Plugin;
@@ -29,7 +36,7 @@ export interface UseFileOperationsProps {
   nodes: Node<CanvasNodeData>[];
   edges: Edge[];
   timeline: Timeline | null;
-  timelineRef: React.MutableRefObject<Timeline | null>; // v1.0.0 - prevents stale closure issues
+  timelineRef: React.MutableRefObject<Timeline | null>;
   annotations: Annotation[];
   setNodes: React.Dispatch<React.SetStateAction<Node<CanvasNodeData>[]>>;
   setEdges: React.Dispatch<React.SetStateAction<Edge[]>>;
@@ -41,11 +48,9 @@ export interface UseFileOperationsProps {
 }
 
 /**
- * Custom hook for file operations
+ * Custom hook for file operations (v2.5.0 dual-file format)
  *
- * Manages file loading and auto-saving (v0.6.0: breadcrumbs removed).
- *
- * @param props - Configuration options
+ * Manages loading and saving of .bac4 + .bac4-graph files.
  */
 export function useFileOperations(props: UseFileOperationsProps): void {
   const {
@@ -53,7 +58,6 @@ export function useFileOperations(props: UseFileOperationsProps): void {
     filePath,
     nodes,
     edges,
-    timelineRef,
     annotations,
     setNodes,
     setEdges,
@@ -63,186 +67,106 @@ export function useFileOperations(props: UseFileOperationsProps): void {
     nodeCounterRef,
   } = props;
 
+  // Store current files in refs to avoid stale closures
+  const nodeFileRef = React.useRef<BAC4FileV2 | null>(null);
+  const graphFileRef = React.useRef<BAC4GraphFileV2 | null>(null);
+
   /**
-   * Auto-save diagram data to file (v1.0.0 format with timeline)
-   * Uses timelineRef to prevent stale closure issues
+   * Auto-save diagram data to dual files (v2.5.0 format)
    */
   React.useEffect(() => {
-    console.log('BAC4: Auto-save effect triggered', {
+    console.log('BAC4 v2.5: Auto-save effect triggered', {
       filePath,
       nodeCount: nodes.length,
       edgeCount: edges.length,
       annotationCount: annotations.length,
-      hasTimeline: !!timelineRef.current,
+      hasNodeFile: !!nodeFileRef.current,
+      hasGraphFile: !!graphFileRef.current,
     });
 
-    if (!filePath || !timelineRef.current) {
-      console.log('BAC4: No filePath or timeline, skipping auto-save');
+    if (!filePath || !nodeFileRef.current || !graphFileRef.current) {
+      console.log('BAC4 v2.5: No filePath or files not loaded, skipping auto-save');
       return;
     }
 
     const saveTimeout = setTimeout(async () => {
       try {
-        // Get latest timeline from ref to avoid stale closure data (v1.0.0 race condition fix)
-        const timeline = timelineRef.current;
-        if (!timeline) {
-          console.log('BAC4: Timeline ref is null, skipping auto-save');
-          return;
-        }
+        console.log('BAC4 v2.5: Starting auto-save to', filePath);
 
-        console.log('BAC4: Starting auto-save to', filePath);
-
-        // v1.0.1: Read file first to get latest cross-references
-        let diskData;
-        try {
-          diskData = await readBAC4File(plugin.app.vault, filePath);
-          console.log('BAC4: Read existing file to preserve cross-references');
-        } catch (readError) {
-          console.log('BAC4: Could not read file, will create new one');
-          diskData = null;
-        }
-
-        // Auto-save to CURRENTLY SELECTED snapshot (v1.0.0 - all snapshots editable)
-        const currentSnapshot = TimelineService.getCurrentSnapshot(timeline);
-        const currentSnapshotId = timeline.currentSnapshotId;
-
-        // Get disk version of current snapshot for cross-reference preservation
-        const diskCurrentSnapshot = diskData?.timeline?.snapshots?.find(
-          (s: any) => s.id === currentSnapshotId
+        // Split React Flow data back to v2.5.0 format
+        const { nodeFile, graphFile } = splitNodesAndEdges(
+          nodes,
+          edges,
+          nodeFileRef.current!,
+          graphFileRef.current!
         );
 
-        console.log('BAC4: Auto-save to selected snapshot:', {
-          currentSnapshotId: currentSnapshotId,
-          currentSnapshotLabel: currentSnapshot.label,
-          hasDiskVersion: !!diskCurrentSnapshot,
+        // Update refs with latest data
+        nodeFileRef.current = nodeFile;
+        graphFileRef.current = graphFile;
+
+        // Write both files
+        await writeDiagram(plugin.app.vault, filePath, nodeFile, graphFile);
+
+        console.log('BAC4 v2.5: ✅ Auto-saved successfully', {
+          nodeFile: filePath,
+          graphFile: getGraphFilePath(filePath),
+          nodeCount: Object.keys(nodeFile.nodes).length,
+          edgeCount: graphFile.timeline.snapshots[0]?.edges.length || 0,
         });
-
-        // Update the currently selected snapshot with current canvas state
-        // v1.0.1: Preserve cross-references from disk to avoid race conditions
-        const updatedSnapshots = timeline.snapshots.map((snapshot) => {
-          if (snapshot.id === currentSnapshotId) {
-            // For the current snapshot, merge in-memory nodes with on-disk cross-references
-            const mergedNodes = nodes.map((memNode) => {
-              // Find corresponding node in disk snapshot (latest version)
-              const diskNode = diskCurrentSnapshot?.nodes?.find((n: any) => n.id === memNode.id);
-
-              // Transform from React Flow format back to .bac4 file format
-              // React Flow uses: {position: {x, y}, ...}
-              // .bac4 files need: {x, y, ...}
-              const { position, ...restNode } = memNode as any;
-              const fileFormatNode = {
-                ...restNode,
-                x: position?.x || 0,
-                y: position?.y || 0,
-              };
-
-              // If disk version has cross-references, preserve them
-              if (diskNode?.data?.isReference && diskNode?.data?.crossReferences) {
-                return {
-                  ...fileFormatNode,
-                  data: {
-                    ...fileFormatNode.data,
-                    isReference: diskNode.data.isReference,
-                    crossReferences: diskNode.data.crossReferences,
-                  },
-                };
-              }
-
-              return fileFormatNode;
-            });
-
-            return {
-              ...snapshot,
-              nodes: JSON.parse(JSON.stringify(mergedNodes)),
-              edges: JSON.parse(JSON.stringify(edges)),
-              annotations: JSON.parse(JSON.stringify(annotations)),
-            };
-          }
-          return snapshot;
-        });
-
-        const updatedTimeline: Timeline = {
-          ...timeline,
-          snapshots: updatedSnapshots,
-        };
-
-        // Use already-read file data to preserve metadata
-        let diagramData;
-        if (diskData) {
-          diagramData = {
-            ...diskData,
-            timeline: updatedTimeline,
-          };
-        } else {
-          console.log('BAC4: Creating new v1.0.0 file structure');
-          // Create new v1.0.0 file structure
-          const now = new Date().toISOString();
-          diagramData = {
-            version: '1.0.0' as const,
-            metadata: {
-              diagramType: 'context' as const, // Default, will be set correctly on next load
-              createdAt: now,
-              updatedAt: now,
-            },
-            timeline: updatedTimeline,
-          };
-        }
-
-        console.log('BAC4: Saving v1.0.0 data', {
-          version: diagramData.version,
-          diagramType: diagramData.metadata.diagramType,
-          snapshotCount: updatedTimeline.snapshots.length,
-          currentSnapshot: currentSnapshot.label,
-        });
-
-        await writeBAC4File(plugin.app.vault, filePath, diagramData);
-        console.log('BAC4: ✅ Auto-saved v1.0.0 diagram successfully');
-
-        // CRITICAL: Update in-memory timeline state so snapshot switching loads latest changes
-        setTimeline(updatedTimeline);
-        console.log('BAC4: ✅ Updated in-memory timeline with auto-saved changes');
       } catch (error) {
-        console.error('BAC4: ❌ Error auto-saving', error);
+        console.error('BAC4 v2.5: ❌ Error auto-saving', error);
+        new Notice('Failed to auto-save diagram');
       }
     }, AUTO_SAVE_DEBOUNCE_MS);
 
     return () => {
-      console.log('BAC4: Cleaning up save timeout');
       clearTimeout(saveTimeout);
     };
-  }, [nodes, edges, annotations, timelineRef, filePath, plugin, setTimeline]);
+  }, [nodes, edges, annotations, filePath, plugin]);
 
   /**
-   * Validate linked files and cleanup broken references (v0.6.0)
+   * Validate linked files and cleanup broken references
    */
   const validateLinkedFiles = React.useCallback(
     async (loadedNodes: Node<CanvasNodeData>[]): Promise<Node<CanvasNodeData>[]> => {
-      let needsSave = false;
       const vault = plugin.app.vault;
+      let needsSave = false;
 
       const cleanedNodes = await Promise.all(
         loadedNodes.map(async (node) => {
           const data = { ...node.data };
           let updated = false;
 
-          // Check linkedDiagramPath (only SystemNodeData and ContainerNodeData have this)
+          // Check linkedDiagramPath
           if ('linkedDiagramPath' in data && data.linkedDiagramPath) {
             const file = vault.getAbstractFileByPath(data.linkedDiagramPath);
             if (!file) {
-              console.warn(`BAC4: Broken link removed: ${node.id} → ${data.linkedDiagramPath}`);
-              // Type-safe delete: We know this property exists from the 'in' check above
+              console.warn(
+                `BAC4 v2.5: Broken link removed: ${node.id} → ${data.linkedDiagramPath}`
+              );
               delete (data as Record<string, unknown>).linkedDiagramPath;
               updated = true;
             }
           }
 
-          // Check linkedMarkdownPath
-          if (data.linkedMarkdownPath) {
-            const file = vault.getAbstractFileByPath(data.linkedMarkdownPath);
-            if (!file) {
-              console.warn(`BAC4: Broken link removed: ${node.id} → ${data.linkedMarkdownPath}`);
-              delete data.linkedMarkdownPath;
-              updated = true;
+          // Check links.linkedDiagrams (v2.5.0 format)
+          if (node.data.links?.linkedDiagrams) {
+            const validLinkedDiagrams = [];
+            for (const link of node.data.links.linkedDiagrams) {
+              const file = vault.getAbstractFileByPath(link.path);
+              if (file) {
+                validLinkedDiagrams.push(link);
+              } else {
+                console.warn(`BAC4 v2.5: Broken linked diagram removed: ${link.path}`);
+                updated = true;
+              }
+            }
+            if (updated) {
+              data.links = {
+                ...data.links,
+                linkedDiagrams: validLinkedDiagrams,
+              };
             }
           }
 
@@ -255,7 +179,7 @@ export function useFileOperations(props: UseFileOperationsProps): void {
       );
 
       if (needsSave) {
-        console.log('BAC4: Broken references cleaned, file will be re-saved');
+        console.log('BAC4 v2.5: Broken references cleaned, files will be re-saved');
       }
 
       return cleanedNodes;
@@ -264,98 +188,135 @@ export function useFileOperations(props: UseFileOperationsProps): void {
   );
 
   /**
-   * Load canvas data when filePath changes (v1.0.0 format with timeline)
+   * Load diagram when filePath changes (v2.5.0 dual-file format)
    */
   React.useEffect(() => {
-    console.log('BAC4: Initializing canvas with filePath:', filePath);
+    console.log('BAC4 v2.5: Initializing canvas with filePath:', filePath);
 
-    // Load from file if available (async)
-    if (filePath) {
-      console.log('BAC4: Loading diagram from file:', filePath);
-
-      readBAC4File(plugin.app.vault, filePath)
-        .then(async (data) => {
-          console.log('BAC4: File content loaded, parsing v1.0.0 format...');
-
-          console.log('BAC4: Parsed data:', {
-            version: data.version,
-            diagramType: data.metadata?.diagramType,
-            snapshotCount: data.timeline.snapshots.length,
-            currentSnapshotId: data.timeline.currentSnapshotId,
-          });
-
-          // Set diagram type from metadata
-          if (data.metadata?.diagramType) {
-            console.log('BAC4: Setting diagram type from metadata:', data.metadata.diagramType);
-            setDiagramType(data.metadata.diagramType);
-          }
-
-          // Set timeline
-          setTimeline(data.timeline);
-
-          // Get current snapshot
-          const currentSnapshot = TimelineService.getCurrentSnapshot(data.timeline);
-          console.log('BAC4: Loading current snapshot:', currentSnapshot.label);
-
-          // Validate and cleanup linked files
-          let validatedNodes = currentSnapshot.nodes || [];
-          if (validatedNodes.length > 0) {
-            validatedNodes = await validateLinkedFiles(validatedNodes);
-          }
-
-          // Transform node format from .bac4 file format to React Flow format
-          // .bac4 files store: {id, type, x, y, width, height, data}
-          // React Flow expects: {id, type, position: {x, y}, width, height, data}
-          const transformedNodes = validatedNodes.map((node: any) => {
-            const { x, y, ...rest } = node;
-            return {
-              ...rest,
-              position: { x: x || 0, y: y || 0 },
-            };
-          });
-
-          // Load nodes from current snapshot
-          console.log(
-            'BAC4: Loading nodes from current snapshot:',
-            transformedNodes.length,
-            'nodes'
-          );
-          setNodes(transformedNodes);
-
-          // Initialize node counter based on existing nodes
-          nodeCounterRef.current = initializeNodeCounter(validatedNodes);
-          console.log('BAC4: Initialized node counter to', nodeCounterRef.current);
-
-          // Load edges from current snapshot
-          const snapshotEdges = currentSnapshot.edges || [];
-          console.log('BAC4: Loading edges from current snapshot:', snapshotEdges.length);
-          const edgesWithType = normalizeEdges(snapshotEdges);
-          setEdges(edgesWithType);
-
-          // Load annotations from current snapshot
-          const snapshotAnnotations = currentSnapshot.annotations || [];
-          console.log('BAC4: Loading annotations from current snapshot:', snapshotAnnotations.length);
-          setAnnotations(snapshotAnnotations);
-        })
-        .catch((error) => {
-          console.error('BAC4: Error loading file:', error);
-          // Create initial timeline if file doesn't exist or is invalid
-          console.log('BAC4: Creating initial timeline for new file');
-          const initialTimeline = TimelineService.createInitialTimeline([], [], 'Current');
-          setTimeline(initialTimeline);
-          setNodes([]);
-          setEdges([]);
-          setAnnotations([]);
-          nodeCounterRef.current = 0;
-        });
-    } else {
-      console.log('BAC4: No filePath provided, starting with empty canvas');
-      const initialTimeline = TimelineService.createInitialTimeline([], [], 'Current');
-      setTimeline(initialTimeline);
+    if (!filePath) {
+      console.log('BAC4 v2.5: No filePath provided, starting with empty canvas');
+      nodeFileRef.current = null;
+      graphFileRef.current = null;
       setNodes([]);
       setEdges([]);
       setAnnotations([]);
       nodeCounterRef.current = 0;
+      return;
     }
-  }, [filePath, plugin, setNodes, setEdges, setTimeline, setAnnotations, setDiagramType, nodeCounterRef, validateLinkedFiles]);
+
+    // Load both .bac4 and .bac4-graph files
+    console.log('BAC4 v2.5: Loading diagram from dual files:', filePath);
+
+    readDiagram(plugin.app.vault, filePath)
+      .then(async ({ nodeFile, graphFile }) => {
+        console.log('BAC4 v2.5: Files loaded successfully', {
+          version: nodeFile.version,
+          diagramType: nodeFile.metadata.diagramType,
+          nodeCount: Object.keys(nodeFile.nodes).length,
+          snapshotCount: graphFile.timeline.snapshots.length,
+        });
+
+        // Store files in refs for auto-save
+        nodeFileRef.current = nodeFile;
+        graphFileRef.current = graphFile;
+
+        // Set diagram type from metadata
+        if (nodeFile.metadata.diagramType) {
+          setDiagramType(nodeFile.metadata.diagramType as DiagramType);
+        }
+
+        // Merge node data + layout data for React Flow
+        const mergedNodes = mergeNodesAndLayout(nodeFile, graphFile);
+
+        // Validate linked files
+        const validatedNodes = await validateLinkedFiles(mergedNodes);
+
+        // Set nodes
+        setNodes(validatedNodes);
+
+        // Initialize node counter
+        nodeCounterRef.current = initializeNodeCounter(validatedNodes);
+        console.log('BAC4 v2.5: Initialized node counter to', nodeCounterRef.current);
+
+        // Get edges from graph file
+        const graphEdges = getEdgesFromGraph(graphFile);
+        const normalizedEdges = normalizeEdges(graphEdges);
+        setEdges(normalizedEdges);
+
+        // Get annotations from graph file
+        const currentSnapshot = graphFile.timeline.snapshots.find(
+          (s) => s.id === graphFile.timeline.currentSnapshotId
+        );
+        const snapshotAnnotations = currentSnapshot?.annotations || [];
+        setAnnotations(snapshotAnnotations);
+
+        // Create timeline from graph file (for backward compatibility)
+        // Convert v2.5.0 timeline to v1 timeline format
+        const v1Timeline: Timeline = {
+          snapshots: graphFile.timeline.snapshots.map((s) => ({
+            id: s.id,
+            label: s.label,
+            timestamp: s.timestamp,
+            description: s.description,
+            createdAt: s.created,
+            nodes: mergeNodesAndLayout(nodeFile, graphFile, s.id),
+            edges: s.edges.map((e) => ({
+              id: e.id,
+              source: e.source,
+              target: e.target,
+              type: e.type,
+              data: e.properties,
+              markerEnd: {
+                type: e.style.markerEnd,
+                color: e.style.color,
+              },
+              sourceHandle: e.handles.sourceHandle,
+              targetHandle: e.handles.targetHandle,
+            })),
+            annotations: s.annotations,
+          })),
+          currentSnapshotId: graphFile.timeline.currentSnapshotId,
+          snapshotOrder: graphFile.timeline.snapshotOrder,
+        };
+        setTimeline(v1Timeline);
+
+        console.log('BAC4 v2.5: ✅ Diagram loaded successfully');
+      })
+      .catch((error) => {
+        console.error('BAC4 v2.5: Error loading files:', error);
+
+        // Check if this is a v1 file that needs migration
+        if (error.message.includes('Invalid file version')) {
+          new Notice(
+            'This diagram uses an old format. Please run "Migrate Diagrams to v2.5.0" from the command palette.',
+            10000
+          );
+        } else if (error.message.includes('Graph file not found')) {
+          new Notice(
+            'Graph file (.bac4-graph) not found. Please run migration.',
+            10000
+          );
+        } else {
+          new Notice('Failed to load diagram. See console for details.');
+        }
+
+        // Reset state
+        nodeFileRef.current = null;
+        graphFileRef.current = null;
+        setNodes([]);
+        setEdges([]);
+        setAnnotations([]);
+        nodeCounterRef.current = 0;
+      });
+  }, [
+    filePath,
+    plugin,
+    setNodes,
+    setEdges,
+    setTimeline,
+    setAnnotations,
+    setDiagramType,
+    nodeCounterRef,
+    validateLinkedFiles,
+  ]);
 }

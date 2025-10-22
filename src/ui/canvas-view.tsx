@@ -27,11 +27,17 @@ import { MarketNode } from './nodes/MarketNode';
 import { OrganisationNode } from './nodes/OrganisationNode';
 import { CodeNode } from './nodes/CodeNode';
 import { GraphNode } from './nodes/GraphNode';
+import { WardleyComponentNode } from './nodes/WardleyComponentNode';
+import { WardleyInertiaNode } from './nodes/WardleyInertiaNode';
 import { DirectionalEdge } from './edges/DirectionalEdge';
+import { WardleyEdge } from './edges/WardleyEdge';
 import { ComponentPalette } from './components/ComponentPalette';
 import { PropertyPanel } from './components/PropertyPanel';
+import { WardleyPropertyPanel } from './components/WardleyPropertyPanel';
 import { UnifiedToolbar } from './components/UnifiedToolbar';
+import { WardleyToolbar } from './components/WardleyToolbar';
 import { TimelineToolbar } from './components/TimelineToolbar';
+import { WardleyCanvas } from './canvas/WardleyCanvas';
 import { AddSnapshotModal } from './components/AddSnapshotModal';
 import { SnapshotManagerModal } from './components/SnapshotManager';
 import { AnnotationType } from './components/AnnotationPalette';
@@ -78,10 +84,12 @@ const nodeTypes: NodeTypes = {
   person: PersonNode,
   container: ContainerNode,
   capability: CapabilityNode,
-  market: MarketNode,              // v2.0.0: Layer 1 - Market segments
-  organisation: OrganisationNode,  // v2.0.0: Layer 2 - Business units
-  code: CodeNode,                   // v2.0.0: Layer 7 - Implementation
+  market: MarketNode,                      // v2.0.0: Layer 1 - Market segments
+  organisation: OrganisationNode,          // v2.0.0: Layer 2 - Business units
+  code: CodeNode,                          // v2.0.0: Layer 7 - Implementation
   graph: GraphNode,
+  'wardley-component': WardleyComponentNode,  // v2.5.0: Wardley Map components
+  'wardley-inertia': WardleyInertiaNode,      // v2.5.0: Wardley Map inertia barriers
 };
 
 // Custom edge types mapping
@@ -89,6 +97,7 @@ const nodeTypes: NodeTypes = {
 // yourEdgeType: YourEdgeComponent,
 const edgeTypes: EdgeTypes = {
   directional: DirectionalEdge,
+  wardley: WardleyEdge,  // v2.5.0: Straight diagonal edges for Wardley Maps
 };
 // </AI_MODIFIABLE>
 
@@ -117,6 +126,12 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath, view }) =
 
   // Annotation state (v1.0.0)
   const [selectedAnnotationId, setSelectedAnnotationId] = React.useState<string | null>(null);
+
+  // Wardley Map state (v2.5.0)
+  const [showWardleyAxes, setShowWardleyAxes] = React.useState(true);
+  const [showWardleyGrid, setShowWardleyGrid] = React.useState(false);
+  const [wardleyBackgroundImage, setWardleyBackgroundImage] = React.useState<string | undefined>(undefined);
+  const [wardleyBackgroundOpacity, setWardleyBackgroundOpacity] = React.useState(0.3);
 
   // Timeline ref for auto-save (v1.0.0 - prevents race conditions)
   const timelineRef = React.useRef<Timeline | null>(null);
@@ -304,6 +319,7 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath, view }) =
   const edgeHandlers = useEdgeHandlers({
     setEdges,
     onEdgeSelect: handleEdgeSelect,
+    diagramType,  // v2.5.0: Pass diagram type to determine edge type (wardley vs directional)
   });
 
   const diagramActions = useDiagramActions({
@@ -746,6 +762,64 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath, view }) =
     console.log('BAC4: ✅ Deleted annotation:', selectedAnnotationId);
   }, [selectedAnnotationId, annotations]);
 
+  /**
+   * Wardley Map Handlers (v2.5.0)
+   */
+  const handleAddWardleyComponent = React.useCallback(() => {
+    if (!mousePosition) {
+      console.warn('BAC4: No mouse position available for Wardley component');
+      return;
+    }
+
+    const nodeId = `wardley-component-${Date.now()}`;
+    const newNode: Node<CanvasNodeData> = {
+      id: nodeId,
+      type: 'wardley-component',
+      position: mousePosition,
+      data: {
+        label: 'New Component',
+        description: '',
+        wardley: {
+          visibility: 0.5,
+          evolution: 0.5,
+          evolutionStage: 'product',
+          inertia: false,
+        },
+      },
+    };
+
+    setNodes((nds) => [...nds, newNode]);
+    console.log('BAC4: Added Wardley component:', nodeId);
+  }, [mousePosition, setNodes]);
+
+  const handleAddWardleyInertia = React.useCallback(() => {
+    if (!mousePosition) {
+      console.warn('BAC4: No mouse position available for Wardley inertia');
+      return;
+    }
+
+    const nodeId = `wardley-inertia-${Date.now()}`;
+    const newNode: Node<CanvasNodeData> = {
+      id: nodeId,
+      type: 'wardley-inertia',
+      position: mousePosition,
+      data: {
+        label: 'Inertia Barrier',
+        description: '',
+        wardley: {
+          inertiaReason: 'Resistance to change',
+          visibility: 0,
+          evolution: 0,
+          evolutionStage: 'genesis',
+          inertia: true,
+        },
+      },
+    };
+
+    setNodes((nds) => [...nds, newNode]);
+    console.log('BAC4: Added Wardley inertia barrier:', nodeId);
+  }, [mousePosition, setNodes]);
+
   return (
     <div
       style={{
@@ -782,6 +856,23 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath, view }) =
           onManageSnapshots={handleManageSnapshots}
           showChanges={showChanges}
           onToggleChanges={handleToggleChanges}
+        />
+      )}
+
+      {/* Wardley Toolbar (v2.5.0 - shows when diagram type is wardley) */}
+      {diagramType === 'wardley' && (
+        <WardleyToolbar
+          showAxes={showWardleyAxes}
+          onToggleAxes={() => setShowWardleyAxes((prev) => !prev)}
+          showGrid={showWardleyGrid}
+          onToggleGrid={() => setShowWardleyGrid((prev) => !prev)}
+          onAddComponent={handleAddWardleyComponent}
+          onAddInertia={handleAddWardleyInertia}
+          backgroundImage={wardleyBackgroundImage}
+          backgroundOpacity={wardleyBackgroundOpacity}
+          onSetBackgroundImage={setWardleyBackgroundImage}
+          onClearBackgroundImage={() => setWardleyBackgroundImage(undefined)}
+          onSetBackgroundOpacity={setWardleyBackgroundOpacity}
         />
       )}
 
@@ -920,6 +1011,17 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath, view }) =
           />
         )}
 
+        {/* Wardley Canvas Overlay (v2.5.0 - Axes, Grid, Background Image) */}
+        {diagramType === 'wardley' && (
+          <WardleyCanvas
+            showAxes={showWardleyAxes}
+            showGrid={showWardleyGrid}
+            axesOpacity={0.6}
+            backgroundImage={wardleyBackgroundImage}
+            backgroundOpacity={wardleyBackgroundOpacity}
+          />
+        )}
+
         {/* Annotation Overlay (v1.0.0) */}
         <AnnotationOverlay
           annotations={annotations}
@@ -951,6 +1053,7 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath, view }) =
           onUpdateProperties={nodeHandlers.updateNodeProperties}
           onUpdateEdgeLabel={edgeHandlers.updateEdgeLabel}
           onUpdateEdgeDirection={edgeHandlers.updateEdgeDirection}
+          onUpdateEdgeStyle={edgeHandlers.updateEdgeStyle}
           onDeleteEdge={edgeHandlers.handleDeleteEdge}
           onClose={() => {
             setSelectedNode(null);
@@ -980,6 +1083,15 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath, view }) =
           showNavigateToChild={navigationIconVisibility.showPlus}
           showNavigateToParent={navigationIconVisibility.showMinus}
         />
+
+        {/* Wardley Property Panel (v2.5.0 - Extends PropertyPanel for Wardley nodes) */}
+        {selectedNode && (selectedNode.type === 'wardley-component' || selectedNode.type === 'wardley-inertia') && (
+          <WardleyPropertyPanel
+            node={selectedNode as any}
+            onUpdateProperties={nodeHandlers.updateNodeProperties}
+            visible={true}
+          />
+        )}
       </div>
     </div>
   );

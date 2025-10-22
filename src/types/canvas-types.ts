@@ -18,6 +18,8 @@ import type { Node, Edge, NodeChange, EdgeChange, Connection } from 'reactflow';
  * - organisation: Business units, departments, teams
  * - capability: Business capabilities (already existed, now part of 7-layer model)
  * - code: Implementation artifacts, GitHub links
+ *
+ * v2.5.0: Added Wardley Mapping support
  */
 export type DiagramType =
   | 'market'        // Layer 1: Market segments and customer needs
@@ -27,6 +29,7 @@ export type DiagramType =
   | 'container'     // Layer 5: C4 Level 2 - Technical containers
   | 'component'     // Layer 6: C4 Level 3 - Internal components
   | 'code'          // Layer 7: Implementation code and data
+  | 'wardley'       // v2.5.0: Wardley Mapping
   | 'graph';        // Meta-diagram: Visualization of diagram relationships
 
 /**
@@ -36,6 +39,7 @@ export type DiagramType =
  * v0.6.0: All node types support markdown linking
  * v0.9.0: Support for multiple child diagram links
  * v1.0.1: Support for cross-references to same-named nodes
+ * v2.5.0: Added links object for v2.5.0 format, wardley properties
  */
 export interface BaseNodeData {
   label: string;
@@ -47,6 +51,40 @@ export interface BaseNodeData {
   linkedDiagramPaths?: string[]; // v0.9.0: Multiple child diagram links (replaces single linkedDiagramPath)
   crossReferences?: string[]; // v1.0.1: Paths to other diagrams with same-named nodes
   isReference?: boolean; // v1.0.1: True if this node is a reference to an existing node
+  links?: NodeLinks; // v2.5.0: Structured links object
+  wardley?: WardleyNodeProperties; // v2.5.0: Wardley mapping properties
+}
+
+/**
+ * Node Links (v2.5.0)
+ * Structured way to represent relationships between nodes and diagrams
+ */
+export interface NodeLinks {
+  parent: string | null;
+  children: string[];
+  linkedDiagrams: LinkedDiagram[];
+  externalSystems: string[];
+  dependencies: string[];
+}
+
+/**
+ * Linked Diagram (v2.5.0)
+ */
+export interface LinkedDiagram {
+  path: string;
+  relationship: 'decomposes-to' | 'implements' | 'contains' | 'depends-on' | 'implemented-by';
+  description?: string;
+}
+
+/**
+ * Wardley Node Properties (v2.5.0)
+ */
+export interface WardleyNodeProperties {
+  visibility: number; // 0-1 (Y-axis)
+  evolution: number; // 0-1 (X-axis)
+  evolutionStage: 'genesis' | 'custom' | 'product' | 'commodity';
+  inertia: boolean;
+  inertiaReason?: string;
 }
 
 /**
@@ -175,9 +213,30 @@ export interface GraphNodeData extends BaseNodeData {
 }
 
 /**
+ * Wardley Component Node Data (v2.5.0)
+ * Represents a component in a Wardley Map
+ */
+export interface WardleyComponentNodeData extends BaseNodeData {
+  visibility: number; // Y-axis position (0-1)
+  evolution: number; // X-axis position (0-1)
+  evolutionStage: 'genesis' | 'custom' | 'product' | 'commodity';
+  changeIndicator?: 'new' | 'modified' | 'removed' | null;
+}
+
+/**
+ * Wardley Inertia Node Data (v2.5.0)
+ * Represents an inertia barrier in a Wardley Map
+ */
+export interface WardleyInertiaNodeData extends BaseNodeData {
+  inertiaReason?: string;
+  changeIndicator?: 'new' | 'modified' | 'removed' | null;
+}
+
+/**
  * Union type for all node data types
  *
  * v2.0.0: Added MarketNodeData, OrganisationNodeData, CodeNodeData
+ * v2.5.0: Added WardleyComponentNodeData, WardleyInertiaNodeData
  */
 export type CanvasNodeData =
   | C4NodeData
@@ -189,6 +248,8 @@ export type CanvasNodeData =
   | OrganisationNodeData    // v2.0.0: Layer 2
   | CapabilityNodeData      // Layer 3 (previously existing)
   | CodeNodeData            // v2.0.0: Layer 7
+  | WardleyComponentNodeData // v2.5.0: Wardley components
+  | WardleyInertiaNodeData   // v2.5.0: Wardley inertia barriers
   | GraphNodeData
   | BaseNodeData;
 
@@ -199,11 +260,13 @@ export type CanvasNode<T extends CanvasNodeData = CanvasNodeData> = Node<T>;
 
 /**
  * Edge data interface
+ * v2.5.0: Added style property for edge rendering
  */
 export interface EdgeData {
   label?: string;
   direction?: 'right' | 'left' | 'both';
   description?: string;
+  style?: 'diagonal' | 'rightAngle' | 'curved'; // v2.5.0: Edge path style
 }
 
 /**

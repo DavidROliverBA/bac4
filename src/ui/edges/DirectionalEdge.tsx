@@ -11,12 +11,13 @@
  */
 
 import * as React from 'react';
-import { EdgeProps, getSmoothStepPath, EdgeLabelRenderer, BaseEdge, Position } from 'reactflow';
+import { EdgeProps, getSmoothStepPath, getBezierPath, EdgeLabelRenderer, BaseEdge, Position } from 'reactflow';
 import { FONT_SIZES, SPACING, UI_COLORS, BORDER_RADIUS } from '../../constants';
 
 export interface DirectionalEdgeData {
   label?: string;
   direction?: 'right' | 'left' | 'both';
+  style?: 'diagonal' | 'rightAngle' | 'curved';  // v2.5.0: Edge path style
 }
 
 /**
@@ -90,16 +91,47 @@ export const DirectionalEdge: React.FC<EdgeProps<DirectionalEdgeData>> = ({
     targetY
   );
 
-  // Calculate path using smooth step for right-angle routing
-  const [edgePath, labelX, labelY] = getSmoothStepPath({
-    sourceX,
-    sourceY,
-    sourcePosition,
-    targetX,
-    targetY,
-    targetPosition,
-    borderRadius: 8, // Smooth corners
-  });
+  // v2.5.0: Get edge style (default to 'curved' for backward compatibility)
+  const edgeStyle = data?.style || 'curved';
+
+  // Calculate path based on selected style
+  let edgePath: string;
+  let labelX: number;
+  let labelY: number;
+
+  if (edgeStyle === 'diagonal') {
+    // Straight diagonal line
+    edgePath = `M ${sourceX},${sourceY} L ${targetX},${targetY}`;
+    labelX = (sourceX + targetX) / 2;
+    labelY = (sourceY + targetY) / 2;
+  } else if (edgeStyle === 'rightAngle') {
+    // Right-angle path with smooth corners
+    const [path, x, y] = getSmoothStepPath({
+      sourceX,
+      sourceY,
+      sourcePosition,
+      targetX,
+      targetY,
+      targetPosition,
+      borderRadius: 8,
+    });
+    edgePath = path;
+    labelX = x;
+    labelY = y;
+  } else {
+    // Curved bezier path (default)
+    const [path, x, y] = getBezierPath({
+      sourceX,
+      sourceY,
+      sourcePosition,
+      targetX,
+      targetY,
+      targetPosition,
+    });
+    edgePath = path;
+    labelX = x;
+    labelY = y;
+  }
 
   return (
     <>

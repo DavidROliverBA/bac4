@@ -48,6 +48,7 @@ import { FormField } from './form/FormField';
 import { FormSection } from './form/FormSection';
 import { ColorPicker } from './form/ColorPicker';
 import { EdgeDirectionSelector } from './edges/EdgeDirectionSelector';
+import { EdgeStyleSelector } from './edges/EdgeStyleSelector';
 import { DiagramLinking } from './diagram/DiagramLinking';
 import { IconSelector } from './form/IconSelector';
 import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
@@ -70,6 +71,7 @@ interface PropertyPanelProps {
   onUpdateProperties: (nodeId: string, updates: Record<string, unknown>) => void;
   onUpdateEdgeLabel: (edgeId: string, label: string) => void;
   onUpdateEdgeDirection: (edgeId: string, direction: 'right' | 'left' | 'both') => void;
+  onUpdateEdgeStyle?: (edgeId: string, style: 'diagonal' | 'rightAngle' | 'curved') => void;
   onDeleteEdge?: (edgeId: string) => void;
   onClose: () => void;
   // New props for diagram linking
@@ -102,6 +104,7 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
   onUpdateProperties,
   onUpdateEdgeLabel,
   onUpdateEdgeDirection,
+  onUpdateEdgeStyle,
   onDeleteEdge,
   onClose,
   currentDiagramPath,
@@ -533,6 +536,15 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
               value={(edge.data?.direction as 'right' | 'left' | 'both') || 'right'}
               onChange={(dir) => onUpdateEdgeDirection(edge.id, dir)}
             />
+
+            {/* Edge Style Selector (v2.5.0) */}
+            {onUpdateEdgeStyle && (
+              <EdgeStyleSelector
+                label="Edge Style"
+                value={(edge.data?.style as 'diagonal' | 'rightAngle' | 'curved') || 'curved'}
+                onChange={(style) => onUpdateEdgeStyle(edge.id, style)}
+              />
+            )}
 
             {/* Delete Edge Button */}
             {onDeleteEdge && (

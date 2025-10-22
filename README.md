@@ -1,6 +1,6 @@
 # bac4 - The Solution Architects Toolbox
 
-**Version:** 2.0.0
+**Version:** 2.3.0
 **Status:** Production-Ready
 
 An Obsidian plugin that transforms your vault into a comprehensive enterprise architecture management platform. Implements a 7-layer enterprise architecture model extending the C4 approach from market strategy to implementation code.
@@ -303,21 +303,47 @@ BAC4 follows a layered plugin architecture:
 
 ## Roadmap
 
-### v2.1.0 - Enhanced Navigation (Planned)
+BAC4 has an ambitious roadmap to become the definitive enterprise architecture platform. See **[ROADMAP.md](ROADMAP.md)** for the complete strategic vision.
+
+### Near-Term Highlights
+
+**v2.3.0 - Enhanced Navigation & UX** (Q4 2025)
 - Click-through navigation between layers
 - Breadcrumb trail across architectural layers
 - Enhanced drill-down experience
+- Accessibility improvements
 
-### v2.2.0 - AI Integration (Planned)
-- AI-powered diagram generation
-- Anthropic API integration
-- MCP workflow support
+**v2.4.0 - AI Integration** (Q1 2026)
+- AI-powered diagram generation ✅ *Started in v2.2.0*
+- Design analysis and anti-pattern detection
+- Anthropic Claude API integration ✅ *Complete*
+- MCP workflow support ✅ *Complete*
 
-### v3.0.0 - Enterprise Features (Planned)
+**v2.5.0 - Data Format Evolution** (Q1 2026) 🚧 *In Development*
+- Dual-file format (semantic + presentation separation)
+- Wardley Mapping support
+- Graph database readiness
+- Enhanced knowledge management
+
+**v3.0.0 - Enterprise Features** (Q2 2026)
 - Planned vs. Actual tracking
 - Architectural drift detection
 - Estate dashboard
-- Team collaboration features
+- Team collaboration and role-based access
+
+### Strategic Themes
+
+1. **Dynamic Documentation & Modeling** - Visual + narrative architecture artifacts
+2. **AI-Driven Insights** - Automated analysis, validation, and recommendations
+3. **SDLC Integration** - Native integration with IDEs, CI/CD, and repositories
+4. **Advanced Search & Traceability** - Semantic search and impact analysis
+5. **Enterprise Knowledge Graph** - Connected systems, APIs, teams, and capabilities
+6. **Standards Support** - TOGAF, ArchiMate, BPMN, UML interoperability
+7. **Tacit Knowledge Capture** - Meeting transcripts, whiteboard recognition
+8. **Security & Governance** - RBAC, audit trails, compliance
+9. **Personalization** - Role-based views and intelligent workflows
+
+**[View Complete Roadmap →](ROADMAP.md)**
 
 ---
 
@@ -368,4 +394,4 @@ MIT License - see [LICENSE](LICENSE) file for details
 
 **Powered by AI, built for humans!**
 
-*Last updated: 2025-10-19 (v2.0.0)*
+*Last updated: 2025-10-22 (v2.3.0)*

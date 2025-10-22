@@ -1,4 +1,4 @@
-import { Plugin, WorkspaceLeaf, TFile, Notice } from 'obsidian';
+import { Plugin, WorkspaceLeaf, TFile, Notice, Modal, App } from 'obsidian';
 import { BAC4Settings } from './core/settings';
 import {
   DEFAULT_SETTINGS,
@@ -11,6 +11,7 @@ import { BAC4CanvasView } from './ui/canvas-view';
 import { hasBac4Diagram } from './utils/frontmatter-parser';
 import { TimelineService } from './services/TimelineService';
 import { NodeRegistryService } from './services/node-registry-service';
+import { MigrationService } from './services/migration-service';
 import './styles.css';
 
 /**
@@ -626,6 +627,15 @@ export default class BAC4Plugin extends Plugin {
       },
     });
 
+    // Wardley Map Command (v2.5.0)
+    this.addCommand({
+      id: 'bac4-create-wardley-map',
+      name: 'Create New Wardley Map',
+      callback: async () => {
+        await this.createNewDiagram('wardley');
+      },
+    });
+
     // Graph View Command (Cmd+Shift+G)
     this.addCommand({
       id: 'bac4-open-graph-view',
@@ -786,23 +796,173 @@ export default class BAC4Plugin extends Plugin {
         await this.showGraphStatistics();
       },
     });
+
+    // ========================================================================
+    // Migration Commands (v2.5.0)
+    // ========================================================================
+
+    this.addCommand({
+      id: 'migrate-to-v2-5',
+      name: 'Migrate Diagrams to v2.5.0 Format',
+      callback: async () => {
+        const migrationService = new MigrationService(this.app);
+
+        // Confirm before migrating
+        const confirmModal = new ConfirmationModal(
+          this.app,
+          'Migrate to v2.5.0 Format',
+          `This will migrate all .bac4 files to the new v2.5.0 format.
+
+**What will happen:**
+• Each .bac4 file will be split into two files:
+  - .bac4 (nodes/semantic data)
+  - .bac4-graph (relationships/layout)
+• Backups will be created (.bac4.v1.backup)
+• A migration report will be generated
+
+**This is a breaking change.** Old plugins will not work with new format.
+
+Continue with migration?`,
+          async () => {
+            new Notice('Starting migration...', 3000);
+            const stats = await migrationService.migrateAllDiagrams({
+              dryRun: false,
+              createBackups: true,
+            });
+
+            if (stats.failed > 0) {
+              new Notice(
+                `Migration completed with errors. ${stats.migrated} migrated, ${stats.failed} failed. See report for details.`,
+                10000
+              );
+            } else {
+              new Notice(
+                `Migration complete! ${stats.migrated} diagrams migrated successfully.`,
+                5000
+              );
+            }
+          }
+        );
+        confirmModal.open();
+      },
+    });
+
+    this.addCommand({
+      id: 'dry-run-migration',
+      name: 'Dry Run Migration (Test Only)',
+      callback: async () => {
+        new Notice('Running dry run migration (no changes will be made)...', 3000);
+
+        const migrationService = new MigrationService(this.app);
+        const stats = await migrationService.dryRunMigration();
+
+        const message = `Dry run complete!
+
+Would migrate: ${stats.migrated}
+Would skip: ${stats.skipped}
+Would fail: ${stats.failed}
+
+No changes were made. Run "Migrate Diagrams to v2.5.0" to perform actual migration.`;
+
+        new Notice(message, 10000);
+        console.log('BAC4 v2.5: Dry run results:', stats);
+      },
+    });
+
+    this.addCommand({
+      id: 'rollback-migration',
+      name: 'Rollback v2.5.0 Migration (Emergency)',
+      callback: async () => {
+        const confirmModal = new ConfirmationModal(
+          this.app,
+          'Rollback Migration',
+          `This will rollback the v2.5.0 migration.
+
+**What will happen:**
+• Restore original .bac4 files from backups
+• Delete .bac4-graph files
+• Delete backup files
+
+**Warning:** This will undo all changes made during migration.
+
+Continue with rollback?`,
+          async () => {
+            new Notice('Rolling back migration...', 3000);
+
+            const migrationService = new MigrationService(this.app);
+            await migrationService.rollbackMigration();
+          }
+        );
+        confirmModal.open();
+      },
+    });
+
+    this.addCommand({
+      id: 'show-migration-status',
+      name: 'Show Migration Status',
+      callback: async () => {
+        const migrationService = new MigrationService(this.app);
+        const bac4Files = this.app.vault.getFiles().filter((f) => f.path.endsWith('.bac4'));
+
+        if (bac4Files.length === 0) {
+          new Notice('No .bac4 files found in vault');
+          return;
+        }
+
+        let v1Count = 0;
+        let v2Count = 0;
+        let unknownCount = 0;
+
+        for (const file of bac4Files) {
+          try {
+            const status = await migrationService.getMigrationStatus(file);
+            if (status.version === '2.5.0') {
+              v2Count++;
+            } else if (status.version.startsWith('2.') || status.version.startsWith('1.')) {
+              v1Count++;
+            } else {
+              unknownCount++;
+            }
+          } catch (error) {
+            unknownCount++;
+          }
+        }
+
+        const message = `Migration Status:
+
+Total .bac4 files: ${bac4Files.length}
+• v2.5.0 (new format): ${v2Count}
+• v1 (old format): ${v1Count}
+• Unknown/Error: ${unknownCount}
+
+${
+  v1Count > 0
+    ? `\n⚠️ ${v1Count} files need migration. Run "Migrate Diagrams to v2.5.0".`
+    : '✅ All files are up to date!'
+}`;
+
+        new Notice(message, 10000);
+        console.log('BAC4 v2.5: Migration status:', { v1Count, v2Count, unknownCount });
+      },
+    });
   }
 
   /**
    * Create a new diagram of a specific type
    *
    * v2.0.0: Creates diagrams for any of the 7 layers
+   * v2.5.0: Added Wardley Map support
    *
    * @param diagramType - Type of diagram to create
    */
   private async createNewDiagram(
-    diagramType: 'market' | 'organisation' | 'capability' | 'context' | 'container' | 'component' | 'code'
+    diagramType: 'market' | 'organisation' | 'capability' | 'context' | 'container' | 'component' | 'code' | 'wardley'
   ): Promise<void> {
-    console.log('BAC4: Creating new diagram:', diagramType);
+    console.log('BAC4 v2.5: Creating new diagram:', diagramType);
 
     // Ensure BAC4 directory exists
     if (!(await this.app.vault.adapter.exists('BAC4'))) {
-      console.log('BAC4: Creating BAC4 directory');
+      console.log('BAC4 v2.5: Creating BAC4 directory');
       await this.app.vault.createFolder('BAC4');
     }
 
@@ -818,26 +978,29 @@ export default class BAC4Plugin extends Plugin {
       filePath = `BAC4/${fileName}`;
     }
 
-    console.log('BAC4: Creating diagram file:', filePath);
+    console.log('BAC4 v2.5: Creating diagram files:', filePath);
 
-    // Create diagram with v1.0.0 format
-    const now = new Date().toISOString();
-    const initialTimeline = TimelineService.createInitialTimeline([], [], 'Current');
-    const diagramData = {
-      version: '1.0.0',
-      metadata: {
-        diagramType,
-        createdAt: now,
-        updatedAt: now,
-      },
-      timeline: initialTimeline,
-    };
+    // Create diagram with v2.5.0 dual-file format
+    const { createDefaultBAC4File, createDefaultGraphFile } = await import('./types/bac4-v2-types');
+    const { writeDiagram } = await import('./services/file-io-service');
 
-    const file = await this.app.vault.create(filePath, JSON.stringify(diagramData, null, 2));
-    console.log('BAC4: Diagram created:', file.path);
+    const nodeFile = createDefaultBAC4File(
+      `New ${typeLabel}`,
+      diagramType as any,
+      diagramType as any
+    );
+
+    const graphFile = createDefaultGraphFile(
+      fileName,
+      `New ${typeLabel}`,
+      diagramType === 'wardley' ? 'wardley' : 'c4-context'
+    );
+
+    await writeDiagram(this.app.vault, filePath, nodeFile, graphFile);
+    console.log('BAC4 v2.5: Created dual files (node + graph):', filePath);
 
     // Open the new diagram
-    await this.openCanvasView(file.path);
+    await this.openCanvasView(filePath);
 
     new Notice(`Created ${fileName}`);
   }
@@ -1210,5 +1373,54 @@ Connection Statistics:
     } catch (error) {
       console.error('BAC4: Error saving graph layout from Canvas:', error);
     }
+  }
+}
+
+/**
+ * Confirmation Modal for Migration Commands
+ *
+ * Simple modal that shows a message and asks for confirmation.
+ * Used by migration commands to ensure user intent.
+ *
+ * v2.5.0
+ */
+class ConfirmationModal extends Modal {
+  constructor(
+    app: App,
+    private title: string,
+    private message: string,
+    private onConfirm: () => void
+  ) {
+    super(app);
+  }
+
+  onOpen() {
+    const { contentEl } = this;
+
+    contentEl.createEl('h2', { text: this.title });
+    contentEl.createEl('p', { text: this.message, attr: { style: 'white-space: pre-wrap' } });
+
+    const buttonContainer = contentEl.createDiv({ cls: 'modal-button-container' });
+    buttonContainer.style.display = 'flex';
+    buttonContainer.style.gap = '10px';
+    buttonContainer.style.marginTop = '20px';
+
+    const confirmButton = buttonContainer.createEl('button', { text: 'Continue' });
+    confirmButton.style.flex = '1';
+    confirmButton.addEventListener('click', () => {
+      this.close();
+      this.onConfirm();
+    });
+
+    const cancelButton = buttonContainer.createEl('button', { text: 'Cancel' });
+    cancelButton.style.flex = '1';
+    cancelButton.addEventListener('click', () => {
+      this.close();
+    });
+  }
+
+  onClose() {
+    const { contentEl } = this;
+    contentEl.empty();
   }
 }
