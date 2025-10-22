@@ -1,7 +1,7 @@
 {
   "name": "bac4",
-  "version": "2.3.0",
-  "description": "bac4 - The Solution Architects Toolbox (v2.3.0: Enhanced navigation, UX improvements, and type safety)",
+  "version": "2.4.0",
+  "description": "bac4 - The Solution Architects Toolbox (v2.4.0: AI-powered diagram validation, architecture analysis, and intelligent suggestions)",
   "main": "main.js",
   "scripts": {
     "dev": "node esbuild.config.mjs",

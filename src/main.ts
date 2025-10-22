@@ -12,6 +12,9 @@ import { hasBac4Diagram } from './utils/frontmatter-parser';
 import { TimelineService } from './services/TimelineService';
 import { NodeRegistryService } from './services/node-registry-service';
 import { MigrationService } from './services/migration-service';
+import { AIValidationService } from './services/ai-validation-service';
+import { ArchitectureAnalyzerService } from './services/architecture-analyzer-service';
+import { AISuggestionsService } from './services/ai-suggestions-service';
 import './styles.css';
 
 /**
@@ -48,12 +51,21 @@ import './styles.css';
  */
 export default class BAC4Plugin extends Plugin {
   settings!: BAC4Settings;
+  aiValidation!: AIValidationService;
+  architectureAnalyzer!: ArchitectureAnalyzerService;
+  aiSuggestions!: AISuggestionsService;
 
   async onload() {
     console.log('Loading BAC4 Plugin v' + this.manifest.version);
 
     // Load settings
     await this.loadSettings();
+
+    // Initialize AI Services (v2.4.0: AI-powered analysis and validation)
+    this.aiValidation = new AIValidationService(this);
+    this.architectureAnalyzer = new ArchitectureAnalyzerService(this);
+    this.aiSuggestions = new AISuggestionsService(this);
+    console.log('BAC4: AI services initialized (validation, analyzer, suggestions)');
 
     // Initialize Node Registry (v1.0.1: Track node names across all diagrams)
     const registry = NodeRegistryService.getInstance();
@@ -945,6 +957,52 @@ ${
         console.log('BAC4 v2.5: Migration status:', { v1Count, v2Count, unknownCount });
       },
     });
+
+    // ========================================================================
+    // AI Commands (v2.4.0)
+    // ========================================================================
+
+    this.addCommand({
+      id: 'bac4-validate-diagram',
+      name: 'AI: Validate Current Diagram',
+      checkCallback: (checking: boolean) => {
+        const activeView = this.app.workspace.getActiveViewOfType(BAC4CanvasView);
+        if (!activeView) return false;
+
+        if (!checking) {
+          this.runDiagramValidation(activeView);
+        }
+        return true;
+      },
+    });
+
+    this.addCommand({
+      id: 'bac4-analyze-architecture',
+      name: 'AI: Analyze Architecture',
+      checkCallback: (checking: boolean) => {
+        const activeView = this.app.workspace.getActiveViewOfType(BAC4CanvasView);
+        if (!activeView) return false;
+
+        if (!checking) {
+          this.runArchitectureAnalysis(activeView);
+        }
+        return true;
+      },
+    });
+
+    this.addCommand({
+      id: 'bac4-suggest-improvements',
+      name: 'AI: Suggest Improvements',
+      checkCallback: (checking: boolean) => {
+        const activeView = this.app.workspace.getActiveViewOfType(BAC4CanvasView);
+        if (!activeView) return false;
+
+        if (!checking) {
+          this.runDiagramSuggestions(activeView);
+        }
+        return true;
+      },
+    });
   }
 
   /**
@@ -1372,6 +1430,295 @@ Connection Statistics:
       }
     } catch (error) {
       console.error('BAC4: Error saving graph layout from Canvas:', error);
+    }
+  }
+
+  /**
+   * Run AI validation on current diagram (v2.4.0)
+   */
+  private async runDiagramValidation(view: BAC4CanvasView): Promise<void> {
+    new Notice('Running AI validation...');
+
+    try {
+      // Get nodes and edges from the view
+      const nodes = view.getNodes ? view.getNodes() : [];
+      const edges = view.getEdges ? view.getEdges() : [];
+      const diagramType = view.getDiagramType ? view.getDiagramType() : 'context';
+      const filePath = view.file?.path || 'Unknown';
+
+      // Run validation
+      const report = await this.aiValidation.validateDiagram(nodes, edges, diagramType, filePath);
+
+      // Create validation report markdown
+      const reportContent = this.formatValidationReport(report);
+
+      // Create or update validation report file
+      const reportPath = `BAC4/Validation-${view.file?.basename || 'Report'}.md`;
+      const existingFile = this.app.vault.getAbstractFileByPath(reportPath);
+
+      if (existingFile instanceof TFile) {
+        await this.app.vault.modify(existingFile, reportContent);
+      } else {
+        await this.app.vault.create(reportPath, reportContent);
+      }
+
+      // Open report
+      const reportFile = this.app.vault.getAbstractFileByPath(reportPath);
+      if (reportFile instanceof TFile) {
+        const leaf = this.app.workspace.getLeaf(false);
+        await leaf.openFile(reportFile);
+      }
+
+      new Notice(`Validation complete! Score: ${report.score}/100 (${report.summary.errors} errors, ${report.summary.warnings} warnings)`);
+    } catch (error) {
+      console.error('BAC4: Validation error:', error);
+      new Notice('Validation failed. See console for details.');
+    }
+  }
+
+  /**
+   * Run architecture analysis on current diagram (v2.4.0)
+   */
+  private async runArchitectureAnalysis(view: BAC4CanvasView): Promise<void> {
+    new Notice('Running architecture analysis...');
+
+    try {
+      const nodes = view.getNodes ? view.getNodes() : [];
+      const edges = view.getEdges ? view.getEdges() : [];
+      const diagramType = view.getDiagramType ? view.getDiagramType() : 'context';
+      const filePath = view.file?.path || 'Unknown';
+
+      // Run analysis
+      const report = await this.architectureAnalyzer.analyzeArchitecture(nodes, edges, diagramType, filePath);
+
+      // Create analysis report markdown
+      const reportContent = this.formatAnalysisReport(report);
+
+      // Create or update analysis report file
+      const reportPath = `BAC4/Analysis-${view.file?.basename || 'Report'}.md`;
+      const existingFile = this.app.vault.getAbstractFileByPath(reportPath);
+
+      if (existingFile instanceof TFile) {
+        await this.app.vault.modify(existingFile, reportContent);
+      } else {
+        await this.app.vault.create(reportPath, reportContent);
+      }
+
+      // Open report
+      const reportFile = this.app.vault.getAbstractFileByPath(reportPath);
+      if (reportFile instanceof TFile) {
+        const leaf = this.app.workspace.getLeaf(false);
+        await leaf.openFile(reportFile);
+      }
+
+      new Notice(`Analysis complete! Grade: ${report.qualityGrade} (Score: ${report.overallScore}/100)`);
+    } catch (error) {
+      console.error('BAC4: Analysis error:', error);
+      new Notice('Analysis failed. See console for details.');
+    }
+  }
+
+  /**
+   * Run AI suggestions on current diagram (v2.4.0)
+   */
+  private async runDiagramSuggestions(view: BAC4CanvasView): Promise<void> {
+    new Notice('Generating AI suggestions...');
+
+    try {
+      const nodes = view.getNodes ? view.getNodes() : [];
+      const edges = view.getEdges ? view.getEdges() : [];
+      const diagramType = view.getDiagramType ? view.getDiagramType() : 'context';
+      const filePath = view.file?.path || 'Unknown';
+
+      // Generate suggestions
+      const report = await this.aiSuggestions.generateSuggestions(nodes, edges, diagramType, filePath);
+
+      // Create suggestions report markdown
+      const reportContent = this.formatSuggestionsReport(report);
+
+      // Create or update suggestions report file
+      const reportPath = `BAC4/Suggestions-${view.file?.basename || 'Report'}.md`;
+      const existingFile = this.app.vault.getAbstractFileByPath(reportPath);
+
+      if (existingFile instanceof TFile) {
+        await this.app.vault.modify(existingFile, reportContent);
+      } else {
+        await this.app.vault.create(reportPath, reportContent);
+      }
+
+      // Open report
+      const reportFile = this.app.vault.getAbstractFileByPath(reportPath);
+      if (reportFile instanceof TFile) {
+        const leaf = this.app.workspace.getLeaf(false);
+        await leaf.openFile(reportFile);
+      }
+
+      new Notice(`${report.summary.total} suggestions generated (${report.summary.highPriority} high priority)`);
+    } catch (error) {
+      console.error('BAC4: Suggestions error:', error);
+      new Notice('Suggestion generation failed. See console for details.');
+    }
+  }
+
+  /**
+   * Format validation report as markdown
+   */
+  private formatValidationReport(report: any): string {
+    return `# Diagram Validation Report
+
+**Diagram:** ${report.diagramPath}
+**Type:** ${report.diagramType}
+**Timestamp:** ${report.timestamp}
+**Score:** ${report.score}/100
+
+## Summary
+
+- ❌ **Errors:** ${report.summary.errors}
+- ⚠️ **Warnings:** ${report.summary.warnings}
+- ℹ️ **Info:** ${report.summary.info}
+
+## Issues
+
+${report.issues.length === 0 ? '✅ No issues found!' : report.issues.map((issue: any) => `
+### ${this.getSeverityIcon(issue.severity)} ${issue.title}
+
+**Severity:** ${issue.severity}
+**Type:** ${issue.type}
+
+${issue.description}
+
+${issue.suggestion ? `**Suggestion:** ${issue.suggestion}` : ''}
+
+${issue.affectedNodes.length > 0 ? `**Affected Nodes:** ${issue.affectedNodes.join(', ')}` : ''}
+${issue.affectedEdges.length > 0 ? `**Affected Edges:** ${issue.affectedEdges.join(', ')}` : ''}
+`).join('\n---\n')}
+
+---
+
+*Generated by BAC4 AI Validation Service v2.4.0*
+`;
+  }
+
+  /**
+   * Format analysis report as markdown
+   */
+  private formatAnalysisReport(report: any): string {
+    return `# Architecture Analysis Report
+
+**Diagram:** ${report.diagramPath}
+**Type:** ${report.diagramType}
+**Timestamp:** ${report.timestamp}
+**Overall Score:** ${report.overallScore}/100
+**Quality Grade:** ${report.qualityGrade}
+
+## Complexity Metrics
+
+- **Cyclomatic Complexity:** ${report.complexity.cyclomaticComplexity}
+- **Coupling Score:** ${report.complexity.couplingScore}/100
+- **Cohesion Score:** ${report.complexity.cohesionScore}/100
+- **Abstraction Level:** ${report.complexity.abstractionLevel}%
+- **Instability Score:** ${report.complexity.instabilityScore}/100
+- **Main Sequence Distance:** ${report.complexity.mainSequenceDistance.toFixed(2)}
+
+## Dependency Analysis
+
+- **Total Dependencies:** ${report.dependencies.totalDependencies}
+- **Direct Dependencies:** ${report.dependencies.directDependencies}
+- **Transitive Dependencies:** ${report.dependencies.transitiveDependencies}
+- **Circular Dependencies:** ${report.dependencies.circularDependencies.length}
+- **Isolated Components:** ${report.dependencies.isolatedComponents.length}
+- **Critical Path Length:** ${report.dependencies.criticalPath.length}
+
+## Cohesion Analysis
+
+- **Component Groups:** ${report.cohesion.componentGroups.length}
+- **Inter-Group Coupling:** ${report.cohesion.interGroupCoupling}%
+- **Intra-Group Cohesion:** ${report.cohesion.intraGroupCohesion}%
+- **Suggested Merges:** ${report.cohesion.suggestedMerges.length}
+- **Suggested Splits:** ${report.cohesion.suggestedSplits.length}
+
+## Detected Architectural Patterns
+
+${report.technologyStack.detectedPatterns.length === 0 ? '*No patterns detected*' : report.technologyStack.detectedPatterns.map((pattern: any) => `
+### ${pattern.name} (Confidence: ${pattern.confidence}%)
+
+${pattern.description}
+
+**Benefits:**
+${pattern.benefits.map((b: string) => `- ${b}`).join('\n')}
+
+**Concerns:**
+${pattern.concerns.map((c: string) => `- ${c}`).join('\n')}
+`).join('\n')}
+
+## Recommendations
+
+${report.recommendations.map((rec: any, i: number) => `
+### ${i + 1}. ${rec.title}
+
+**Priority:** ${rec.priority.toUpperCase()}
+**Category:** ${rec.category}
+**Effort:** ${rec.effort} | **Impact:** ${rec.impact}
+
+${rec.description}
+
+**Benefits:**
+${rec.benefits.map((b: string) => `- ${b}`).join('\n')}
+`).join('\n')}
+
+---
+
+*Generated by BAC4 Architecture Analyzer Service v2.4.0*
+`;
+  }
+
+  /**
+   * Format suggestions report as markdown
+   */
+  private formatSuggestionsReport(report: any): string {
+    return `# AI Suggestions Report
+
+**Diagram:** ${report.diagramPath}
+**Type:** ${report.diagramType}
+**Timestamp:** ${report.timestamp}
+
+## Summary
+
+- **Total Suggestions:** ${report.summary.total}
+- **High Priority:** ${report.summary.highPriority}
+- **Medium Priority:** ${report.summary.mediumPriority}
+- **Low Priority:** ${report.summary.lowPriority}
+- **Auto-Applicable:** ${report.summary.autoApplicable}
+
+## Suggestions
+
+${report.suggestions.map((sug: any, i: number) => `
+### ${i + 1}. ${sug.title}
+
+**Priority:** ${sug.priority.toUpperCase()} | **Type:** ${sug.type} | **Confidence:** ${sug.confidence}%
+
+${sug.description}
+
+**Rationale:** ${sug.rationale}
+
+${sug.autoApplicable ? '✅ **Can be auto-applied**' : ''}
+`).join('\n---\n')}
+
+---
+
+*Generated by BAC4 AI Suggestions Service v2.4.0*
+`;
+  }
+
+  /**
+   * Get severity icon for validation issues
+   */
+  private getSeverityIcon(severity: string): string {
+    switch (severity) {
+      case 'error': return '❌';
+      case 'warning': return '⚠️';
+      case 'info': return 'ℹ️';
+      default: return '•';
     }
   }
 }
