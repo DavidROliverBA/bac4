@@ -171,28 +171,63 @@ export default class BAC4Plugin extends Plugin {
     );
 
     // Register file deletion listener (v2.0.1: Clean up graph layout)
+    // v2.5.0: Also delete companion .bac4-graph file
     this.registerEvent(
       this.app.vault.on('delete', async (file) => {
         if (!(file instanceof TFile)) return;
 
-        // Handle .bac4 file deletions in graph layout
+        // Handle .bac4 file deletions
         if (file.extension === 'bac4') {
+          // Clean up graph layout
           const { GraphLayoutService } = await import('./services/graph-layout-service');
           await GraphLayoutService.handleDiagramDeletion(this.app.vault, file.path);
+
+          // Delete companion .bac4-graph file (v2.5.0 dual-file format)
+          const graphPath = file.path.replace('.bac4', '.bac4-graph');
+          const graphFile = this.app.vault.getAbstractFileByPath(graphPath);
+
+          if (graphFile instanceof TFile) {
+            try {
+              await this.app.vault.delete(graphFile);
+              console.log('BAC4 v2.5: ✅ Deleted companion graph file:', graphPath);
+            } catch (error) {
+              console.error('BAC4 v2.5: Error deleting graph file:', error);
+            }
+          } else {
+            console.log('BAC4 v2.5: No companion graph file to delete (v1 format)');
+          }
         }
       })
     );
 
     // Register file rename listener (v0.6.0: Auto-update linkedDiagramPath and linkedMarkdownPath)
     // v2.0.1: Also update graph layout file
+    // v2.5.0: Also rename companion .bac4-graph file
     this.registerEvent(
       this.app.vault.on('rename', async (file, oldPath) => {
         if (!(file instanceof TFile)) return;
 
-        // Handle .bac4 file renames in graph layout
+        // Handle .bac4 file renames
         if (file.extension === 'bac4') {
+          // Update graph layout references
           const { GraphLayoutService } = await import('./services/graph-layout-service');
           await GraphLayoutService.handleDiagramRename(this.app.vault, oldPath, file.path);
+
+          // Rename companion .bac4-graph file (v2.5.0 dual-file format)
+          const oldGraphPath = oldPath.replace('.bac4', '.bac4-graph');
+          const newGraphPath = file.path.replace('.bac4', '.bac4-graph');
+          const graphFile = this.app.vault.getAbstractFileByPath(oldGraphPath);
+
+          if (graphFile instanceof TFile) {
+            try {
+              await this.app.vault.rename(graphFile, newGraphPath);
+              console.log('BAC4 v2.5: ✅ Renamed companion graph file:', oldGraphPath, '→', newGraphPath);
+            } catch (error) {
+              console.error('BAC4 v2.5: Error renaming graph file:', error);
+            }
+          } else {
+            console.log('BAC4 v2.5: No companion graph file found (v1 format or already renamed)');
+          }
         }
 
         // Only care about .bac4 and .md file renames for diagram references
