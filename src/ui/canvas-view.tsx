@@ -381,6 +381,7 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath, view }) =
 
   /**
    * Track navigation history (v2.3.0)
+   * Note: Simplified to show only current diagram, not full history
    */
   React.useEffect(() => {
     if (filePath) {
@@ -388,7 +389,9 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath, view }) =
         filePath,
         diagramType,
       });
-      setBreadcrumbs(navigationHistoryService.getBreadcrumbs());
+      // Only show current diagram (last entry) in breadcrumbs
+      const currentEntry = navigationHistoryService.getCurrentEntry();
+      setBreadcrumbs(currentEntry ? [currentEntry] : []);
     }
   }, [filePath, diagramType, navigationHistoryService]);
 
@@ -398,7 +401,9 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath, view }) =
   const handleNavigateBack = async () => {
     const entry = await navigationHistoryService.goBack();
     if (entry) {
-      setBreadcrumbs(navigationHistoryService.getBreadcrumbs());
+      // Only show current diagram in breadcrumbs
+      const currentEntry = navigationHistoryService.getCurrentEntry();
+      setBreadcrumbs(currentEntry ? [currentEntry] : []);
       // Open the previous diagram
       const file = plugin.app.vault.getAbstractFileByPath(entry.filePath);
       if (file instanceof plugin.app.vault.adapter.constructor.prototype.constructor) {
@@ -410,7 +415,9 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath, view }) =
   const handleNavigateForward = async () => {
     const entry = await navigationHistoryService.goForward();
     if (entry) {
-      setBreadcrumbs(navigationHistoryService.getBreadcrumbs());
+      // Only show current diagram in breadcrumbs
+      const currentEntry = navigationHistoryService.getCurrentEntry();
+      setBreadcrumbs(currentEntry ? [currentEntry] : []);
       // Open the next diagram
       const file = plugin.app.vault.getAbstractFileByPath(entry.filePath);
       if (file instanceof plugin.app.vault.adapter.constructor.prototype.constructor) {
