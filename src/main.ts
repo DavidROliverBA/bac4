@@ -15,7 +15,10 @@ import { MigrationService } from './services/migration-service';
 import { AIValidationService } from './services/ai-validation-service';
 import { ArchitectureAnalyzerService } from './services/architecture-analyzer-service';
 import { AISuggestionsService } from './services/ai-suggestions-service';
+import { KeyboardShortcutsService } from './services/keyboard-shortcuts-service';
 import './styles.css';
+import '../styles/navigation.css';
+import '../styles/accessibility.css';
 
 /**
  * BAC4 Plugin - Main entry point
@@ -54,6 +57,7 @@ export default class BAC4Plugin extends Plugin {
   aiValidation!: AIValidationService;
   architectureAnalyzer!: ArchitectureAnalyzerService;
   aiSuggestions!: AISuggestionsService;
+  keyboardShortcuts!: KeyboardShortcutsService;
 
   async onload() {
     console.log('Loading BAC4 Plugin v' + this.manifest.version);
@@ -66,6 +70,10 @@ export default class BAC4Plugin extends Plugin {
     this.architectureAnalyzer = new ArchitectureAnalyzerService(this);
     this.aiSuggestions = new AISuggestionsService(this);
     console.log('BAC4: AI services initialized (validation, analyzer, suggestions)');
+
+    // Initialize Keyboard Shortcuts Service (v2.3.0: Navigation shortcuts)
+    this.keyboardShortcuts = new KeyboardShortcutsService(this);
+    console.log('BAC4: Keyboard shortcuts service initialized');
 
     // Initialize Node Registry (v1.0.1: Track node names across all diagrams)
     const registry = NodeRegistryService.getInstance();

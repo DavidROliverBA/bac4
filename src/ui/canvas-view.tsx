@@ -37,6 +37,8 @@ import { WardleyPropertyPanel } from './components/WardleyPropertyPanel';
 import { UnifiedToolbar } from './components/UnifiedToolbar';
 import { WardleyToolbar } from './components/WardleyToolbar';
 import { TimelineToolbar } from './components/TimelineToolbar';
+import { NavigationControls } from './components/NavigationControls';
+import { NavigationBreadcrumbs } from './components/NavigationBreadcrumbs';
 import { WardleyCanvas } from './canvas/WardleyCanvas';
 import { AddSnapshotModal } from './components/AddSnapshotModal';
 import { SnapshotManagerModal } from './components/SnapshotManager';
@@ -45,6 +47,7 @@ import { AnnotationOverlay } from './components/AnnotationOverlay';
 import { ChangesSummaryPanel } from './components/ChangesSummaryPanel';
 import { ComponentLibraryService } from '../services/component-library-service';
 import { DiagramNavigationService } from '../services/diagram-navigation-service';
+import { NavigationHistoryService } from '../services/navigation-history-service';
 import { TimelineService } from '../services/TimelineService';
 import { ChangeDetectionService } from '../services/ChangeDetectionService';
 import { AnnotationService } from '../services/AnnotationService';
@@ -133,6 +136,9 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath, view }) =
   const [wardleyBackgroundImage, setWardleyBackgroundImage] = React.useState<string | undefined>(undefined);
   const [wardleyBackgroundOpacity, setWardleyBackgroundOpacity] = React.useState(0.3);
 
+  // Navigation state (v2.3.0)
+  const [breadcrumbs, setBreadcrumbs] = React.useState<any[]>([]);
+
   // Timeline ref for auto-save (v1.0.0 - prevents race conditions)
   const timelineRef = React.useRef<Timeline | null>(null);
 
@@ -148,6 +154,7 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath, view }) =
     return service;
   });
   const [navigationService] = React.useState(() => new DiagramNavigationService(plugin));
+  const [navigationHistoryService] = React.useState(() => new NavigationHistoryService(plugin));
 
   // Log whenever filePath prop changes
   React.useEffect(() => {
@@ -371,6 +378,54 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath, view }) =
     nodeCounterRef,
     navigationService,
   });
+
+  /**
+   * Track navigation history (v2.3.0)
+   */
+  React.useEffect(() => {
+    if (filePath) {
+      navigationHistoryService.addEntry({
+        filePath,
+        diagramType,
+      });
+      setBreadcrumbs(navigationHistoryService.getBreadcrumbs());
+    }
+  }, [filePath, diagramType, navigationHistoryService]);
+
+  /**
+   * Navigation handlers (v2.3.0)
+   */
+  const handleNavigateBack = async () => {
+    const entry = await navigationHistoryService.goBack();
+    if (entry) {
+      setBreadcrumbs(navigationHistoryService.getBreadcrumbs());
+      // Open the previous diagram
+      const file = plugin.app.vault.getAbstractFileByPath(entry.filePath);
+      if (file instanceof plugin.app.vault.adapter.constructor.prototype.constructor) {
+        await plugin.openDiagram(file as any, true);
+      }
+    }
+  };
+
+  const handleNavigateForward = async () => {
+    const entry = await navigationHistoryService.goForward();
+    if (entry) {
+      setBreadcrumbs(navigationHistoryService.getBreadcrumbs());
+      // Open the next diagram
+      const file = plugin.app.vault.getAbstractFileByPath(entry.filePath);
+      if (file instanceof plugin.app.vault.adapter.constructor.prototype.constructor) {
+        await plugin.openDiagram(file as any, true);
+      }
+    }
+  };
+
+  const handleBreadcrumbNavigate = async (entry: any) => {
+    // Navigate to specific breadcrumb entry
+    const file = plugin.app.vault.getAbstractFileByPath(entry.filePath);
+    if (file instanceof plugin.app.vault.adapter.constructor.prototype.constructor) {
+      await plugin.openDiagram(file as any, true);
+    }
+  };
 
   /**
    * Generate graph view when diagram type is 'graph'
@@ -631,10 +686,27 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath, view }) =
   }, [timeline, setNodes, setEdges]);
 
   /**
-   * Keyboard shortcuts for timeline navigation (Cmd+[, Cmd+])
+   * Keyboard shortcuts for timeline and diagram navigation (v2.3.0)
+   * - Cmd+[, Cmd+] - Timeline snapshot navigation
+   * - Alt+Left, Alt+Right - Diagram navigation (back/forward)
    */
   React.useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      // Alt+Left - Navigate back
+      if (event.altKey && event.key === 'ArrowLeft') {
+        event.preventDefault();
+        handleNavigateBack();
+        return;
+      }
+
+      // Alt+Right - Navigate forward
+      if (event.altKey && event.key === 'ArrowRight') {
+        event.preventDefault();
+        handleNavigateForward();
+        return;
+      }
+
+      // Timeline shortcuts - only if timeline has snapshots
       if (!timeline || timeline.snapshots.length < 2) return;
 
       const currentSnapshot = TimelineService.getCurrentSnapshot(timeline);
@@ -660,7 +732,7 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath, view }) =
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [timeline, handleSnapshotSwitch]);
+  }, [timeline, handleSnapshotSwitch, handleNavigateBack, handleNavigateForward]);
 
   /**
    * Annotation Handlers (v1.0.0)
@@ -846,6 +918,21 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath, view }) =
         diagramName={filePath ? getDiagramName(filePath) : 'diagram'}
         timeline={timeline}
       />
+
+      {/* Navigation Controls & Breadcrumbs (v2.3.0) */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 16px', background: 'var(--background-secondary)', borderBottom: '1px solid var(--background-modifier-border)' }}>
+        <NavigationControls
+          plugin={plugin}
+          navigationService={navigationHistoryService}
+          onNavigateBack={handleNavigateBack}
+          onNavigateForward={handleNavigateForward}
+        />
+        <NavigationBreadcrumbs
+          plugin={plugin}
+          breadcrumbs={breadcrumbs}
+          onNavigate={handleBreadcrumbNavigate}
+        />
+      </div>
 
       {/* Timeline Toolbar (v1.0.0 - shows when 2+ snapshots) */}
       {timeline && (
