@@ -1,7 +1,7 @@
 {
   "name": "bac4",
-  "version": "2.4.0",
-  "description": "bac4 - The Solution Architects Toolbox (v2.4.0: AI-powered diagram validation, architecture analysis, and intelligent suggestions)",
+  "version": "2.5.0",
+  "description": "bac4 - The Solution Architects Toolbox (v2.5.0: Dual-file format, enhanced knowledge management, Wardley Mapping, and graph database readiness)",
   "main": "main.js",
   "scripts": {
     "dev": "node esbuild.config.mjs",
