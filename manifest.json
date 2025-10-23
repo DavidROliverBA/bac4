@@ -1,9 +1,9 @@
 {
 	"id": "bac4",
 	"name": "bac4 - The Solution Architects Toolbox",
-	"version": "2.5.0",
+	"version": "3.0.0",
 	"minAppVersion": "1.0.0",
-	"description": "Enterprise architecture management with 7-layer model: Market → Organisation → Capability → Context → Container → Component → Code. Visual diagram editor with layer-specific validation and hierarchical navigation.",
+	"description": "Enterprise architecture management with single global graph. All nodes unique, edit once updates everywhere. True single source of truth for your architecture.",
 	"author": "David Oliver",
 	"authorUrl": "https://github.com/DavidROliverBA",
 	"isDesktopOnly": true

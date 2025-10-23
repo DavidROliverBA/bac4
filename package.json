@@ -1,7 +1,7 @@
 {
   "name": "bac4",
-  "version": "2.5.0",
-  "description": "bac4 - The Solution Architects Toolbox (v2.5.0: Dual-file format, enhanced knowledge management, Wardley Mapping, and graph database readiness)",
+  "version": "3.0.0",
+  "description": "bac4 - The Solution Architects Toolbox (v3.0.0: Single global graph, unique nodes, edit once updates everywhere, true single source of truth)",
   "main": "main.js",
   "scripts": {
     "dev": "node esbuild.config.mjs",

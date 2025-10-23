@@ -171,7 +171,8 @@ export default class BAC4Plugin extends Plugin {
     );
 
     // Register file deletion listener (v2.0.1: Clean up graph layout)
-    // v2.5.0: Also delete companion .bac4-graph file
+    // v2.5.0: Delete companion .bac4-graph file
+    // v2.6.0: Remove from __graph__.json
     this.registerEvent(
       this.app.vault.on('delete', async (file) => {
         if (!(file instanceof TFile)) return;
@@ -182,11 +183,12 @@ export default class BAC4Plugin extends Plugin {
           const { GraphLayoutService } = await import('./services/graph-layout-service');
           await GraphLayoutService.handleDiagramDeletion(this.app.vault, file.path);
 
-          // Delete companion .bac4-graph file (v2.5.0 dual-file format)
+          // Check if this is v2.5.0 dual-file format (has .bac4-graph companion)
           const graphPath = file.path.replace('.bac4', '.bac4-graph');
           const graphFile = this.app.vault.getAbstractFileByPath(graphPath);
 
           if (graphFile instanceof TFile) {
+            // v2.5.0: Delete companion .bac4-graph file
             try {
               await this.app.vault.delete(graphFile);
               console.log('BAC4 v2.5: ✅ Deleted companion graph file:', graphPath);
@@ -194,7 +196,16 @@ export default class BAC4Plugin extends Plugin {
               console.error('BAC4 v2.5: Error deleting graph file:', error);
             }
           } else {
-            console.log('BAC4 v2.5: No companion graph file to delete (v1 format)');
+            // v2.6.0 or v1: Remove from __graph__.json (if exists)
+            try {
+              const { GraphFileService } = await import('./services/graph-file-service');
+              const graphService = new GraphFileService(this.app.vault);
+              await graphService.removeDiagramData(file.path);
+              console.log('BAC4 v2.6: ✅ Removed diagram from __graph__.json:', file.path);
+            } catch (error) {
+              // Silently fail if __graph__.json doesn't exist (v1 format)
+              console.log('BAC4: No graph data to clean up (v1 format or __graph__.json not found)');
+            }
           }
         }
       })
@@ -202,7 +213,8 @@ export default class BAC4Plugin extends Plugin {
 
     // Register file rename listener (v0.6.0: Auto-update linkedDiagramPath and linkedMarkdownPath)
     // v2.0.1: Also update graph layout file
-    // v2.5.0: Also rename companion .bac4-graph file
+    // v2.5.0: Rename companion .bac4-graph file
+    // v2.6.0: Update __graph__.json
     this.registerEvent(
       this.app.vault.on('rename', async (file, oldPath) => {
         if (!(file instanceof TFile)) return;
@@ -213,12 +225,13 @@ export default class BAC4Plugin extends Plugin {
           const { GraphLayoutService } = await import('./services/graph-layout-service');
           await GraphLayoutService.handleDiagramRename(this.app.vault, oldPath, file.path);
 
-          // Rename companion .bac4-graph file (v2.5.0 dual-file format)
+          // Check if this is v2.5.0 dual-file format (has .bac4-graph companion)
           const oldGraphPath = oldPath.replace('.bac4', '.bac4-graph');
           const newGraphPath = file.path.replace('.bac4', '.bac4-graph');
           const graphFile = this.app.vault.getAbstractFileByPath(oldGraphPath);
 
           if (graphFile instanceof TFile) {
+            // v2.5.0: Rename companion .bac4-graph file
             try {
               await this.app.vault.rename(graphFile, newGraphPath);
               console.log('BAC4 v2.5: ✅ Renamed companion graph file:', oldGraphPath, '→', newGraphPath);
@@ -226,7 +239,16 @@ export default class BAC4Plugin extends Plugin {
               console.error('BAC4 v2.5: Error renaming graph file:', error);
             }
           } else {
-            console.log('BAC4 v2.5: No companion graph file found (v1 format or already renamed)');
+            // v2.6.0 or v1: Update __graph__.json (if exists)
+            try {
+              const { GraphFileService } = await import('./services/graph-file-service');
+              const graphService = new GraphFileService(this.app.vault);
+              await graphService.renameDiagram(oldPath, file.path);
+              console.log('BAC4 v2.6: ✅ Updated diagram path in __graph__.json:', oldPath, '→', file.path);
+            } catch (error) {
+              // Silently fail if __graph__.json doesn't exist (v1 format)
+              console.log('BAC4: No graph data to update (v1 format or __graph__.json not found)');
+            }
           }
         }
 
