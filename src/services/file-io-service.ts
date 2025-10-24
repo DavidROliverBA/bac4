@@ -250,12 +250,20 @@ export function mergeNodesAndLayout(
     console.warn(`Snapshot ${snapshot.id} has no layout data, using defaults for all nodes`);
   }
 
+  // Determine if this is the current snapshot or a historical one
+  const isCurrentSnapshot = snapshot.id === graphFile.timeline.currentSnapshotId;
+
   // Merge each node
   const nodes: Node[] = Object.values(nodeFile.nodes).map((node) => {
     const layout = snapshot.layout?.[node.id];
 
-    if (!layout) {
-      console.warn(`No layout found for node ${node.id} in snapshot ${snapshot.id}, using defaults`);
+    // Only warn if node is missing from CURRENT snapshot
+    // Historical snapshots are expected to not have newer nodes
+    if (!layout && isCurrentSnapshot) {
+      console.warn(
+        `⚠️ BAC4 v2.5: Node ${node.id} ("${node.properties.label}") missing from current snapshot layout, using defaults (0, 0). ` +
+        `This usually means the node was added but auto-save hasn't completed yet.`
+      );
     }
 
     return {
