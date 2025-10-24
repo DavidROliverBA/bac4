@@ -45,9 +45,9 @@ export async function readBAC4File(
   const data = JSON.parse(content);
 
   // Validate format
-  if (data.version !== '2.5.0') {
+  if (data.version !== '2.5.0' && data.version !== '2.5.1') {
     throw new Error(
-      `Invalid file version: ${data.version}. Expected 2.5.0. File may need migration.`
+      `Invalid file version: ${data.version}. Expected 2.5.0 or 2.5.1. File may need migration.`
     );
   }
 
@@ -71,9 +71,9 @@ export async function readBAC4GraphFile(
   const data = JSON.parse(content);
 
   // Validate format
-  if (data.version !== '2.5.0') {
+  if (data.version !== '2.5.0' && data.version !== '2.5.1') {
     throw new Error(
-      `Invalid graph file version: ${data.version}. Expected 2.5.0.`
+      `Invalid graph file version: ${data.version}. Expected 2.5.0 or 2.5.1.`
     );
   }
 
@@ -250,60 +250,66 @@ export function mergeNodesAndLayout(
     console.warn(`Snapshot ${snapshot.id} has no layout data, using defaults for all nodes`);
   }
 
-  // Determine if this is the current snapshot or a historical one
-  const isCurrentSnapshot = snapshot.id === graphFile.timeline.currentSnapshotId;
+  // ✅ v2.5.1 FIX: Get nodes that exist in this snapshot
+  // Use layout as source of truth for which nodes exist in snapshot
+  // This prevents showing nodes from other snapshots
+  const snapshotNodeIds = Object.keys(snapshot.layout || {});
 
-  // Merge each node
-  const nodes: Node[] = Object.values(nodeFile.nodes).map((node) => {
-    const layout = snapshot.layout?.[node.id];
+  // Merge each node that exists in this snapshot
+  const nodes: Node[] = [];
 
-    // Only warn if node is missing from CURRENT snapshot
-    // Historical snapshots are expected to not have newer nodes
-    if (!layout && isCurrentSnapshot) {
-      console.warn(
-        `⚠️ BAC4 v2.5: Node ${node.id} ("${node.properties.label}") missing from current snapshot layout, using defaults (0, 0). ` +
-        `This usually means the node was added but auto-save hasn't completed yet.`
-      );
+  for (const nodeId of snapshotNodeIds) {
+    const node = nodeFile.nodes[nodeId];
+    if (!node) {
+      console.warn(`⚠️ BAC4 v2.5: Node ${nodeId} in snapshot layout not found in node file, skipping`);
+      continue;
     }
 
-    return {
+    const layout = snapshot.layout[nodeId];
+    const snapshotProps = snapshot.nodeProperties?.[nodeId]; // ✅ v2.5.1: Per-snapshot properties
+
+    nodes.push({
       id: node.id,
       type: node.type,
       position: {
-        x: layout?.x || 0,
-        y: layout?.y || 0,
+        x: layout.x,
+        y: layout.y,
       },
-      width: layout?.width || 200,
-      height: layout?.height || 100,
+      width: layout.width,
+      height: layout.height,
       data: {
-        // Core properties
-        label: node.properties.label,
-        description: node.properties.description,
-        technology: node.properties.technology,
-        team: node.properties.team,
-
-        // Additional properties
+        // Additional properties from node file (not snapshot-specific)
         ...node.properties,
 
-        // Knowledge
+        // ✅ v2.5.1 FIX: Override with snapshot-specific properties if available
+        // This allows each snapshot to have independent colors, labels, etc.
+        ...(snapshotProps ? {
+          label: snapshotProps.properties.label,
+          description: snapshotProps.properties.description,
+          technology: snapshotProps.properties.technology,
+          team: snapshotProps.properties.team,
+          status: snapshotProps.properties.status,
+        } : {}),
+
+        // Knowledge (invariant across snapshots)
         knowledge: node.knowledge,
 
-        // Metrics
+        // Metrics (invariant across snapshots)
         metrics: node.metrics,
 
-        // Wardley properties
+        // Wardley properties (invariant across snapshots)
         wardley: node.wardley,
 
-        // Links
+        // Links (invariant across snapshots)
         links: node.links,
 
-        // Style
-        color: node.style.color,
-        icon: node.style.icon,
-        shape: node.style.shape,
+        // ✅ v2.5.1 FIX: Style from snapshot if available
+        color: snapshotProps?.style.color ?? node.style.color,
+        icon: snapshotProps?.style.icon ?? node.style.icon,
+        shape: snapshotProps?.style.shape ?? node.style.shape,
       },
-    };
-  });
+    });
+  }
 
   return nodes;
 }
@@ -327,24 +333,32 @@ export function getEdgesFromGraph(
   }
 
   // Convert edges
-  const edges: Edge[] = snapshot.edges.map((edge) => ({
-    id: edge.id,
-    source: edge.source,
-    target: edge.target,
-    type: edge.type || 'default',
-    data: {
-      label: edge.properties.label,
-      direction: edge.style.direction,
-      ...edge.properties,
-    },
-    style: {
-      stroke: edge.style.color,
-      strokeWidth: 2,
-    },
-    markerEnd: edge.style.markerEnd,
-    sourceHandle: edge.handles.sourceHandle,
-    targetHandle: edge.handles.targetHandle,
-  }));
+  const edges: Edge[] = snapshot.edges.map((edge) => {
+    // ✅ FIX: Extract direction and style from properties (they may have been saved there)
+    // to avoid data duplication and ensure correct loading
+    const { direction: propDirection, style: propStyle, label, ...otherProperties } = edge.properties || {};
+
+    return {
+      id: edge.id,
+      source: edge.source,
+      target: edge.target,
+      type: edge.type || 'default',
+      data: {
+        // ✅ FIX: Set label, direction, and style explicitly to prevent overwriting
+        label: label,                                // Edge label (user-editable)
+        direction: edge.style.direction,             // Arrow direction (right/left/both)
+        style: propStyle || 'curved',                // Edge path style (curved/diagonal/rightAngle)
+        ...otherProperties,                          // Any other custom properties
+      },
+      style: {
+        stroke: edge.style.color,
+        strokeWidth: 2,
+      },
+      markerEnd: edge.style.markerEnd,
+      sourceHandle: edge.handles.sourceHandle,
+      targetHandle: edge.handles.targetHandle,
+    };
+  });
 
   return edges;
 }
@@ -365,38 +379,62 @@ export function splitNodesAndEdges(
     // Get existing node to preserve fields not in React Flow
     const existingNode = currentNodeFile.nodes[reactFlowNode.id];
 
-    updatedNodes[reactFlowNode.id] = {
-      id: reactFlowNode.id,
-      type: (reactFlowNode.type || 'system') as NodeType,
-      properties: {
-        label: reactFlowNode.data.label,
-        description: reactFlowNode.data.description || '',
-        technology: reactFlowNode.data.technology,
-        team: reactFlowNode.data.team,
-        // Preserve other properties
-        ...(existingNode?.properties || {}),
-        ...extractNodeProperties(reactFlowNode.data),
-      },
-      knowledge: reactFlowNode.data.knowledge || {
-        notes: [],
-        urls: [],
-        attachments: [],
-      },
-      metrics: reactFlowNode.data.metrics || {},
-      wardley: reactFlowNode.data.wardley,
-      links: reactFlowNode.data.links || {
-        parent: null,
-        children: [],
-        linkedDiagrams: [],
-        externalSystems: [],
-        dependencies: [],
-      },
-      style: {
-        color: reactFlowNode.data.color || '#3b82f6',
-        icon: reactFlowNode.data.icon,
-        shape: reactFlowNode.data.shape,
-      },
-    };
+    if (existingNode) {
+      // ✅ v2.5.1 FIX: Existing node - ONLY update INVARIANT properties
+      // DO NOT update snapshot-varying properties (label, description, status, color, icon, shape)
+      // These are stored in snapshot.nodeProperties to prevent contamination between snapshots
+      updatedNodes[reactFlowNode.id] = {
+        ...existingNode,
+        // Update ONLY invariant semantic properties
+        properties: {
+          ...existingNode.properties,
+          // Update invariant properties only
+          technology: reactFlowNode.data.technology,
+          team: reactFlowNode.data.team,
+        },
+        knowledge: reactFlowNode.data.knowledge || existingNode.knowledge,
+        metrics: reactFlowNode.data.metrics || existingNode.metrics,
+        wardley: reactFlowNode.data.wardley || existingNode.wardley,
+        links: reactFlowNode.data.links || existingNode.links,
+        // DO NOT update style - snapshot-varying
+        // DO NOT update label, description, status - snapshot-varying
+      };
+    } else {
+      // ✅ New node - Initialize with default/neutral values
+      // Actual display values come from snapshot.nodeProperties
+      updatedNodes[reactFlowNode.id] = {
+        id: reactFlowNode.id,
+        type: (reactFlowNode.type || 'system') as NodeType,
+        properties: {
+          // Initialize with defaults - these will be overridden by nodeProperties
+          label: reactFlowNode.data.label || 'New Node',
+          description: '',
+          technology: reactFlowNode.data.technology,
+          team: reactFlowNode.data.team,
+          ...extractNodeProperties(reactFlowNode.data),
+        },
+        knowledge: reactFlowNode.data.knowledge || {
+          notes: [],
+          urls: [],
+          attachments: [],
+        },
+        metrics: reactFlowNode.data.metrics || {},
+        wardley: reactFlowNode.data.wardley,
+        links: reactFlowNode.data.links || {
+          parent: null,
+          children: [],
+          linkedDiagrams: [],
+          externalSystems: [],
+          dependencies: [],
+        },
+        style: {
+          // Initialize with defaults - these will be overridden by nodeProperties
+          color: '#3b82f6',
+          icon: reactFlowNode.data.icon,
+          shape: reactFlowNode.data.shape,
+        },
+      };
+    }
   }
 
   // Create updated node file
@@ -426,6 +464,26 @@ export function splitNodesAndEdges(
     };
   }
 
+  // ✅ v2.5.1 FIX: Store snapshot-specific node properties
+  // This prevents data contamination between snapshots
+  const nodeProperties: Record<string, any> = {};
+  for (const node of nodes) {
+    nodeProperties[node.id] = {
+      properties: {
+        label: node.data.label,
+        description: node.data.description || '',
+        technology: node.data.technology,
+        team: node.data.team,
+        status: node.data.status,
+      },
+      style: {
+        color: node.data.color || '#3b82f6',
+        icon: node.data.icon,
+        shape: node.data.shape,
+      },
+    };
+  }
+
   // Update edges
   const graphEdges: EdgeV2[] = edges.map((edge) => {
     const direction = (edge.data?.direction as Direction) || 'right';
@@ -436,17 +494,23 @@ export function splitNodesAndEdges(
     const sourceHandle = (edge.sourceHandle || 'right') as HandlePosition;
     const targetHandle = (edge.targetHandle || 'left') as HandlePosition;
 
+    // ✅ FIX: Extract direction and style from edge.data before spreading
+    // These are stored in separate fields to avoid data duplication
+    const { direction: _direction, style: edgePathStyle, label, ...otherEdgeData } = edge.data || {};
+
     return {
       id: edge.id,
       source: edge.source,
       target: edge.target,
       type: edgeType,
       properties: {
-        label: edge.data?.label,
-        ...edge.data,
+        // ✅ FIX: Store only label and custom properties, not implementation details
+        label: label,
+        style: edgePathStyle,  // Edge path style (curved/diagonal/rightAngle) goes in properties
+        ...otherEdgeData,      // Any other custom edge data (excluding direction which goes in style)
       },
       style: {
-        direction,
+        direction,  // Arrow direction stored here (not in properties)
         lineType: 'solid',
         color: (typeof edge.style?.stroke === 'string' ? edge.style.stroke : '#888888'),
         markerEnd,
@@ -463,6 +527,7 @@ export function splitNodesAndEdges(
     ...currentSnapshot,
     layout,
     edges: graphEdges,
+    nodeProperties, // ✅ v2.5.1 FIX: Store per-snapshot node properties
   };
 
   // Update graph file

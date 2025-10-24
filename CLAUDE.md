@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **BAC4** is an Obsidian plugin that transforms vaults into comprehensive enterprise architecture management platforms. It implements a 7-layer enterprise architecture model extending the C4 approach from market strategy to implementation code, with support for Wardley Mapping.
 
-**Current Version:** 2.2.0 (in transition to v2.5.0 with major architectural refactor)
+**Current Version:** 3.0.0 (v2.5.1 format with snapshot isolation and edge persistence fixes)
 
 ## Essential Development Commands
 
@@ -272,6 +272,121 @@ const nodes = mergeNodesAndLayout(nodeFile, switchedGraphFile);
 setNodes(nodes);
 ```
 
+### 6. Snapshot Isolation (v2.5.1) ⚠️ CRITICAL
+
+**NEVER update snapshot-varying properties in the shared `.bac4` file.**
+
+Snapshot-varying properties (label, description, status, color, icon, shape) are stored ONLY in `snapshot.nodeProperties` to prevent contamination between snapshots.
+
+❌ **Wrong (causes snapshot contamination):**
+```typescript
+// In splitNodesAndEdges - DON'T DO THIS
+updatedNodes[nodeId] = {
+  ...existingNode,
+  properties: {
+    ...existingNode.properties,
+    label: reactFlowNode.data.label,  // ❌ Updates shared file
+    description: reactFlowNode.data.description,  // ❌ Contaminates snapshots
+  },
+  style: {
+    color: reactFlowNode.data.color,  // ❌ Wrong! Snapshot-varying
+  }
+};
+```
+
+✅ **Correct (preserves snapshot isolation):**
+```typescript
+// In splitNodesAndEdges - Existing nodes
+if (existingNode) {
+  updatedNodes[nodeId] = {
+    ...existingNode,
+    // Update ONLY invariant properties
+    properties: {
+      ...existingNode.properties,
+      technology: reactFlowNode.data.technology,  // ✅ Invariant
+      team: reactFlowNode.data.team,              // ✅ Invariant
+    },
+    knowledge: reactFlowNode.data.knowledge,  // ✅ Invariant
+    // DO NOT update: label, description, status, color, icon, shape
+  };
+}
+
+// Store snapshot-varying properties separately
+const nodeProperties: Record<string, NodeSnapshotProperties> = {};
+for (const node of nodes) {
+  nodeProperties[node.id] = {
+    properties: {
+      label: node.data.label,                    // ✅ Per-snapshot
+      description: node.data.description || '',  // ✅ Per-snapshot
+      status: node.data.status,                  // ✅ Per-snapshot
+    },
+    style: {
+      color: node.data.color || '#3b82f6',       // ✅ Per-snapshot
+      icon: node.data.icon,                      // ✅ Per-snapshot
+      shape: node.data.shape,                    // ✅ Per-snapshot
+    },
+  };
+}
+```
+
+**Why this matters:**
+- Prevents "color contamination" where changing a node in one snapshot affects other snapshots
+- Ensures true snapshot isolation
+- Maintains temporal accuracy in architecture evolution
+
+### 7. Edge Data Handling (v2.5.1) ⚠️ CRITICAL
+
+**Avoid data duplication and spread ordering issues with edges.**
+
+❌ **Wrong (causes data overwrites):**
+```typescript
+// In getEdgesFromGraph - DON'T DO THIS
+data: {
+  label: edge.properties.label,       // Set explicitly
+  direction: edge.style.direction,    // Set explicitly
+  ...edge.properties,                 // ❌ Overwrites above values!
+}
+```
+
+✅ **Correct (prevents overwrites):**
+```typescript
+// In getEdgesFromGraph - Extract before spreading
+const { direction: propDirection, style: propStyle, label, ...otherProperties } = edge.properties || {};
+
+return {
+  data: {
+    label: label,                         // Edge label (user-editable)
+    direction: edge.style.direction,      // Arrow direction (right/left/both)
+    style: propStyle || 'curved',         // Edge path style (curved/diagonal/rightAngle)
+    ...otherProperties,                   // Other custom properties (safe to spread)
+  }
+};
+```
+
+```typescript
+// In splitNodesAndEdges - Extract before spreading
+const { direction: _direction, style: edgePathStyle, label, ...otherEdgeData } = edge.data || {};
+
+return {
+  properties: {
+    label: label,              // User-editable label
+    style: edgePathStyle,      // Edge path style
+    ...otherEdgeData,          // Other custom data (no direction)
+  },
+  style: {
+    direction,                 // Arrow direction (stored here, not in properties)
+    lineType: 'solid',
+    color: edge.style.stroke,
+    markerEnd,
+  }
+};
+```
+
+**Why this matters:**
+- Prevents edge labels from being overwritten during save/load
+- Eliminates data duplication (direction stored in both properties and style)
+- Ensures edge changes persist correctly across file reloads
+
 ## Wardley Mapping Integration (v2.5.0)
 
 Wardley Maps use the same dual-file format but with specialized properties:
@@ -341,22 +456,88 @@ Legacy types in `src/types/canvas-types.ts` are being phased out.
 
 6. **Settings Migration:** Users upgrading from old versions may not have `graphFilter` in settings. Always check and provide defaults (see `main.ts:1114`).
 
+7. **Snapshot Auto-Switch (v2.5.1):** Creating a snapshot automatically switches to it. The `TimelineService.createSnapshot` sets `currentSnapshotId: snapshot.id` (line 75). This is intentional behavior approved in specification.
+
+8. **Force Save Before Snapshot Switch (v2.5.1):** ALWAYS call `forceSaveRef.current()` before switching snapshots to prevent data loss from auto-save race conditions. The 300ms debounce can cause changes to be lost if user switches too quickly.
+
+9. **Snapshot Contamination Prevention (v2.5.1):** Modifying `splitNodesAndEdges` requires extreme care. NEVER update snapshot-varying properties (label, color, description) in the shared `.bac4` file. These go in `snapshot.nodeProperties` only.
+
+10. **Edge Data Duplication (v2.5.1):** `direction` belongs in `edge.style.direction`, NOT in `edge.properties.direction`. Extract values before spreading to avoid overwrites.
+
+11. **Auto-Save Timing:** Changes trigger auto-save after 300ms debounce. Users must wait ~1 second before closing files to ensure save completes. Force save is used for critical operations (snapshot switching).
+
 ## Testing Strategy
 
-- **Unit tests:** Use Jest for services, utilities, type conversions
-- **Integration tests:** Test file I/O, migration, graph generation
-- **Manual tests in Obsidian:** Build → symlink → reload → test features
+**See [REGRESSION_TESTING_STRATEGY.md](REGRESSION_TESTING_STRATEGY.md) for comprehensive testing guidelines.**
 
-**Coverage target:** 30%+ (current: 29.65%)
+### Test Levels
+
+1. **Unit Tests:** Use Jest for services, utilities, type conversions
+2. **Integration Tests:** Test file I/O, migration, graph generation, snapshot persistence
+3. **Manual Smoke Tests:** Build → symlink → reload → test critical features
+
+### Pre-Commit Testing Requirements
+
+**MANDATORY before every commit:**
+```bash
+npm test              # All unit tests must pass
+npm run typecheck     # Zero TypeScript errors
+npm run build         # Build must succeed
+```
+
+**Manual smoke test checklist:**
+- ✅ Change node label → save → reload → verify persistence
+- ✅ Change node color → save → reload → verify persistence
+- ✅ Change edge label → save → reload → verify persistence ⭐ CRITICAL
+- ✅ Change edge direction → save → reload → verify persistence
+- ✅ Create snapshot → verify auto-switch and isolation
+- ✅ Edit snapshot → switch snapshots → verify no contamination
+
+### Coverage Targets
+
+| Type | Current | Target |
+|------|---------|--------|
+| Unit Tests | 29.65% | 60% |
+| Integration Tests | ~0% | 40% |
+| Critical Path | ~60% | 100% |
+
+### Critical Tests Required
+
+**Always test these after modifying `file-io-service.ts`:**
+- Node label persistence
+- Node color persistence
+- Node position persistence
+- **Edge label persistence** ⭐
+- **Edge direction persistence** ⭐
+- Snapshot isolation (no contamination)
+- File round-trip (save/load cycle)
 
 ## Documentation
 
+### User Documentation
 - `README.md` - User-facing features and installation
+- `ROADMAP.md` - Strategic product roadmap
+
+### Developer Documentation
+- `CLAUDE.md` - This file - Development guidelines for AI assistants
+- `COMPREHENSIVE_EDITOR_SPECIFICATION.md` - Complete rebuild specification (v3.0.0)
 - `docs/V2.5_REFACTOR_PLAN.md` - v2.5.0 architectural changes
 - `docs/V2.5_QUICK_REFERENCE.md` - Developer quick reference
 - `docs/V2.5_TESTING_GUIDE.md` - Testing procedures
+
+### Testing & Quality
+- `REGRESSION_TESTING_STRATEGY.md` - Comprehensive regression testing guidelines ⭐ NEW
+- `EDGE_LABEL_TEST.md` - Edge label persistence testing procedure ⭐ NEW
+
+### Architecture & Planning
 - `docs/GRAPH_VIEW_ROADMAP.md` - Graph view feature roadmap
 - `docs/WARDLEY_MAPPING_PLAN.md` - Wardley Mapping implementation plan
+
+### Session Documentation (Historical)
+- `SNAPSHOT_FIXES_IMPLEMENTED.md` - v2.5.1 snapshot isolation fixes
+- `FILE_RENAME_BUG_FIXED.md` - File rename bug resolution
+- `SNAPSHOT_SWITCHING_BUG_FIXED.md` - Snapshot switching fixes
+- `V3.0.0_INTEGRATION_COMPLETE.md` - v3.0.0 migration documentation
 
 ## Release Process
 
@@ -403,3 +584,64 @@ See **[ROADMAP.md](ROADMAP.md)** for the complete strategic product roadmap.
 - Mobile apps with offline support
 - AI pair programming for architecture
 - Real-time collaborative diagramming
+
+---
+
+## Critical Bug Fixes (v2.5.1)
+
+### Snapshot Color Contamination (FIXED 2025-10-24)
+
+**Problem:** Changing node colors in one snapshot contaminated other snapshots.
+
+**Root Cause:** `splitNodesAndEdges` was updating snapshot-varying properties (label, color, description) in the shared `.bac4` file, which then became the fallback for other snapshots.
+
+**Fix:** Modified `splitNodesAndEdges` to:
+- Store snapshot-varying properties ONLY in `snapshot.nodeProperties`
+- Update ONLY invariant properties (technology, team, knowledge, metrics) in shared `.bac4` file
+- Prevent any contamination between snapshots
+
+**Files Changed:** `src/services/file-io-service.ts` (lines 374-430)
+
+**Testing:** See `SNAPSHOT_FIXES_IMPLEMENTED.md` for detailed test procedures
+
+---
+
+### Edge Label Persistence (FIXED 2025-10-24)
+
+**Problem:** Edge label changes may not persist correctly after file reload.
+
+**Root Cause:**
+- Data duplication: `direction` stored in both `edge.properties` and `edge.style`
+- Object spread ordering: `...edge.properties` could overwrite explicitly set values
+- Confusion about which field contains which data
+
+**Fix:** Modified edge save/load logic to:
+- Extract `label`, `direction`, and `style` explicitly before spreading
+- Store `direction` ONLY in `edge.style.direction`
+- Store `label` and `style` (path style) ONLY in `edge.properties`
+- Eliminate data duplication
+
+**Files Changed:** `src/services/file-io-service.ts` (lines 336-363, 488-523)
+
+**Testing:** See `EDGE_LABEL_TEST.md` and `REGRESSION_TESTING_STRATEGY.md`
+
+---
+
+## Prevention Strategy
+
+**To prevent future regressions:**
+
+1. **Always run tests before committing:**
+   ```bash
+   npm test && npm run typecheck && npm run build
+   ```
+
+2. **Follow the pre-commit checklist:** See `REGRESSION_TESTING_STRATEGY.md`
+
+3. **Test file I/O after changes:** Any modification to `file-io-service.ts`, `splitNodesAndEdges`, or `mergeNodesAndLayout` requires full persistence testing
+
+4. **Use the critical patterns:** Follow patterns #6 (Snapshot Isolation) and #7 (Edge Data Handling) exactly
+
+5. **Reference regression strategy:** Before making changes, consult `REGRESSION_TESTING_STRATEGY.md` for impact analysis
+
+**Key Principle:** No code changes without tests. Every feature must have unit tests, integration tests, and manual smoke tests.
