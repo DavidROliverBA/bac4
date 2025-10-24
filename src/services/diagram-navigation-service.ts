@@ -285,10 +285,15 @@ export class DiagramNavigationService {
       const parentContent = await this.plugin.app.vault.adapter.read(parentPath);
       const parentData = JSON.parse(parentContent);
 
-      // Extract nodes (v1.0.0 uses timeline snapshots, legacy uses root-level nodes)
+      // Extract nodes (format detection: v2.5.0, v1.0.0, or legacy)
       let nodes: Array<{ id: string; data?: { linkedDiagramPath?: string } }>;
 
-      if (parentData.timeline) {
+      if (parentData.version === '2.5.0') {
+        // ✅ v2.5.0 dual-file format - nodes are stored as object in .bac4 file
+        // Convert { "node-1": {...}, "node-2": {...} } to array
+        nodes = Object.values(parentData.nodes || {}) as any[];
+        console.log('BAC4 NavService: Using v2.5.0 dual-file format');
+      } else if (parentData.timeline) {
         // v1.0.0 format - get working snapshot (first in order)
         const workingSnapshotId = parentData.timeline.snapshotOrder?.[0];
         const workingSnapshot = parentData.timeline.snapshots?.find((s: { id: string }) => s.id === workingSnapshotId);
@@ -301,7 +306,7 @@ export class DiagramNavigationService {
         nodes = workingSnapshot.nodes || [];
         console.log('BAC4 NavService: Using v1.0.0 timeline format, working snapshot:', workingSnapshotId);
       } else {
-        // Legacy format
+        // Legacy format (v0.x)
         nodes = parentData.nodes || [];
         console.log('BAC4 NavService: Using legacy format');
       }
@@ -360,13 +365,16 @@ export class DiagramNavigationService {
           // Extract nodes based on format
           let nodes: Array<{ data?: { linkedDiagramPath?: string } }> = [];
 
-          if (data.timeline) {
+          if (data.version === '2.5.0') {
+            // ✅ v2.5.0 dual-file format - nodes are stored as object
+            nodes = Object.values(data.nodes || {}) as any[];
+          } else if (data.timeline) {
             // v1.0.0 format - get working snapshot (first in order)
             const workingSnapshotId = data.timeline.snapshotOrder?.[0];
             const workingSnapshot = data.timeline.snapshots?.find((s: { id: string }) => s.id === workingSnapshotId);
             nodes = workingSnapshot?.nodes || [];
           } else {
-            // Legacy format
+            // Legacy format (v0.x)
             nodes = data.nodes || [];
           }
 

@@ -58,6 +58,7 @@ export function useFileOperations(props: UseFileOperationsProps): void {
     filePath,
     nodes,
     edges,
+    timeline,
     annotations,
     setNodes,
     setEdges,
@@ -93,6 +94,77 @@ export function useFileOperations(props: UseFileOperationsProps): void {
       try {
         console.log('BAC4 v2.5: Starting auto-save to', filePath);
 
+        // ✅ FIX: Sync new snapshots from v1 timeline to v2.5 graphFileRef
+        // timeline.snapshots is v1 format (from React state)
+        // graphFileRef.timeline.snapshots is v2.5 format (for disk)
+        // We need to convert any NEW v1 snapshots to v2.5 and add them
+        if (timeline && graphFileRef.current) {
+          const existingSnapshotIds = new Set(
+            graphFileRef.current.timeline.snapshots.map(s => s.id)
+          );
+
+          // Find new snapshots that don't exist in graphFileRef yet
+          const newSnapshots = timeline.snapshots.filter(
+            s => !existingSnapshotIds.has(s.id)
+          );
+
+          // Convert new v1 snapshots to v2.5 format
+          const newV2Snapshots = newSnapshots.map(v1Snapshot => {
+            // Build layout from v1 nodes
+            const layout: Record<string, any> = {};
+            for (const node of v1Snapshot.nodes) {
+              layout[node.id] = {
+                x: node.position.x,
+                y: node.position.y,
+                width: node.width || 200,
+                height: node.height || 100,
+                locked: false,
+              };
+            }
+
+            // Convert v1 edges to v2.5 edges
+            const v2Edges = v1Snapshot.edges.map((edge: any) => ({
+              id: edge.id,
+              source: edge.source,
+              target: edge.target,
+              type: edge.type || 'default',
+              properties: { label: edge.data?.label, ...edge.data },
+              style: {
+                direction: edge.data?.direction || 'right',
+                lineType: 'solid',
+                color: edge.style?.stroke || '#888888',
+                markerEnd: edge.markerEnd || 'arrowclosed',
+              },
+              handles: {
+                sourceHandle: edge.sourceHandle || 'right',
+                targetHandle: edge.targetHandle || 'left',
+              },
+            }));
+
+            return {
+              id: v1Snapshot.id,
+              label: v1Snapshot.label,
+              timestamp: v1Snapshot.timestamp,
+              description: v1Snapshot.description,
+              created: v1Snapshot.createdAt,
+              layout,
+              edges: v2Edges,
+              groups: [],
+              annotations: v1Snapshot.annotations || [],
+            };
+          });
+
+          // Update graphFileRef with new snapshots
+          graphFileRef.current = {
+            ...graphFileRef.current,
+            timeline: {
+              snapshots: [...graphFileRef.current.timeline.snapshots, ...newV2Snapshots],
+              currentSnapshotId: timeline.currentSnapshotId,
+              snapshotOrder: timeline.snapshotOrder,
+            },
+          };
+        }
+
         // Split React Flow data back to v2.5.0 format
         const { nodeFile, graphFile } = splitNodesAndEdges(
           nodes,
@@ -104,6 +176,11 @@ export function useFileOperations(props: UseFileOperationsProps): void {
         // Update refs with latest data
         nodeFileRef.current = nodeFile;
         graphFileRef.current = graphFile;
+
+        // ✅ FIX: Update graphFile metadata to match current filename
+        // This prevents creating duplicate files when diagram is renamed
+        const fileName = filePath.split('/').pop() || filePath;
+        graphFile.metadata.nodeFile = fileName;
 
         // Write both files
         await writeDiagram(plugin.app.vault, filePath, nodeFile, graphFile);
@@ -123,7 +200,7 @@ export function useFileOperations(props: UseFileOperationsProps): void {
     return () => {
       clearTimeout(saveTimeout);
     };
-  }, [nodes, edges, annotations, filePath, plugin]);
+  }, [nodes, edges, annotations, timeline, filePath, plugin]);
 
   /**
    * Validate linked files and cleanup broken references

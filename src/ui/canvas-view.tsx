@@ -27,19 +27,13 @@ import { MarketNode } from './nodes/MarketNode';
 import { OrganisationNode } from './nodes/OrganisationNode';
 import { CodeNode } from './nodes/CodeNode';
 import { GraphNode } from './nodes/GraphNode';
-import { WardleyComponentNode } from './nodes/WardleyComponentNode';
-import { WardleyInertiaNode } from './nodes/WardleyInertiaNode';
 import { DirectionalEdge } from './edges/DirectionalEdge';
-import { WardleyEdge } from './edges/WardleyEdge';
 import { ComponentPalette } from './components/ComponentPalette';
 import { PropertyPanel } from './components/PropertyPanel';
-import { WardleyPropertyPanel } from './components/WardleyPropertyPanel';
 import { UnifiedToolbar } from './components/UnifiedToolbar';
-import { WardleyToolbar } from './components/WardleyToolbar';
 import { TimelineToolbar } from './components/TimelineToolbar';
 import { NavigationControls } from './components/NavigationControls';
 import { NavigationBreadcrumbs } from './components/NavigationBreadcrumbs';
-import { WardleyCanvas } from './canvas/WardleyCanvas';
 import { AddSnapshotModal } from './components/AddSnapshotModal';
 import { SnapshotManagerModal } from './components/SnapshotManager';
 import { AnnotationType } from './components/AnnotationPalette';
@@ -91,8 +85,6 @@ const nodeTypes: NodeTypes = {
   organisation: OrganisationNode,          // v2.0.0: Layer 2 - Business units
   code: CodeNode,                          // v2.0.0: Layer 7 - Implementation
   graph: GraphNode,
-  'wardley-component': WardleyComponentNode,  // v2.5.0: Wardley Map components
-  'wardley-inertia': WardleyInertiaNode,      // v2.5.0: Wardley Map inertia barriers
 };
 
 // Custom edge types mapping
@@ -100,7 +92,6 @@ const nodeTypes: NodeTypes = {
 // yourEdgeType: YourEdgeComponent,
 const edgeTypes: EdgeTypes = {
   directional: DirectionalEdge,
-  wardley: WardleyEdge,  // v2.5.0: Straight diagonal edges for Wardley Maps
 };
 // </AI_MODIFIABLE>
 
@@ -532,14 +523,42 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath, view }) =
     (snapshotId: string) => {
       if (!timeline) return;
 
-      const result = TimelineService.switchSnapshot(snapshotId, timeline);
+      // ✅ FIX: Save current canvas state to current snapshot BEFORE switching
+      // This prevents losing nodes when switching between snapshots
+      const currentSnapshotIndex = timeline.snapshots.findIndex(
+        (s) => s.id === timeline.currentSnapshotId
+      );
+
+      let updatedTimeline = timeline;
+      if (currentSnapshotIndex !== -1) {
+        console.log('BAC4: Saving current canvas state before switching', {
+          currentSnapshot: timeline.currentSnapshotId,
+          nodeCount: nodes.length,
+          edgeCount: edges.length,
+        });
+
+        const updatedSnapshots = [...timeline.snapshots];
+        updatedSnapshots[currentSnapshotIndex] = {
+          ...updatedSnapshots[currentSnapshotIndex],
+          nodes: JSON.parse(JSON.stringify(nodes)), // Deep copy
+          edges: JSON.parse(JSON.stringify(edges)), // Deep copy
+          annotations: JSON.parse(JSON.stringify(annotations)), // Deep copy
+        };
+
+        updatedTimeline = {
+          ...timeline,
+          snapshots: updatedSnapshots,
+        };
+      }
+
+      const result = TimelineService.switchSnapshot(snapshotId, updatedTimeline);
       let updatedNodes = result.nodes;
       let updatedEdges = result.edges;
 
       // Apply change detection if enabled
       if (showChanges && baseSnapshotId && baseSnapshotId !== snapshotId) {
-        const baseSnapshot = TimelineService.getSnapshotById(baseSnapshotId, timeline);
-        const currentSnapshot = TimelineService.getSnapshotById(snapshotId, timeline);
+        const baseSnapshot = TimelineService.getSnapshotById(baseSnapshotId, updatedTimeline);
+        const currentSnapshot = TimelineService.getSnapshotById(snapshotId, updatedTimeline);
 
         if (baseSnapshot && currentSnapshot) {
           const changes = ChangeDetectionService.compareSnapshots(
@@ -580,15 +599,15 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath, view }) =
       setEdges(updatedEdges);
       setAnnotations(result.annotations);
 
-      // Update timeline's currentSnapshotId
+      // Update timeline's currentSnapshotId (use updatedTimeline which has saved state)
       setTimeline({
-        ...timeline,
+        ...updatedTimeline,
         currentSnapshotId: snapshotId,
       });
 
       console.log('BAC4: Switched to snapshot:', snapshotId);
     },
-    [timeline, setNodes, setEdges, setAnnotations, showChanges, baseSnapshotId]
+    [timeline, nodes, edges, annotations, setNodes, setEdges, setAnnotations, showChanges, baseSnapshotId]
   );
 
   const handleAddSnapshot = React.useCallback(() => {
@@ -842,62 +861,11 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath, view }) =
   }, [selectedAnnotationId, annotations]);
 
   /**
-   * Wardley Map Handlers (v2.5.0)
+   * Wardley Map Handlers (v2.5.0) - DISABLED
+   * Wardley Map support removed in v3.0.0
    */
-  const handleAddWardleyComponent = React.useCallback(() => {
-    if (!mousePosition) {
-      console.warn('BAC4: No mouse position available for Wardley component');
-      return;
-    }
-
-    const nodeId = `wardley-component-${Date.now()}`;
-    const newNode: Node<CanvasNodeData> = {
-      id: nodeId,
-      type: 'wardley-component',
-      position: mousePosition,
-      data: {
-        label: 'New Component',
-        description: '',
-        wardley: {
-          visibility: 0.5,
-          evolution: 0.5,
-          evolutionStage: 'product',
-          inertia: false,
-        },
-      },
-    };
-
-    setNodes((nds) => [...nds, newNode]);
-    console.log('BAC4: Added Wardley component:', nodeId);
-  }, [mousePosition, setNodes]);
-
-  const handleAddWardleyInertia = React.useCallback(() => {
-    if (!mousePosition) {
-      console.warn('BAC4: No mouse position available for Wardley inertia');
-      return;
-    }
-
-    const nodeId = `wardley-inertia-${Date.now()}`;
-    const newNode: Node<CanvasNodeData> = {
-      id: nodeId,
-      type: 'wardley-inertia',
-      position: mousePosition,
-      data: {
-        label: 'Inertia Barrier',
-        description: '',
-        wardley: {
-          inertiaReason: 'Resistance to change',
-          visibility: 0,
-          evolution: 0,
-          evolutionStage: 'genesis',
-          inertia: true,
-        },
-      },
-    };
-
-    setNodes((nds) => [...nds, newNode]);
-    console.log('BAC4: Added Wardley inertia barrier:', nodeId);
-  }, [mousePosition, setNodes]);
+  // const handleAddWardleyComponent = React.useCallback(() => { ... }, []);
+  // const handleAddWardleyInertia = React.useCallback(() => { ... }, []);
 
   return (
     <div
@@ -953,22 +921,11 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath, view }) =
         />
       )}
 
-      {/* Wardley Toolbar (v2.5.0 - shows when diagram type is wardley) */}
+      {/* Wardley Toolbar - DISABLED in v3.0.0
       {diagramType === 'wardley' && (
-        <WardleyToolbar
-          showAxes={showWardleyAxes}
-          onToggleAxes={() => setShowWardleyAxes((prev) => !prev)}
-          showGrid={showWardleyGrid}
-          onToggleGrid={() => setShowWardleyGrid((prev) => !prev)}
-          onAddComponent={handleAddWardleyComponent}
-          onAddInertia={handleAddWardleyInertia}
-          backgroundImage={wardleyBackgroundImage}
-          backgroundOpacity={wardleyBackgroundOpacity}
-          onSetBackgroundImage={setWardleyBackgroundImage}
-          onClearBackgroundImage={() => setWardleyBackgroundImage(undefined)}
-          onSetBackgroundOpacity={setWardleyBackgroundOpacity}
-        />
+        <WardleyToolbar ... />
       )}
+      */}
 
       {/* React Flow Canvas */}
       <div
@@ -1105,16 +1062,11 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath, view }) =
           />
         )}
 
-        {/* Wardley Canvas Overlay (v2.5.0 - Axes, Grid, Background Image) */}
+        {/* Wardley Canvas Overlay - DISABLED in v3.0.0
         {diagramType === 'wardley' && (
-          <WardleyCanvas
-            showAxes={showWardleyAxes}
-            showGrid={showWardleyGrid}
-            axesOpacity={0.6}
-            backgroundImage={wardleyBackgroundImage}
-            backgroundOpacity={wardleyBackgroundOpacity}
-          />
+          <WardleyCanvas ... />
         )}
+        */}
 
         {/* Annotation Overlay (v1.0.0) */}
         <AnnotationOverlay
@@ -1178,14 +1130,11 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath, view }) =
           showNavigateToParent={navigationIconVisibility.showMinus}
         />
 
-        {/* Wardley Property Panel (v2.5.0 - Extends PropertyPanel for Wardley nodes) */}
+        {/* Wardley Property Panel - DISABLED in v3.0.0
         {selectedNode && (selectedNode.type === 'wardley-component' || selectedNode.type === 'wardley-inertia') && (
-          <WardleyPropertyPanel
-            node={selectedNode as any}
-            onUpdateProperties={nodeHandlers.updateNodeProperties}
-            visible={true}
-          />
+          <WardleyPropertyPanel ... />
         )}
+        */}
       </div>
     </div>
   );
@@ -1204,6 +1153,8 @@ export class BAC4CanvasView extends ItemView {
   // Canvas state accessors (set by React component for export feature)
   private nodesGetter: (() => Node<CanvasNodeData>[]) | null = null;
   private edgesGetter: (() => Edge[]) | null = null;
+  // Event reference for file rename
+  private renameEventRef: any = null;
 
   constructor(leaf: WorkspaceLeaf, plugin: BAC4Plugin, filePath?: string) {
     super(leaf);
@@ -1461,11 +1412,32 @@ export class BAC4CanvasView extends ItemView {
     container.style.position = 'relative';
     container.style.overflow = 'hidden';
 
+    // ✅ FIX: Register file rename event listener
+    this.renameEventRef = this.app.vault.on('rename', (file, oldPath) => {
+      // Check if this view's file was renamed
+      if (this.filePath === oldPath) {
+        console.log('BAC4CanvasView: File renamed from', oldPath, 'to', file.path);
+        this.filePath = file.path;
+        this.file = file as TFile;
+
+        // ✅ DON'T re-render! Just update the path.
+        // The diagram data is already loaded in memory.
+        // Re-rendering would cause reload and race with graph file rename.
+        // Auto-save will use the updated filePath automatically.
+      }
+    });
+
     // Render canvas (will create React root internally)
     this.renderCanvas();
   }
 
   async onClose(): Promise<void> {
+    // ✅ FIX: Unregister rename event listener
+    if (this.renameEventRef) {
+      this.app.vault.offref(this.renameEventRef);
+      this.renameEventRef = null;
+    }
+
     // Unmount React component
     if (this.root) {
       this.root.unmount();

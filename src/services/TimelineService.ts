@@ -68,10 +68,11 @@ export class TimelineService {
 			annotations: JSON.parse(JSON.stringify(annotations)), // Deep copy
 		};
 
-		// Update timeline
+		// Update timeline - STAY ON CURRENT SNAPSHOT (don't auto-switch)
+		// The new snapshot is created in the background for comparison
 		const updatedTimeline: Timeline = {
 			snapshots: [...currentTimeline.snapshots, snapshot],
-			currentSnapshotId: snapshot.id, // Switch to new snapshot
+			currentSnapshotId: currentTimeline.currentSnapshotId, // ✅ Stay on current, don't switch
 			snapshotOrder: [...currentTimeline.snapshotOrder, snapshot.id],
 		};
 

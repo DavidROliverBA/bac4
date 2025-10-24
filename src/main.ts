@@ -8,6 +8,8 @@ import {
 } from './core/constants';
 import { BAC4SettingsTab } from './ui/settings-tab';
 import { BAC4CanvasView } from './ui/canvas-view';
+import { BAC4CanvasViewV3, VIEW_TYPE_CANVAS_V3 } from './ui/canvas-view-v3';
+import { NodeExplorerView, VIEW_TYPE_NODE_EXPLORER } from './ui/views/NodeExplorerView';
 import { hasBac4Diagram } from './utils/frontmatter-parser';
 import { TimelineService } from './services/TimelineService';
 import { NodeRegistryService } from './services/node-registry-service';
@@ -15,6 +17,11 @@ import { AIValidationService } from './services/ai-validation-service';
 import { ArchitectureAnalyzerService } from './services/architecture-analyzer-service';
 import { AISuggestionsService } from './services/ai-suggestions-service';
 import { KeyboardShortcutsService } from './services/keyboard-shortcuts-service';
+
+// v3.0.0 Services
+import { GraphServiceV3 } from './services/graph-service-v3';
+import { DiagramServiceV3 } from './services/diagram-service-v3';
+import { createEmptyDiagramV3 } from './types/graph-v3-types';
 import './styles.css';
 import '../styles/navigation.css';
 import '../styles/accessibility.css';
@@ -79,8 +86,16 @@ export default class BAC4Plugin extends Plugin {
     await registry.initialize(this.app.vault);
     console.log('BAC4: Node registry initialized with', registry.getUniqueNodeCount(), 'unique node names');
 
-    // Register canvas view
+    // Register canvas view (legacy)
     this.registerView(VIEW_TYPE_CANVAS, (leaf: WorkspaceLeaf) => new BAC4CanvasView(leaf, this));
+
+    // Register v3.0.0 canvas view
+    this.registerView(VIEW_TYPE_CANVAS_V3, (leaf: WorkspaceLeaf) => new BAC4CanvasViewV3(leaf, this));
+    console.log('BAC4: Registered v3.0.0 canvas view');
+
+    // Register Node Explorer view
+    this.registerView(VIEW_TYPE_NODE_EXPLORER, (leaf: WorkspaceLeaf) => new NodeExplorerView(leaf, this));
+    console.log('BAC4: Registered Node Explorer view');
 
     // Register .bac4 file extension to open with canvas view
     this.registerExtensions(['bac4'], VIEW_TYPE_CANVAS);
@@ -117,9 +132,31 @@ export default class BAC4Plugin extends Plugin {
       this.app.workspace.on('file-open', async (file) => {
         if (!file) return;
 
-        // Handle .bac4 files - log for debugging
+        // Handle .bac4 files - detect version and route to correct view
         if (file.extension === 'bac4') {
           console.log('BAC4: file-open event for', file.path);
+
+          try {
+            const content = await this.app.vault.read(file as TFile);
+            const data = JSON.parse(content);
+
+            // Check if v3.0.0 format
+            if (data.version === '3.0.0') {
+              console.log('BAC4: Detected v3.0.0 format, routing to v3 canvas view');
+
+              // Get active leaf
+              const activeLeaf = this.app.workspace.activeLeaf;
+              if (activeLeaf && activeLeaf.view.getViewType() !== VIEW_TYPE_CANVAS_V3) {
+                // Switch to v3.0.0 canvas view
+                await activeLeaf.setViewState({
+                  type: VIEW_TYPE_CANVAS_V3,
+                  state: { filePath: file.path },
+                });
+              }
+            }
+          } catch (error) {
+            console.error('BAC4: Error detecting file version:', error);
+          }
         }
 
         // Handle .md files - check for BAC4 diagram frontmatter
@@ -389,11 +426,13 @@ export default class BAC4Plugin extends Plugin {
 
     // Get dashboard path from settings
     const contextPath = this.settings.dashboardPath;
+    const contextGraphPath = contextPath.replace('.bac4', '.bac4-graph');
 
-    // Check if Context diagram exists
+    // ✅ FIX: Check if BOTH Context diagram files exist
     const contextExists = await this.app.vault.adapter.exists(contextPath);
+    const contextGraphExists = await this.app.vault.adapter.exists(contextGraphPath);
 
-    if (!contextExists) {
+    if (!contextExists || !contextGraphExists) {
       console.log('BAC4: Context diagram does not exist, creating at:', contextPath);
 
       // Create directory if needed
@@ -406,20 +445,15 @@ export default class BAC4Plugin extends Plugin {
         }
       }
 
-      // Create empty Context diagram (v1.0.0 format with timeline)
-      const now = new Date().toISOString();
-      const initialTimeline = TimelineService.createInitialTimeline([], [], 'Current');
-      const emptyDiagram = {
-        version: '1.0.0',
-        metadata: {
-          diagramType: 'context',
-          createdAt: now,
-          updatedAt: now,
-        },
-        timeline: initialTimeline,
-      };
-      await this.app.vault.adapter.write(contextPath, JSON.stringify(emptyDiagram, null, 2));
-      console.log('BAC4: Created empty Context diagram with v1.0.0 format');
+      // Create empty Context diagram (v2.5.0 dual-file format)
+      const { createDefaultBAC4File, createDefaultGraphFile } = await import('./types/bac4-v2-types');
+      const { writeDiagram } = await import('./services/file-io-service');
+
+      const nodeFile = createDefaultBAC4File('Context', 'context', 'context');
+      const graphFile = createDefaultGraphFile('Context.bac4', 'Context', 'c4-context');
+
+      await writeDiagram(this.app.vault, contextPath, nodeFile, graphFile);
+      console.log('BAC4: Created empty Context diagram with v2.5.0 dual-file format');
     }
 
     // Open Context diagram (v0.6.0: No registration needed, self-contained diagrams)
@@ -550,31 +584,33 @@ export default class BAC4Plugin extends Plugin {
       // Use simple "Untitled" name, add number if file exists
       let fileName = 'Untitled.bac4';
       let fullPath = `BAC4/${fileName}`;
+      let graphPath = `BAC4/${fileName.replace('.bac4', '.bac4-graph')}`;
       let counter = 1;
 
-      while (this.app.vault.getAbstractFileByPath(fullPath)) {
+      // ✅ FIX: Use adapter.exists() to check filesystem directly (handles case-insensitive FS)
+      while (
+        await this.app.vault.adapter.exists(fullPath) ||
+        await this.app.vault.adapter.exists(graphPath)
+      ) {
         counter++;
         fileName = `Untitled ${counter}.bac4`;
         fullPath = `BAC4/${fileName}`;
+        graphPath = `BAC4/${fileName.replace('.bac4', '.bac4-graph')}`;
       }
 
       console.log('BAC4: Creating new diagram file:', fullPath);
 
-      // Create in BAC4 folder
-      // v1.0.0 format with timeline
-      const now = new Date().toISOString();
-      const initialTimeline = TimelineService.createInitialTimeline([], [], 'Current');
-      const initialData = {
-        version: '1.0.0',
-        metadata: {
-          diagramType: 'context',
-          createdAt: now,
-          updatedAt: now,
-        },
-        timeline: initialTimeline,
-      };
+      // Create in BAC4 folder (v2.5.0 dual-file format)
+      const { createDefaultBAC4File, createDefaultGraphFile } = await import('./types/bac4-v2-types');
+      const { writeDiagram } = await import('./services/file-io-service');
 
-      const file = await this.app.vault.create(fullPath, JSON.stringify(initialData, null, 2));
+      const nodeFile = createDefaultBAC4File(fileName.replace('.bac4', ''), 'context', 'context');
+      const graphFile = createDefaultGraphFile(fileName, fileName.replace('.bac4', ''), 'c4-context');
+
+      await writeDiagram(this.app.vault, fullPath, nodeFile, graphFile);
+
+      // Get the file reference for opening
+      const file = this.app.vault.getAbstractFileByPath(fullPath) as TFile;
 
       // Open the file directly (v0.6.0: No registration needed, self-contained diagrams)
       const leaf = workspace.getLeaf(false);
@@ -690,12 +726,39 @@ export default class BAC4Plugin extends Plugin {
       },
     });
 
-    // Wardley Map Command (v2.5.0)
+    // ========================================================================
+    // v3.0.0 Commands - Global Graph Architecture
+    // ========================================================================
+
     this.addCommand({
-      id: 'bac4-create-wardley-map',
-      name: 'Create New Wardley Map',
+      id: 'bac4-create-context-diagram-v3',
+      name: 'Create New Context Diagram (v3.0.0)',
       callback: async () => {
-        await this.createNewDiagram('wardley');
+        await this.createNewDiagramV3('context');
+      },
+    });
+
+    this.addCommand({
+      id: 'bac4-create-container-diagram-v3',
+      name: 'Create New Container Diagram (v3.0.0)',
+      callback: async () => {
+        await this.createNewDiagramV3('container');
+      },
+    });
+
+    this.addCommand({
+      id: 'bac4-create-component-diagram-v3',
+      name: 'Create New Component Diagram (v3.0.0)',
+      callback: async () => {
+        await this.createNewDiagramV3('component');
+      },
+    });
+
+    this.addCommand({
+      id: 'bac4-open-node-explorer',
+      name: 'Open Node Explorer (v3.0.0)',
+      callback: async () => {
+        await this.openNodeExplorer();
       },
     });
 
@@ -794,15 +857,15 @@ export default class BAC4Plugin extends Plugin {
   }
 
   /**
-   * Create a new diagram of a specific type
+   * Create a new diagram of a specific type (v2.5.0 dual-file format)
    *
-   * v2.0.0: Creates diagrams for any of the 7 layers
-   * v2.5.0: Added Wardley Map support
+   * Creates diagrams for any of the 7 layers using v2.5.0 format
+   * Note: For v3.0.0 global graph architecture, use createNewDiagramV3()
    *
    * @param diagramType - Type of diagram to create
    */
   private async createNewDiagram(
-    diagramType: 'market' | 'organisation' | 'capability' | 'context' | 'container' | 'component' | 'code' | 'wardley'
+    diagramType: 'market' | 'organisation' | 'capability' | 'context' | 'container' | 'component' | 'code'
   ): Promise<void> {
     console.log('BAC4 v2.5: Creating new diagram:', diagramType);
 
@@ -816,12 +879,18 @@ export default class BAC4Plugin extends Plugin {
     const typeLabel = diagramType.charAt(0).toUpperCase() + diagramType.slice(1);
     let fileName = `New ${typeLabel}.bac4`;
     let filePath = `BAC4/${fileName}`;
+    let graphPath = `BAC4/${fileName.replace('.bac4', '.bac4-graph')}`;
     let counter = 1;
 
-    while (this.app.vault.getAbstractFileByPath(filePath)) {
+    // ✅ FIX: Use adapter.exists() to check filesystem directly (handles case-insensitive FS)
+    while (
+      await this.app.vault.adapter.exists(filePath) ||
+      await this.app.vault.adapter.exists(graphPath)
+    ) {
       counter++;
       fileName = `New ${typeLabel} ${counter}.bac4`;
       filePath = `BAC4/${fileName}`;
+      graphPath = `BAC4/${fileName.replace('.bac4', '.bac4-graph')}`;
     }
 
     console.log('BAC4 v2.5: Creating diagram files:', filePath);
@@ -839,7 +908,7 @@ export default class BAC4Plugin extends Plugin {
     const graphFile = createDefaultGraphFile(
       fileName,
       `New ${typeLabel}`,
-      diagramType === 'wardley' ? 'wardley' : 'c4-context'
+      'c4-context'
     );
 
     await writeDiagram(this.app.vault, filePath, nodeFile, graphFile);
@@ -849,6 +918,98 @@ export default class BAC4Plugin extends Plugin {
     await this.openCanvasView(filePath);
 
     new Notice(`Created ${fileName}`);
+  }
+
+  /**
+   * Create a new v3.0.0 diagram
+   *
+   * v3.0.0: Creates diagrams using global graph architecture
+   * - Initializes __graph__.json if needed
+   * - Creates .bac4 file as view into global nodes
+   * - Opens in v3.0.0 canvas view
+   *
+   * @param diagramType - Type of diagram to create
+   */
+  private async createNewDiagramV3(
+    diagramType: 'context' | 'container' | 'component'
+  ): Promise<void> {
+    console.log('BAC4 v3.0.0: Creating new diagram:', diagramType);
+
+    try {
+      // Initialize __graph__.json if needed
+      const graphService = new GraphServiceV3(this.app.vault);
+      await graphService.initialize();
+      console.log('BAC4 v3.0.0: Graph initialized');
+
+      // Ensure BAC4 directory exists
+      if (!(await this.app.vault.adapter.exists('BAC4'))) {
+        console.log('BAC4 v3.0.0: Creating BAC4 directory');
+        await this.app.vault.createFolder('BAC4');
+      }
+
+      // Generate unique file name
+      const typeLabel = diagramType.charAt(0).toUpperCase() + diagramType.slice(1);
+      let fileName = `New ${typeLabel}.bac4`;
+      let filePath = `BAC4/${fileName}`;
+      let counter = 1;
+
+      while (this.app.vault.getAbstractFileByPath(filePath)) {
+        counter++;
+        fileName = `New ${typeLabel} ${counter}.bac4`;
+        filePath = `BAC4/${fileName}`;
+      }
+
+      console.log('BAC4 v3.0.0: Creating diagram file:', filePath);
+
+      // Create diagram using v3.0.0 service
+      const diagramService = new DiagramServiceV3(this.app.vault);
+      await diagramService.createDiagram(filePath, `New ${typeLabel}`, diagramType);
+      console.log('BAC4 v3.0.0: Diagram created');
+
+      // Open in v3.0.0 canvas view
+      const file = this.app.vault.getAbstractFileByPath(filePath);
+      if (file) {
+        const leaf = this.app.workspace.getLeaf();
+        await leaf.setViewState({
+          type: VIEW_TYPE_CANVAS_V3,
+          state: { filePath: filePath },
+        });
+        this.app.workspace.setActiveLeaf(leaf, { focus: true });
+      }
+
+      new Notice(`Created ${fileName} (v3.0.0)`);
+    } catch (error) {
+      console.error('BAC4 v3.0.0: Error creating diagram:', error);
+      new Notice('Error creating diagram: ' + error.message);
+    }
+  }
+
+  /**
+   * Open Node Explorer view (v3.0.0)
+   *
+   * Opens a vault-wide view of all nodes from __graph__.json
+   * Shows relationships, usage stats, and allows bulk operations.
+   */
+  private async openNodeExplorer(): Promise<void> {
+    console.log('BAC4 v3.0.0: Opening Node Explorer...');
+
+    // Check if already open
+    const existingLeaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_NODE_EXPLORER);
+    if (existingLeaves.length > 0) {
+      console.log('BAC4 v3.0.0: Node Explorer already open, activating');
+      this.app.workspace.setActiveLeaf(existingLeaves[0], { focus: true });
+      return;
+    }
+
+    // Open in new leaf
+    const leaf = this.app.workspace.getLeaf('tab');
+    await leaf.setViewState({
+      type: VIEW_TYPE_NODE_EXPLORER,
+      active: true,
+    });
+
+    this.app.workspace.setActiveLeaf(leaf, { focus: true });
+    console.log('BAC4 v3.0.0: Node Explorer opened');
   }
 
   /**
