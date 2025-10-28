@@ -1,0 +1,373 @@
+/**
+ * Layout Selector Styles
+ *
+ * Dropdown UI for switching between multiple presentation layouts
+ *
+ * @version 2.6.0
+ */
+
+/* ============================================================================
+   Layout Selector Button
+   ========================================================================= */
+
+.bac4-layout-selector {
+  position: relative;
+  display: inline-block;
+}
+
+.bac4-layout-selector-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  background-color: var(--background-primary);
+  color: var(--text-normal);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.bac4-layout-selector-button:hover {
+  background-color: var(--background-modifier-hover);
+  border-color: var(--interactive-accent);
+}
+
+.bac4-layout-selector-button:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
+}
+
+.bac4-layout-selector-icon {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.bac4-layout-selector-title {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bac4-layout-selector-arrow {
+  color: var(--text-muted);
+  font-size: 10px;
+  transition: transform 0.2s ease;
+}
+
+.bac4-layout-selector-button[aria-expanded='true'] .bac4-layout-selector-arrow {
+  transform: rotate(180deg);
+}
+
+/* ============================================================================
+   Dropdown Menu
+   ========================================================================= */
+
+.bac4-layout-selector-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: 280px;
+  max-width: 400px;
+  padding: 8px;
+  background-color: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  animation: bac4-dropdown-slide-in 0.2s ease-out;
+}
+
+@keyframes bac4-dropdown-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.bac4-layout-selector-section {
+  padding: 4px 0;
+}
+
+.bac4-layout-selector-section-title {
+  padding: 4px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
+}
+
+.bac4-layout-selector-divider {
+  height: 1px;
+  margin: 8px 4px;
+  background-color: var(--background-modifier-border);
+}
+
+/* ============================================================================
+   Layout Items
+   ========================================================================= */
+
+.bac4-layout-selector-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 6px;
+  background-color: transparent;
+  color: var(--text-normal);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.bac4-layout-selector-item:hover {
+  background-color: var(--background-modifier-hover);
+}
+
+.bac4-layout-selector-item:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: -2px;
+}
+
+.bac4-layout-selector-item-current {
+  background-color: var(--background-modifier-active-hover);
+  font-weight: 500;
+}
+
+.bac4-layout-selector-item-icon {
+  font-size: 16px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.bac4-layout-selector-item-title {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bac4-layout-selector-item-badge {
+  display: inline-block;
+  padding: 2px 6px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--text-on-accent);
+  background-color: var(--interactive-accent);
+  border-radius: 3px;
+  letter-spacing: 0.3px;
+}
+
+.bac4-layout-selector-item-checkmark {
+  color: var(--interactive-accent);
+  font-size: 14px;
+  font-weight: bold;
+  margin-left: auto;
+}
+
+.bac4-layout-selector-item-actions {
+  display: none;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.bac4-layout-selector-item:hover .bac4-layout-selector-item-actions {
+  display: flex;
+}
+
+.bac4-layout-selector-item-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background-color: transparent;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.bac4-layout-selector-item-action:hover {
+  background-color: var(--background-modifier-border-hover);
+}
+
+.bac4-layout-selector-item-action:active {
+  transform: scale(0.95);
+}
+
+/* ============================================================================
+   Create New Layout Button
+   ========================================================================= */
+
+.bac4-layout-selector-create {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px dashed var(--background-modifier-border-hover);
+  border-radius: 6px;
+  background-color: transparent;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.bac4-layout-selector-create:hover {
+  background-color: var(--background-modifier-hover);
+  border-color: var(--interactive-accent);
+  color: var(--text-normal);
+}
+
+.bac4-layout-selector-create:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: -2px;
+}
+
+.bac4-layout-selector-create-icon {
+  font-size: 18px;
+  font-weight: bold;
+  line-height: 1;
+}
+
+/* ============================================================================
+   Dark Mode Optimizations
+   ========================================================================= */
+
+.theme-dark .bac4-layout-selector-dropdown {
+  background-color: var(--background-primary);
+  border-color: var(--background-modifier-border-hover);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+.theme-dark .bac4-layout-selector-item:hover {
+  background-color: var(--background-modifier-hover);
+}
+
+.theme-dark .bac4-layout-selector-item-current {
+  background-color: var(--background-modifier-active-hover);
+}
+
+.theme-dark .bac4-layout-selector-create:hover {
+  background-color: var(--background-modifier-hover);
+  border-color: var(--interactive-accent);
+}
+
+/* ============================================================================
+   Responsive Design
+   ========================================================================= */
+
+/* Mobile (< 768px) */
+@media (max-width: 768px) {
+  .bac4-layout-selector-dropdown {
+    min-width: 240px;
+    left: auto;
+    right: 0;
+  }
+
+  .bac4-layout-selector-title {
+    max-width: 120px;
+  }
+
+  .bac4-layout-selector-button {
+    padding: 8px 10px;
+  }
+}
+
+/* Small mobile (< 480px) */
+@media (max-width: 480px) {
+  .bac4-layout-selector-dropdown {
+    min-width: 200px;
+  }
+
+  .bac4-layout-selector-title {
+    max-width: 80px;
+  }
+
+  /* Hide layout icon on very small screens */
+  .bac4-layout-selector-icon {
+    display: none;
+  }
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+  .bac4-layout-selector-button {
+    min-height: 44px;
+    padding: 10px 14px;
+  }
+
+  .bac4-layout-selector-item {
+    min-height: 44px;
+    padding: 10px 14px;
+  }
+
+  .bac4-layout-selector-create {
+    min-height: 44px;
+    padding: 10px 14px;
+  }
+
+  .bac4-layout-selector-item-action {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+  }
+
+  /* Always show actions on touch devices */
+  .bac4-layout-selector-item-actions {
+    display: flex;
+  }
+}
+
+/* ============================================================================
+   Accessibility
+   ========================================================================= */
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .bac4-layout-selector-button,
+  .bac4-layout-selector-item,
+  .bac4-layout-selector-create,
+  .bac4-layout-selector-arrow {
+    transition: none;
+  }
+
+  .bac4-layout-selector-dropdown {
+    animation: none;
+  }
+}
+
+/* High contrast */
+@media (prefers-contrast: high) {
+  .bac4-layout-selector-button,
+  .bac4-layout-selector-dropdown {
+    border-width: 2px;
+  }
+
+  .bac4-layout-selector-item:focus-visible,
+  .bac4-layout-selector-create:focus-visible {
+    outline-width: 3px;
+  }
+}

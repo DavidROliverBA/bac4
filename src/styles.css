@@ -4,6 +4,9 @@
 @import '../styles/navigation.css';
 @import '../styles/accessibility.css';
 
+/* Import layout selector styles (v2.6.0) */
+@import '../styles/layout-selector.css';
+
 .bac4-canvas-view {
   width: 100%;
   height: 100%;
