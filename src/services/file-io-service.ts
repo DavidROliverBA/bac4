@@ -82,17 +82,24 @@ export async function readBAC4GraphFile(
 
 /**
  * Read both .bac4 and .bac4-graph files
+ *
+ * @param vault - Obsidian vault
+ * @param bac4FilePath - Path to .bac4 file
+ * @param graphFilePath - Optional specific graph file path (v2.6.0 - for multiple layouts)
+ *                        If not provided, uses default <basename>.bac4-graph
  */
 export async function readDiagram(
   vault: Vault,
-  bac4FilePath: string
-): Promise<{ nodeFile: BAC4FileV2; graphFile: BAC4GraphFileV2 }> {
-  const graphFilePath = bac4FilePath.replace('.bac4', '.bac4-graph');
+  bac4FilePath: string,
+  graphFilePath?: string
+): Promise<{ nodeFile: BAC4FileV2; graphFile: BAC4GraphFileV2; graphFilePath: string }> {
+  // Use provided graph file path or derive default
+  const actualGraphFilePath = graphFilePath || bac4FilePath.replace('.bac4', '.bac4-graph');
 
   const nodeFile = await readBAC4File(vault, bac4FilePath);
-  const graphFile = await readBAC4GraphFile(vault, graphFilePath);
+  const graphFile = await readBAC4GraphFile(vault, actualGraphFilePath);
 
-  return { nodeFile, graphFile };
+  return { nodeFile, graphFile, graphFilePath: actualGraphFilePath };
 }
 
 // ============================================================================

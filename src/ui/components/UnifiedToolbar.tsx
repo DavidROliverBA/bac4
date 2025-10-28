@@ -18,9 +18,11 @@ import { AnnotationButtons } from './toolbar/components/AnnotationButtons';
 import { ExportMenu } from './toolbar/components/ExportMenu';
 import { DiagramActions } from './toolbar/components/DiagramActions';
 import { useExport } from './toolbar/hooks/useExport';
+import { LayoutSelector } from './LayoutSelector';
 import type { Timeline } from '../../types/timeline';
 import type { DiagramType } from '../../types/canvas-types';
 import type { AnnotationType } from './AnnotationPalette';
+import type { LayoutInfo } from '../../services/layout-manager-service';
 
 export interface UnifiedToolbarProps {
   /** Current diagram type */
@@ -51,6 +53,18 @@ export interface UnifiedToolbarProps {
   diagramName?: string;
   /** Timeline for export watermark (v1.0.0) */
   timeline?: Timeline | null;
+  /** Available layouts (v2.6.0) */
+  layouts?: LayoutInfo[];
+  /** Current layout (v2.6.0) */
+  currentLayout?: LayoutInfo | null;
+  /** Callback when layout should be switched (v2.6.0) */
+  onLayoutSwitch?: (graphPath: string) => void;
+  /** Callback to create new layout (v2.6.0) */
+  onCreateLayout?: () => void;
+  /** Callback to rename layout (v2.6.0) */
+  onRenameLayout?: (graphPath: string) => void;
+  /** Callback to delete layout (v2.6.0) */
+  onDeleteLayout?: (graphPath: string) => void;
 }
 
 /**
@@ -99,6 +113,12 @@ export const UnifiedToolbar: React.FC<UnifiedToolbarProps> = ({
   onAddSnapshot,
   diagramName = 'diagram',
   timeline,
+  layouts,
+  currentLayout,
+  onLayoutSwitch,
+  onCreateLayout,
+  onRenameLayout,
+  onDeleteLayout,
 }) => {
   const { handleExport, isExporting } = useExport({ diagramName, timeline });
 
@@ -116,6 +136,21 @@ export const UnifiedToolbar: React.FC<UnifiedToolbarProps> = ({
     >
       {/* Diagram Type Selector */}
       <DiagramTypeSelector currentType={currentType} onTypeChange={onTypeChange} />
+
+      {/* Layout Selector (v2.6.0 - Multiple Layouts) */}
+      {layouts && currentLayout && onLayoutSwitch && onCreateLayout && onRenameLayout && onDeleteLayout && (
+        <>
+          <Divider />
+          <LayoutSelector
+            layouts={layouts}
+            currentLayout={currentLayout}
+            onLayoutSwitch={onLayoutSwitch}
+            onCreateLayout={onCreateLayout}
+            onRenameLayout={onRenameLayout}
+            onDeleteLayout={onDeleteLayout}
+          />
+        </>
+      )}
 
       <Divider />
 
