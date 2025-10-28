@@ -1,5 +1,9 @@
 /* BAC4 Plugin Styles */
 
+/* Import navigation and accessibility styles (v2.3.0) */
+@import '../styles/navigation.css';
+@import '../styles/accessibility.css';
+
 .bac4-canvas-view {
   width: 100%;
   height: 100%;
@@ -204,4 +208,144 @@
 
 .bac4-nav-icon:hover svg circle {
   fill: var(--interactive-accent-hover);
+}
+
+/* ============================================================================
+   Responsive Design Enhancements (v2.3.0)
+   ========================================================================= */
+
+/* Tablet optimizations (< 1024px) */
+@media (max-width: 1024px) {
+  .bac4-canvas-view .react-flow__controls {
+    bottom: 60px;
+    right: 10px;
+  }
+
+  .bac4-canvas-view .react-flow__minimap {
+    bottom: 60px;
+    left: 10px;
+    width: 150px;
+    height: 100px;
+  }
+
+  /* Larger touch targets */
+  .bac4-canvas-view .react-flow__handle {
+    width: 16px !important;
+    height: 16px !important;
+  }
+}
+
+/* Mobile optimizations (< 768px) */
+@media (max-width: 768px) {
+  .bac4-canvas-view .react-flow__controls {
+    bottom: 80px;
+    right: 5px;
+  }
+
+  .bac4-canvas-view .react-flow__minimap {
+    display: none; /* Hide minimap on mobile for space */
+  }
+
+  /* Even larger touch targets for mobile */
+  .bac4-canvas-view .react-flow__handle {
+    width: 20px !important;
+    height: 20px !important;
+  }
+
+  /* Larger edge labels for readability */
+  .bac4-canvas-view .react-flow__edge-text {
+    font-size: 14px !important;
+  }
+
+  /* Modal adjustments for mobile */
+  .bac4-description-textarea {
+    min-height: 150px;
+    font-size: 16px; /* Prevent zoom on iOS */
+  }
+}
+
+/* Small mobile optimizations (< 480px) */
+@media (max-width: 480px) {
+  .bac4-canvas-view .react-flow__controls {
+    bottom: 100px;
+  }
+
+  .bac4-canvas-view .react-flow__handle {
+    width: 24px !important;
+    height: 24px !important;
+  }
+
+  /* Stack modal buttons vertically on small screens */
+  .bac4-modal-buttons {
+    flex-direction: column-reverse;
+  }
+
+  .bac4-modal-buttons button {
+    width: 100%;
+    padding: 12px 16px;
+  }
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+  /* Prevent accidental double-tap zoom */
+  .bac4-canvas-view {
+    touch-action: pan-x pan-y;
+  }
+
+  /* Larger interactive elements */
+  .bac4-canvas-view .react-flow__controls-button {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 12px;
+  }
+
+  .bac4-nav-icon {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+/* ============================================================================
+   Dark Mode Optimizations (v2.3.0)
+   ========================================================================= */
+
+.theme-dark .bac4-canvas-view .react-flow__background {
+  background: var(--background-primary);
+}
+
+.theme-dark .bac4-canvas-view .react-flow__edge-path {
+  stroke: var(--text-muted);
+  stroke-opacity: 0.8;
+}
+
+.theme-dark .bac4-canvas-view .react-flow__controls,
+.theme-dark .bac4-canvas-view .react-flow__minimap {
+  background: var(--background-secondary);
+  border-color: var(--background-modifier-border-hover);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.theme-dark .bac4-canvas-view .react-flow__controls-button {
+  background: var(--background-primary);
+  border-color: var(--background-modifier-border);
+}
+
+.theme-dark .bac4-canvas-view .react-flow__controls-button:hover {
+  background: var(--background-modifier-hover);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.theme-dark .bac4-description-textarea {
+  background: var(--background-primary);
+  border-color: var(--background-modifier-border-hover);
+}
+
+.theme-dark .bac4-example-section {
+  background: var(--background-secondary);
+  border-left-color: var(--interactive-accent);
+}
+
+.theme-dark .bac4-example-text {
+  background: var(--background-primary-alt);
 }
