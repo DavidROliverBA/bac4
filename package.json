@@ -1,7 +1,7 @@
 {
   "name": "bac4",
-  "version": "3.0.0",
-  "description": "bac4 - The Solution Architects Toolbox (v3.0.0: Single global graph, unique nodes, edit once updates everywhere, true single source of truth)",
+  "version": "2.5.1",
+  "description": "bac4 - The Solution Architects Toolbox (v2.5.1: Snapshot isolation and edge label persistence fixes)",
   "main": "main.js",
   "scripts": {
     "dev": "node esbuild.config.mjs",

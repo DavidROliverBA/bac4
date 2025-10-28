@@ -128,7 +128,7 @@ export class FormatConverter {
 
     // Create node file (semantic data)
     const nodeFile: BAC4FileV2 = {
-      version: '2.5.0',
+      version: '2.5.1',
       metadata: {
         id: this.generateId(diagramType),
         title: v1File.metadata.title,
@@ -144,7 +144,7 @@ export class FormatConverter {
 
     // Create graph file (relationships + layout)
     const graphFile: BAC4GraphFileV2 = {
-      version: '2.5.0',
+      version: '2.5.1',
       metadata: {
         nodeFile: this.getFileName(filePath),
         graphId: this.generateId(viewType),
@@ -488,10 +488,10 @@ export class FormatConverter {
     const errors: string[] = [];
 
     // Check version
-    if (nodeFile.version !== '2.5.0') {
+    if (nodeFile.version !== '2.5.0' && nodeFile.version !== '2.5.1') {
       errors.push(`Invalid node file version: ${nodeFile.version}`);
     }
-    if (graphFile.version !== '2.5.0') {
+    if (graphFile.version !== '2.5.0' && graphFile.version !== '2.5.1') {
       errors.push(`Invalid graph file version: ${graphFile.version}`);
     }
 

@@ -45,6 +45,7 @@ export interface UseFileOperationsProps {
   setDiagramType: (type: DiagramType) => void;
   nodeCounterRef: React.MutableRefObject<number>;
   navigationService: DiagramNavigationService;
+  forceSaveRef?: React.MutableRefObject<(() => Promise<void>) | null>;
 }
 
 /**
@@ -66,11 +67,154 @@ export function useFileOperations(props: UseFileOperationsProps): void {
     setAnnotations,
     setDiagramType,
     nodeCounterRef,
+    forceSaveRef,
   } = props;
 
   // Store current files in refs to avoid stale closures
   const nodeFileRef = React.useRef<BAC4FileV2 | null>(null);
   const graphFileRef = React.useRef<BAC4GraphFileV2 | null>(null);
+
+  // Store auto-save timeout ID to allow cancellation
+  const autoSaveTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  /**
+   * Force immediate save to disk (used when switching snapshots)
+   * This ensures changes are persisted before loading new snapshot
+   */
+  const forceSaveSnapshot = React.useCallback(async () => {
+    console.log('BAC4 v2.5.1: 💾 FORCE SAVE triggered');
+
+    // Cancel any pending auto-save
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
+      autoSaveTimeoutRef.current = null;
+      console.log('BAC4 v2.5.1: ⏸️ Cancelled pending auto-save');
+    }
+
+    if (!filePath || !nodeFileRef.current || !graphFileRef.current) {
+      console.log('BAC4 v2.5.1: ⚠️ Cannot force save - missing file path or refs');
+      return;
+    }
+
+    try {
+      console.log('BAC4 v2.5.1: Saving current canvas state to disk', {
+        filePath,
+        nodeCount: nodes.length,
+        edgeCount: edges.length,
+        annotationCount: annotations.length,
+      });
+
+      // Sync new snapshots from v1 timeline to v2.5 graphFileRef
+      if (timeline && graphFileRef.current) {
+        const existingSnapshotIds = new Set(
+          graphFileRef.current.timeline.snapshots.map(s => s.id)
+        );
+
+        const newSnapshots = timeline.snapshots.filter(
+          s => !existingSnapshotIds.has(s.id)
+        );
+
+        if (newSnapshots.length > 0) {
+          console.log('BAC4 v2.5.1: Converting', newSnapshots.length, 'new v1 snapshots to v2.5');
+
+          const newV2Snapshots = newSnapshots.map(v1Snapshot => {
+            const layout: Record<string, any> = {};
+            for (const node of v1Snapshot.nodes) {
+              layout[node.id] = {
+                x: node.position.x,
+                y: node.position.y,
+                width: node.width || 200,
+                height: node.height || 100,
+                locked: false,
+              };
+            }
+
+            const nodeProperties: Record<string, any> = {};
+            for (const node of v1Snapshot.nodes) {
+              nodeProperties[node.id] = {
+                properties: {
+                  label: node.data.label,
+                  description: node.data.description || '',
+                  technology: node.data.technology,
+                  team: node.data.team,
+                  status: node.data.status,
+                },
+                style: {
+                  color: node.data.color || '#3b82f6',
+                  icon: node.data.icon,
+                  shape: node.data.shape,
+                },
+              };
+            }
+
+            const v2Edges = v1Snapshot.edges.map((edge: any) => ({
+              id: edge.id,
+              source: edge.source,
+              target: edge.target,
+              type: edge.type || 'default',
+              properties: { label: edge.data?.label, ...edge.data },
+              style: {
+                direction: edge.data?.direction || 'right',
+                lineType: 'solid',
+                color: edge.style?.stroke || '#888888',
+                markerEnd: edge.markerEnd || 'arrowclosed',
+              },
+              handles: {
+                sourceHandle: edge.sourceHandle || 'right',
+                targetHandle: edge.targetHandle || 'left',
+              },
+            }));
+
+            return {
+              id: v1Snapshot.id,
+              label: v1Snapshot.label,
+              timestamp: v1Snapshot.timestamp,
+              description: v1Snapshot.description,
+              created: v1Snapshot.createdAt,
+              layout,
+              edges: v2Edges,
+              groups: [],
+              annotations: v1Snapshot.annotations || [],
+              nodeProperties,
+            };
+          });
+
+          graphFileRef.current = {
+            ...graphFileRef.current,
+            timeline: {
+              snapshots: [...graphFileRef.current.timeline.snapshots, ...newV2Snapshots],
+              currentSnapshotId: timeline.currentSnapshotId,
+              snapshotOrder: timeline.snapshotOrder,
+            },
+          };
+        }
+      }
+
+      // Split React Flow data to v2.5.1 format
+      const { nodeFile, graphFile } = splitNodesAndEdges(
+        nodes,
+        edges,
+        nodeFileRef.current!,
+        graphFileRef.current!
+      );
+
+      // Update refs
+      nodeFileRef.current = nodeFile;
+      graphFileRef.current = graphFile;
+
+      // Update metadata
+      const fileName = filePath.split('/').pop() || filePath;
+      graphFile.metadata.nodeFile = fileName;
+
+      // Write to disk
+      await writeDiagram(plugin.app.vault, filePath, nodeFile, graphFile);
+
+      console.log('BAC4 v2.5.1: ✅ FORCE SAVE complete');
+    } catch (error) {
+      console.error('BAC4 v2.5.1: ❌ Force save failed:', error);
+      new Notice(`Failed to save diagram: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }, [filePath, nodes, edges, annotations, timeline, plugin.app.vault]);
 
   /**
    * Auto-save diagram data to dual files (v2.5.0 format)
@@ -90,7 +234,13 @@ export function useFileOperations(props: UseFileOperationsProps): void {
       return;
     }
 
-    const saveTimeout = setTimeout(async () => {
+    // Clear any existing timeout
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
+    }
+
+    // Set new timeout
+    autoSaveTimeoutRef.current = setTimeout(async () => {
       try {
         console.log('BAC4 v2.5: Starting auto-save to', filePath);
 
@@ -119,6 +269,25 @@ export function useFileOperations(props: UseFileOperationsProps): void {
                 width: node.width || 200,
                 height: node.height || 100,
                 locked: false,
+              };
+            }
+
+            // ✅ v2.5.1 FIX: Extract snapshot-specific node properties
+            const nodeProperties: Record<string, any> = {};
+            for (const node of v1Snapshot.nodes) {
+              nodeProperties[node.id] = {
+                properties: {
+                  label: node.data.label,
+                  description: node.data.description || '',
+                  technology: node.data.technology,
+                  team: node.data.team,
+                  status: node.data.status,
+                },
+                style: {
+                  color: node.data.color || '#3b82f6',
+                  icon: node.data.icon,
+                  shape: node.data.shape,
+                },
               };
             }
 
@@ -151,6 +320,7 @@ export function useFileOperations(props: UseFileOperationsProps): void {
               edges: v2Edges,
               groups: [],
               annotations: v1Snapshot.annotations || [],
+              nodeProperties, // ✅ v2.5.1 FIX: Include per-snapshot node properties
             };
           });
 
@@ -198,9 +368,24 @@ export function useFileOperations(props: UseFileOperationsProps): void {
     }, AUTO_SAVE_DEBOUNCE_MS);
 
     return () => {
-      clearTimeout(saveTimeout);
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+        autoSaveTimeoutRef.current = null;
+      }
     };
   }, [nodes, edges, annotations, timeline, filePath, plugin]);
+
+  // Expose forceSaveSnapshot to parent component via ref
+  React.useEffect(() => {
+    if (forceSaveRef) {
+      forceSaveRef.current = forceSaveSnapshot;
+    }
+    return () => {
+      if (forceSaveRef) {
+        forceSaveRef.current = null;
+      }
+    };
+  }, [forceSaveSnapshot, forceSaveRef]);
 
   /**
    * Validate linked files and cleanup broken references

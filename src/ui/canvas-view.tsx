@@ -133,6 +133,9 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath, view }) =
   // Timeline ref for auto-save (v1.0.0 - prevents race conditions)
   const timelineRef = React.useRef<Timeline | null>(null);
 
+  // Force save ref (v2.5.1 - allows immediate save when switching snapshots)
+  const forceSaveRef = React.useRef<(() => Promise<void>) | null>(null);
+
   // Keep ref in sync with state
   React.useEffect(() => {
     timelineRef.current = timeline;
@@ -368,6 +371,7 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath, view }) =
     setDiagramType,
     nodeCounterRef,
     navigationService,
+    forceSaveRef,
   });
 
   /**
@@ -520,23 +524,24 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath, view }) =
    * Timeline Handlers (v1.0.0)
    */
   const handleSnapshotSwitch = React.useCallback(
-    (snapshotId: string) => {
+    async (snapshotId: string) => {
       if (!timeline) return;
 
-      // ✅ FIX: Save current canvas state to current snapshot BEFORE switching
-      // This prevents losing nodes when switching between snapshots
+      // ✅ v2.5.1 FIX: Save current canvas state to BOTH v1 timeline AND disk BEFORE switching
+      // This prevents data loss when switching snapshots quickly
       const currentSnapshotIndex = timeline.snapshots.findIndex(
         (s) => s.id === timeline.currentSnapshotId
       );
 
       let updatedTimeline = timeline;
       if (currentSnapshotIndex !== -1) {
-        console.log('BAC4: Saving current canvas state before switching', {
+        console.log('BAC4 v2.5.1: Saving current canvas state before switching', {
           currentSnapshot: timeline.currentSnapshotId,
           nodeCount: nodes.length,
           edgeCount: edges.length,
         });
 
+        // 1. Save to v1 timeline (in-memory)
         const updatedSnapshots = [...timeline.snapshots];
         updatedSnapshots[currentSnapshotIndex] = {
           ...updatedSnapshots[currentSnapshotIndex],
@@ -549,6 +554,15 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath, view }) =
           ...timeline,
           snapshots: updatedSnapshots,
         };
+
+        // 2. ✅ NEW: Force save to disk IMMEDIATELY (prevent data loss)
+        if (forceSaveRef.current) {
+          console.log('BAC4 v2.5.1: 💾 Force saving to disk before switch...');
+          await forceSaveRef.current();
+          console.log('BAC4 v2.5.1: ✅ Force save complete, now switching snapshots');
+        } else {
+          console.warn('BAC4 v2.5.1: ⚠️ forceSaveRef not available, changes may be lost!');
+        }
       }
 
       const result = TimelineService.switchSnapshot(snapshotId, updatedTimeline);
@@ -633,10 +647,27 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath, view }) =
         console.log('BAC4: 📸 Snapshot created:', newSnapshotId);
         console.log('BAC4: Updated timeline snapshot count:', updatedTimeline.snapshots.length);
 
-        // Update timeline - stay on currently selected snapshot (all snapshots editable)
-        setTimeline(updatedTimeline);
+        // ✅ v2.5.1 FIX: Auto-switch to new snapshot (approved spec behavior)
+        // Timeline service already set currentSnapshotId to new snapshot
+        // Now load the new snapshot's state into canvas
+        const newSnapshot = updatedTimeline.snapshots.find(s => s.id === newSnapshotId);
 
-        console.log('BAC4: ✅ Snapshot created, staying on current snapshot');
+        if (newSnapshot) {
+          console.log('BAC4: 🔄 Auto-switching to new snapshot:', newSnapshotId);
+
+          // Load new snapshot's state into canvas
+          setNodes(JSON.parse(JSON.stringify(newSnapshot.nodes))); // Deep copy
+          setEdges(JSON.parse(JSON.stringify(newSnapshot.edges))); // Deep copy
+          setAnnotations(JSON.parse(JSON.stringify(newSnapshot.annotations))); // Deep copy
+
+          // Update timeline
+          setTimeline(updatedTimeline);
+
+          console.log('BAC4: ✅ Switched to new snapshot:', newSnapshot.label);
+        } else {
+          console.error('BAC4: ❌ New snapshot not found in timeline:', newSnapshotId);
+          setTimeline(updatedTimeline);
+        }
       }
     );
     modal.open();

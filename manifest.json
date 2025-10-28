@@ -1,9 +1,9 @@
 {
 	"id": "bac4",
 	"name": "bac4 - The Solution Architects Toolbox",
-	"version": "3.0.0",
+	"version": "2.5.1",
 	"minAppVersion": "1.0.0",
-	"description": "Enterprise architecture management with single global graph. All nodes unique, edit once updates everywhere. True single source of truth for your architecture.",
+	"description": "Enterprise architecture management with C4 diagrams, Wardley Mapping, and timeline versioning. Dual-file format for semantic data and presentation separation.",
 	"author": "David Oliver",
 	"authorUrl": "https://github.com/DavidROliverBA",
 	"isDesktopOnly": true

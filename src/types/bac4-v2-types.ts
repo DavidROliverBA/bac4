@@ -19,7 +19,7 @@
 // ============================================================================
 
 export interface BAC4FileV2 {
-  version: '2.5.0';
+  version: '2.5.0' | '2.5.1';
   metadata: DiagramMetadata;
   nodes: Record<string, NodeV2>;
 }
@@ -205,7 +205,7 @@ export type ShapeType =
 // ============================================================================
 
 export interface BAC4GraphFileV2 {
-  version: '2.5.0';
+  version: '2.5.0' | '2.5.1';
   metadata: GraphMetadata;
   timeline: Timeline;
   config: GraphConfig;
@@ -243,6 +243,34 @@ export interface Snapshot {
   edges: EdgeV2[];
   groups: Group[];
   annotations: Annotation[];
+  /**
+   * Snapshot-specific node properties (v2.5.1+)
+   * Stores properties that vary between snapshots (color, label, etc.)
+   * Falls back to nodeFile.nodes if not present (backward compatibility)
+   */
+  nodeProperties?: Record<string, NodeSnapshotProperties>;
+}
+
+/**
+ * Properties that can vary between snapshots (v2.5.1+)
+ * For time-based snapshots, these properties are stored per-snapshot
+ * to allow independent editing of each snapshot.
+ */
+export interface NodeSnapshotProperties {
+  /** User-editable properties that may vary between snapshots */
+  properties: {
+    label: string;
+    description?: string;
+    technology?: string;
+    team?: string;
+    status?: string;
+  };
+  /** Visual style that may vary between snapshots */
+  style: {
+    color: string;
+    icon?: string;
+    shape?: ShapeType;
+  };
 }
 
 export interface LayoutInfo {
