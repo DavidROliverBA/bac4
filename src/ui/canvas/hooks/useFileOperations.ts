@@ -46,6 +46,7 @@ export interface UseFileOperationsProps {
   nodeCounterRef: React.MutableRefObject<number>;
   navigationService: DiagramNavigationService;
   forceSaveRef?: React.MutableRefObject<(() => Promise<void>) | null>;
+  currentGraphFilePath?: string | null; // v2.6.0 - Multiple layouts support
 }
 
 /**
@@ -68,6 +69,7 @@ export function useFileOperations(props: UseFileOperationsProps): void {
     setDiagramType,
     nodeCounterRef,
     forceSaveRef,
+    currentGraphFilePath,
   } = props;
 
   // Store current files in refs to avoid stale closures
@@ -467,10 +469,11 @@ export function useFileOperations(props: UseFileOperationsProps): void {
     }
 
     // Load both .bac4 and .bac4-graph files
-    console.log('BAC4 v2.5: Loading diagram from dual files:', filePath);
+    console.log('BAC4 v2.5: Loading diagram from dual files:', filePath, 'graph:', currentGraphFilePath);
 
-    readDiagram(plugin.app.vault, filePath)
-      .then(async ({ nodeFile, graphFile }) => {
+    readDiagram(plugin.app.vault, filePath, currentGraphFilePath || undefined)
+      .then(async ({ nodeFile, graphFile, graphFilePath: actualGraphPath }) => {
+        console.log('BAC4 v2.6: Loaded graph file:', actualGraphPath);
         console.log('BAC4 v2.5: Files loaded successfully', {
           version: nodeFile.version,
           diagramType: nodeFile.metadata.diagramType,
@@ -572,6 +575,7 @@ export function useFileOperations(props: UseFileOperationsProps): void {
       });
   }, [
     filePath,
+    currentGraphFilePath, // v2.6.0 - Reload when layout switches
     plugin,
     setNodes,
     setEdges,

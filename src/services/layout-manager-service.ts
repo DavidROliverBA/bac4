@@ -13,7 +13,6 @@
 
 import { TFile, TFolder, Vault } from 'obsidian';
 import { BAC4GraphFileV2, ViewType, GraphMetadata } from '../types/bac4-v2-types';
-import { createEmptyGraphFile } from '../utils/format-converter';
 
 export interface LayoutInfo {
   graphPath: string;
@@ -342,13 +341,33 @@ export class LayoutManagerService {
     viewType: ViewType,
     title: string
   ): BAC4GraphFileV2 {
-    const graphFile = createEmptyGraphFile();
-    graphFile.metadata.nodeFile = nodeFileName;
-    graphFile.metadata.graphId = this.generateId();
-    graphFile.metadata.title = title;
-    graphFile.metadata.viewType = viewType;
+    const now = new Date().toISOString();
 
-    return graphFile;
+    return {
+      version: '2.5.1',
+      metadata: {
+        nodeFile: nodeFileName,
+        graphId: this.generateId(),
+        title: title,
+        viewType: viewType,
+        created: now,
+        updated: now,
+      },
+      timeline: {
+        snapshots: [],
+        currentSnapshotId: '',
+        snapshotOrder: [],
+      },
+      config: {
+        layoutAlgorithm: 'manual',
+        showGrid: true,
+        showMinimap: true,
+        gridSize: 20,
+        snapToGrid: false,
+        nodeSpacing: { x: 200, y: 150 },
+        axisLabels: undefined,
+      },
+    };
   }
 
   private getBaseName(filePath: string): string {

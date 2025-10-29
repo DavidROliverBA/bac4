@@ -36,6 +36,7 @@ import { NavigationControls } from './components/NavigationControls';
 import { NavigationBreadcrumbs } from './components/NavigationBreadcrumbs';
 import { AddSnapshotModal } from './components/AddSnapshotModal';
 import { SnapshotManagerModal } from './components/SnapshotManager';
+import { CreateLayoutModal, RenameLayoutModal, DeleteLayoutModal } from './modals/layout-modals';
 import { AnnotationType } from './components/AnnotationPalette';
 import { AnnotationOverlay } from './components/AnnotationOverlay';
 import { ChangesSummaryPanel } from './components/ChangesSummaryPanel';
@@ -47,6 +48,7 @@ import { ChangeDetectionService } from '../services/ChangeDetectionService';
 import { AnnotationService } from '../services/AnnotationService';
 import { GraphGenerationService } from '../services/graph-generation-service';
 import { NodeRegistryService } from '../services/node-registry-service';
+import { LayoutManagerService, LayoutInfo } from '../services/layout-manager-service';
 import type { CanvasNodeData, ReactFlowInstance, DiagramType } from '../types/canvas-types';
 import type { Timeline, Annotation, ChangeSet } from '../types/timeline';
 import { getNavigationIconVisibility } from '../utils/navigation-utils';
@@ -130,6 +132,11 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath, view }) =
   // Navigation state (v2.3.0)
   const [breadcrumbs, setBreadcrumbs] = React.useState<any[]>([]);
 
+  // Layout state (v2.6.0 - Multiple Layouts)
+  const [layouts, setLayouts] = React.useState<LayoutInfo[]>([]);
+  const [currentLayout, setCurrentLayout] = React.useState<LayoutInfo | null>(null);
+  const [currentGraphFilePath, setCurrentGraphFilePath] = React.useState<string | null>(null);
+
   // Timeline ref for auto-save (v1.0.0 - prevents race conditions)
   const timelineRef = React.useRef<Timeline | null>(null);
 
@@ -149,6 +156,7 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath, view }) =
   });
   const [navigationService] = React.useState(() => new DiagramNavigationService(plugin));
   const [navigationHistoryService] = React.useState(() => new NavigationHistoryService(plugin));
+  const [layoutManager] = React.useState(() => new LayoutManagerService(plugin.app.vault));
 
   // Log whenever filePath prop changes
   React.useEffect(() => {
@@ -372,7 +380,33 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath, view }) =
     nodeCounterRef,
     navigationService,
     forceSaveRef,
+    currentGraphFilePath, // v2.6.0 - Multiple layouts
   });
+
+  /**
+   * Initialize layouts when file opens (v2.6.0)
+   */
+  React.useEffect(() => {
+    if (!filePath) return;
+
+    async function initializeLayouts() {
+      try {
+        const availableLayouts = await layoutManager.getLayoutsForNodeFile(filePath);
+        setLayouts(availableLayouts);
+
+        // Set current layout (default or first available)
+        const defaultLayout = availableLayouts.find(l => l.isDefault) || availableLayouts[0];
+        if (defaultLayout) {
+          setCurrentLayout(defaultLayout);
+          setCurrentGraphFilePath(defaultLayout.graphPath);
+        }
+      } catch (error) {
+        console.error('Failed to initialize layouts:', error);
+      }
+    }
+
+    initializeLayouts();
+  }, [filePath, layoutManager]);
 
   /**
    * Track navigation history (v2.3.0)
@@ -898,6 +932,140 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath, view }) =
   // const handleAddWardleyComponent = React.useCallback(() => { ... }, []);
   // const handleAddWardleyInertia = React.useCallback(() => { ... }, []);
 
+  /**
+   * Layout Handlers (v2.6.0 - Multiple Layouts)
+   */
+
+  // Switch to a different layout
+  const handleLayoutSwitch = React.useCallback(async (graphPath: string) => {
+    if (!filePath) return;
+
+    try {
+      // Force save current state before switching
+      if (forceSaveRef.current) {
+        await forceSaveRef.current();
+      }
+
+      // Layout switching will be handled by useFileOperations hook
+      // when currentGraphFilePath changes
+      setCurrentGraphFilePath(graphPath);
+
+      // Update current layout in state
+      const newLayout = layouts.find(l => l.graphPath === graphPath);
+      if (newLayout) {
+        setCurrentLayout(newLayout);
+        plugin.app.workspace.trigger('bac4:layout-switched', { layoutPath: graphPath });
+      }
+    } catch (error) {
+      console.error('Failed to switch layout:', error);
+    }
+  }, [filePath, forceSaveRef, layouts, plugin]);
+
+  // Create a new layout
+  const handleCreateLayout = React.useCallback(() => {
+    if (!filePath) return;
+
+    // Determine suggested view type based on current diagram
+    const suggestedType =
+      diagramType === 'wardley' ? 'wardley' :
+      diagramType === 'context' ? 'c4-context' :
+      diagramType === 'container' ? 'c4-container' :
+      diagramType === 'component' ? 'c4-component' :
+      'custom';
+
+    new CreateLayoutModal(
+      plugin.app,
+      suggestedType,
+      async (layoutName, viewType, copyFromCurrent) => {
+        try {
+          // Read current graph file if copying
+          let currentGraphData = null;
+          if (copyFromCurrent && currentGraphFilePath) {
+            const content = await plugin.app.vault.adapter.read(currentGraphFilePath);
+            currentGraphData = JSON.parse(content);
+          }
+
+          // Create new layout
+          const newGraphPath = await layoutManager.createLayout(filePath, {
+            viewType,
+            layoutName,
+            copyFromCurrent,
+            currentGraphFile: currentGraphData,
+          });
+
+          // Refresh layouts list
+          const updatedLayouts = await layoutManager.getLayoutsForNodeFile(filePath);
+          setLayouts(updatedLayouts);
+
+          // Switch to new layout
+          await handleLayoutSwitch(newGraphPath);
+        } catch (error) {
+          console.error('Failed to create layout:', error);
+        }
+      }
+    ).open();
+  }, [filePath, diagramType, currentGraphFilePath, layoutManager, plugin, handleLayoutSwitch]);
+
+  // Rename an existing layout
+  const handleRenameLayout = React.useCallback((graphPath: string) => {
+    const layout = layouts.find(l => l.graphPath === graphPath);
+    if (!layout || !filePath) return;
+
+    new RenameLayoutModal(
+      plugin.app,
+      layout.title,
+      async (newName) => {
+        try {
+          await layoutManager.renameLayout(graphPath, newName);
+
+          // Refresh layouts list
+          const updatedLayouts = await layoutManager.getLayoutsForNodeFile(filePath);
+          setLayouts(updatedLayouts);
+
+          // Update current layout if it was renamed
+          if (graphPath === currentGraphFilePath) {
+            const renamedLayout = updatedLayouts.find(l => l.graphPath !== graphPath);
+            if (renamedLayout) {
+              setCurrentLayout(renamedLayout);
+            }
+          }
+        } catch (error) {
+          console.error('Failed to rename layout:', error);
+        }
+      }
+    ).open();
+  }, [layouts, filePath, layoutManager, plugin, currentGraphFilePath]);
+
+  // Delete a layout
+  const handleDeleteLayout = React.useCallback((graphPath: string) => {
+    const layout = layouts.find(l => l.graphPath === graphPath);
+    if (!layout || !filePath) return;
+
+    new DeleteLayoutModal(
+      plugin.app,
+      layout.title,
+      async () => {
+        try {
+          await layoutManager.deleteLayout(graphPath);
+
+          // Refresh layouts list
+          const updatedLayouts = await layoutManager.getLayoutsForNodeFile(filePath);
+          setLayouts(updatedLayouts);
+
+          // If current layout was deleted, switch to default
+          if (graphPath === currentGraphFilePath) {
+            const defaultLayout = updatedLayouts.find(l => l.isDefault);
+            if (defaultLayout) {
+              await handleLayoutSwitch(defaultLayout.graphPath);
+            }
+          }
+        } catch (error) {
+          console.error('Failed to delete layout:', error);
+        }
+      }
+    ).open();
+  }, [layouts, filePath, layoutManager, plugin, currentGraphFilePath, handleLayoutSwitch]);
+
   return (
     <div
       style={{
@@ -923,6 +1091,12 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath, view }) =
         onAddSnapshot={timeline ? handleAddSnapshot : undefined}
         diagramName={filePath ? getDiagramName(filePath) : 'diagram'}
         timeline={timeline}
+        layouts={layouts}
+        currentLayout={currentLayout}
+        onLayoutSwitch={handleLayoutSwitch}
+        onCreateLayout={handleCreateLayout}
+        onRenameLayout={handleRenameLayout}
+        onDeleteLayout={handleDeleteLayout}
       />
 
       {/* Navigation Controls & Breadcrumbs (v2.3.0) */}
