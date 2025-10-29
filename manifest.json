@@ -1,9 +1,9 @@
 {
 	"id": "bac4",
 	"name": "bac4 - The Solution Architects Toolbox",
-	"version": "2.5.1",
+	"version": "2.6.0",
 	"minAppVersion": "1.0.0",
-	"description": "Enterprise architecture management with C4 diagrams, Wardley Mapping, and timeline versioning. Dual-file format for semantic data and presentation separation.",
+	"description": "Enterprise architecture management with C4 diagrams, Wardley Mapping, and multiple layouts. Create many presentation views from one semantic data file.",
 	"author": "David Oliver",
 	"authorUrl": "https://github.com/DavidROliverBA",
 	"isDesktopOnly": true

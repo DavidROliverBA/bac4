@@ -1,6 +1,6 @@
 # bac4 - The Solution Architects Toolbox
 
-**Version:** 2.3.0
+**Version:** 2.6.0
 **Status:** Production-Ready
 
 An Obsidian plugin that transforms your vault into a comprehensive enterprise architecture management platform. Implements a 7-layer enterprise architecture model extending the C4 approach from market strategy to implementation code.
@@ -131,6 +131,39 @@ After installation, verify BAC4 is working:
 - Auto-update references when files are renamed
 - Layer validation prevents mixing incompatible node types
 
+### Multiple Layouts (v2.6.0) ⭐ NEW
+
+Create multiple presentation views of the same architecture data:
+
+- **One .bac4 file, many .bac4-graph views** - Separate semantic data from presentation
+- **Pre-configured templates** - C4 Context, C4 Container, C4 Component, Wardley Map, or Custom
+- **Seamless switching** - Change views without losing your place
+- **Independent positioning** - Each layout has its own node positions and visual style
+- **Copy or start fresh** - Create new layouts from scratch or copy current state
+
+**Example Use Cases:**
+- `Context.bac4` → `Context.bac4-graph` (default C4 view) + `Context-Wardley.bac4-graph` (Wardley Map view)
+- `API.bac4` → `API-Container.bac4-graph` (C4 Container) + `API-Timeline.bac4-graph` (temporal evolution)
+- View the same architecture from different stakeholder perspectives (technical, business, compliance)
+
+**How to Use:**
+1. **Open any diagram** - Layout dropdown appears in toolbar
+2. **Click "+" to create layout** - Choose template (C4 Context, Wardley Map, Custom, etc.)
+3. **Name your layout** - Example: "Wardley Map View" or "Executive Overview"
+4. **Choose starting point:**
+   - Copy current layout (preserves node positions)
+   - Start with blank canvas
+5. **Switch layouts** - Select from dropdown, canvas updates instantly
+6. **Edit independently** - Each layout remembers its own node positions and zoom level
+7. **Rename/delete** - Right-click layout in dropdown for more options
+
+**Technical Details:**
+- Default layout: `Context.bac4-graph` (matches file basename)
+- Named layouts: `Context-Wardley.bac4-graph` (hyphen-separated)
+- All layouts reference the same `Context.bac4` semantic data
+- Changing node properties updates all layouts
+- Each layout has independent snapshot timelines
+
 ### Cloud Component Library
 
 - AWS services (Lambda, S3, DynamoDB, API Gateway, etc.)
@@ -146,7 +179,10 @@ After installation, verify BAC4 is working:
 
 ### File Management
 
-- `.bac4` file format (timeline-based JSON)
+- **Dual-file format (v2.5.0+):**
+  - `.bac4` files - Semantic data (node properties, knowledge, metrics)
+  - `.bac4-graph` files - Presentation data (layout, edges, snapshots)
+- **Multiple layouts (v2.6.0):** One `.bac4` file can have many `.bac4-graph` views
 - Version metadata embedded
 - Git-friendly JSON format
 - Multi-tab support
@@ -394,4 +430,4 @@ MIT License - see [LICENSE](LICENSE) file for details
 
 **Powered by AI, built for humans!**
 
-*Last updated: 2025-10-22 (v2.3.0)*
+*Last updated: 2025-10-29 (v2.6.0)*

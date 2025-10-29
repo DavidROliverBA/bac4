@@ -1,7 +1,7 @@
 {
   "name": "bac4",
-  "version": "2.5.1",
-  "description": "bac4 - The Solution Architects Toolbox (v2.5.1: Snapshot isolation and edge label persistence fixes)",
+  "version": "2.6.0",
+  "description": "bac4 - The Solution Architects Toolbox (v2.6.0: Multiple Layouts - Create many presentation views from one semantic data file)",
   "main": "main.js",
   "scripts": {
     "dev": "node esbuild.config.mjs",
