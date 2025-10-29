@@ -51,6 +51,8 @@ export interface UnifiedToolbarProps {
   onAddSnapshot?: () => void;
   /** Diagram name for export filename */
   diagramName?: string;
+  /** File path for React Flow instance ID (v2.6.1 - multi-tab export fix) */
+  filePath?: string | null;
   /** Timeline for export watermark (v1.0.0) */
   timeline?: Timeline | null;
   /** Available layouts (v2.6.0) */
@@ -112,6 +114,7 @@ export const UnifiedToolbar: React.FC<UnifiedToolbarProps> = ({
   onSendNodeBackward,
   onAddSnapshot,
   diagramName = 'diagram',
+  filePath,
   timeline,
   layouts,
   currentLayout,
@@ -120,7 +123,13 @@ export const UnifiedToolbar: React.FC<UnifiedToolbarProps> = ({
   onRenameLayout,
   onDeleteLayout,
 }) => {
-  const { handleExport, isExporting } = useExport({ diagramName, timeline });
+  // Generate React Flow ID for multi-tab export support (v2.6.1)
+  const reactFlowId = React.useMemo(
+    () => (filePath ? `rf-${filePath.replace(/[^a-zA-Z0-9]/g, '-')}` : 'rf-default'),
+    [filePath]
+  );
+
+  const { handleExport, isExporting } = useExport({ diagramName, timeline, reactFlowId });
 
   return (
     <div

@@ -18,6 +18,7 @@ import { TimelineService } from '../../../../services/TimelineService';
 export interface UseExportOptions {
   diagramName?: string;
   timeline?: Timeline | null; // v1.0.0: Include timeline for watermark
+  reactFlowId?: string; // v2.6.1: React Flow instance ID for multi-tab support
 }
 
 export interface ExportHandlers {
@@ -31,24 +32,54 @@ export interface ExportHandlers {
  * We export the .bac4-canvas-export-container which includes both the React Flow
  * canvas AND the AnnotationOverlay, ensuring annotations are included in exports.
  *
+ * @param reactFlowId - Optional React Flow instance ID to target specific instance
  * @returns The canvas export container HTML element or null if not found
  */
-function getExportElement(): HTMLElement | null {
-  // Try to get the BAC4 canvas export container (includes ReactFlow + AnnotationOverlay)
-  const exportContainer = document.querySelector('.bac4-canvas-export-container') as HTMLElement;
-  if (exportContainer) {
-    const rect = exportContainer.getBoundingClientRect();
-    if (rect.width > 0 && rect.height > 0) {
-      return exportContainer;
+function getExportElement(reactFlowId?: string): HTMLElement | null {
+  // If reactFlowId is provided, find the specific React Flow instance first
+  if (reactFlowId) {
+    const specificReactFlow = document.querySelector(`.react-flow[id="${reactFlowId}"]`) as HTMLElement;
+    if (specificReactFlow) {
+      // Get the parent export container
+      const exportContainer = specificReactFlow.closest('.bac4-canvas-export-container') as HTMLElement;
+      if (exportContainer) {
+        const rect = exportContainer.getBoundingClientRect();
+        if (rect.width > 0 && rect.height > 0) {
+          console.log(`BAC4: Found export container for React Flow ID: ${reactFlowId}`);
+          return exportContainer;
+        }
+      }
+      // Fallback: use the React Flow element itself
+      const rect = specificReactFlow.getBoundingClientRect();
+      if (rect.width > 0 && rect.height > 0) {
+        console.log(`BAC4: Using React Flow element directly for ID: ${reactFlowId}`);
+        return specificReactFlow;
+      }
+    } else {
+      console.warn(`BAC4: Could not find React Flow with ID: ${reactFlowId}`);
     }
   }
 
-  // Fallback: try the main React Flow container
-  const reactFlow = document.querySelector('.react-flow') as HTMLElement;
-  if (reactFlow) {
-    const rect = reactFlow.getBoundingClientRect();
-    if (rect.width > 0 && rect.height > 0) {
-      return reactFlow;
+  // Fallback: Try to get the visible BAC4 canvas export container
+  const exportContainers = document.querySelectorAll('.bac4-canvas-export-container');
+  for (let i = 0; i < exportContainers.length; i++) {
+    const container = exportContainers[i] as HTMLElement;
+    const rect = container.getBoundingClientRect();
+    // Find the first visible container (width > 0, height > 0, not hidden)
+    if (rect.width > 0 && rect.height > 0 && container.offsetParent !== null) {
+      console.log(`BAC4: Found visible export container (${i + 1} of ${exportContainers.length})`);
+      return container;
+    }
+  }
+
+  // Last resort: try the first visible React Flow container
+  const reactFlows = document.querySelectorAll('.react-flow');
+  for (let i = 0; i < reactFlows.length; i++) {
+    const rf = reactFlows[i] as HTMLElement;
+    const rect = rf.getBoundingClientRect();
+    if (rect.width > 0 && rect.height > 0 && rf.offsetParent !== null) {
+      console.log(`BAC4: Using visible React Flow container (${i + 1} of ${reactFlows.length})`);
+      return rf;
     }
   }
 
@@ -131,7 +162,7 @@ function restoreUIControls(elements: HTMLElement[]): void {
  * ```
  */
 export function useExport(options: UseExportOptions = {}): ExportHandlers {
-  const { diagramName = 'diagram', timeline } = options;
+  const { diagramName = 'diagram', timeline, reactFlowId } = options;
   const { getNodes } = useReactFlow();
   const [isExporting, setIsExporting] = React.useState(false);
 
@@ -150,12 +181,14 @@ export function useExport(options: UseExportOptions = {}): ExportHandlers {
       }
 
       // Validation: Find export element
-      const element = getExportElement();
+      const element = getExportElement(reactFlowId);
       if (!element) {
         console.error('BAC4: ❌ Could not find React Flow container');
         console.error('BAC4: Available elements:', {
           reactFlow: document.querySelectorAll('.react-flow').length,
           viewport: document.querySelectorAll('.react-flow__viewport').length,
+          exportContainers: document.querySelectorAll('.bac4-canvas-export-container').length,
+          reactFlowId: reactFlowId || 'not provided',
         });
         ErrorHandler.handleError(
           new Error('Export element not found'),
@@ -271,7 +304,7 @@ export function useExport(options: UseExportOptions = {}): ExportHandlers {
           });
       }, EXPORT_DELAY_MS);
     },
-    [getNodes, diagramName, timeline]
+    [getNodes, diagramName, timeline, reactFlowId]
   );
 
   return {

@@ -1090,6 +1090,7 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath, view }) =
         onSendNodeBackward={() => selectedNode && nodeHandlers.sendNodeBackward(selectedNode.id)}
         onAddSnapshot={timeline ? handleAddSnapshot : undefined}
         diagramName={filePath ? getDiagramName(filePath) : 'diagram'}
+        filePath={filePath}
         timeline={timeline}
         layouts={layouts}
         currentLayout={currentLayout}
