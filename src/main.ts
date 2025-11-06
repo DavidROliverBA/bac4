@@ -1,9 +1,8 @@
-import { Plugin, WorkspaceLeaf, TFile, Notice, Modal, App } from 'obsidian';
+import { Plugin, WorkspaceLeaf, TFile, Notice } from 'obsidian';
 import { BAC4Settings } from './core/settings';
 import {
   DEFAULT_SETTINGS,
   COMMAND_OPEN_DASHBOARD,
-  COMMAND_OPEN_SETTINGS,
   VIEW_TYPE_CANVAS,
 } from './core/constants';
 import { BAC4SettingsTab } from './ui/settings-tab';
@@ -11,7 +10,6 @@ import { BAC4CanvasView } from './ui/canvas-view';
 import { BAC4CanvasViewV3, VIEW_TYPE_CANVAS_V3 } from './ui/canvas-view-v3';
 import { NodeExplorerView, VIEW_TYPE_NODE_EXPLORER } from './ui/views/NodeExplorerView';
 import { hasBac4Diagram } from './utils/frontmatter-parser';
-import { TimelineService } from './services/TimelineService';
 import { NodeRegistryService } from './services/node-registry-service';
 import { AIValidationService } from './services/ai-validation-service';
 import { ArchitectureAnalyzerService } from './services/architecture-analyzer-service';
@@ -21,7 +19,7 @@ import { KeyboardShortcutsService } from './services/keyboard-shortcuts-service'
 // v3.0.0 Services
 import { GraphServiceV3 } from './services/graph-service-v3';
 import { DiagramServiceV3 } from './services/diagram-service-v3';
-import { createEmptyDiagramV3 } from './types/graph-v3-types';
+import type { DiagramType } from './types/bac4-v2-types';
 import './styles.css';
 import '../styles/navigation.css';
 import '../styles/accessibility.css';
@@ -233,16 +231,9 @@ export default class BAC4Plugin extends Plugin {
               console.error('BAC4 v2.5: Error deleting graph file:', error);
             }
           } else {
-            // v2.6.0 or v1: Remove from __graph__.json (if exists)
-            try {
-              const { GraphFileService } = await import('./services/graph-file-service');
-              const graphService = new GraphFileService(this.app.vault);
-              await graphService.removeDiagramData(file.path);
-              console.log('BAC4 v2.6: ✅ Removed diagram from __graph__.json:', file.path);
-            } catch (error) {
-              // Silently fail if __graph__.json doesn't exist (v1 format)
-              console.log('BAC4: No graph data to clean up (v1 format or __graph__.json not found)');
-            }
+            // v2.6.0 or v1: Legacy format (no cleanup needed)
+            // Note: GraphFileService was removed in v2.6+ refactor
+            console.log('BAC4: Legacy format detected, no graph cleanup needed');
           }
         }
       })
@@ -276,16 +267,9 @@ export default class BAC4Plugin extends Plugin {
               console.error('BAC4 v2.5: Error renaming graph file:', error);
             }
           } else {
-            // v2.6.0 or v1: Update __graph__.json (if exists)
-            try {
-              const { GraphFileService } = await import('./services/graph-file-service');
-              const graphService = new GraphFileService(this.app.vault);
-              await graphService.renameDiagram(oldPath, file.path);
-              console.log('BAC4 v2.6: ✅ Updated diagram path in __graph__.json:', oldPath, '→', file.path);
-            } catch (error) {
-              // Silently fail if __graph__.json doesn't exist (v1 format)
-              console.log('BAC4: No graph data to update (v1 format or __graph__.json not found)');
-            }
+            // v2.6.0 or v1: Legacy format (no update needed)
+            // Note: GraphFileService was removed in v2.6+ refactor
+            console.log('BAC4: Legacy format detected, no graph update needed');
           }
         }
 
@@ -980,7 +964,8 @@ export default class BAC4Plugin extends Plugin {
       new Notice(`Created ${fileName} (v3.0.0)`);
     } catch (error) {
       console.error('BAC4 v3.0.0: Error creating diagram:', error);
-      new Notice('Error creating diagram: ' + error.message);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      new Notice('Error creating diagram: ' + errorMessage);
     }
   }
 
@@ -1118,10 +1103,17 @@ export default class BAC4Plugin extends Plugin {
     const layoutType = this.settings.graphLayout || 'hierarchical';
 
     // Ensure graphFilter exists (for users upgrading from older versions)
-    const filter = this.settings.graphFilter || {
+    const filterSettings = this.settings.graphFilter || {
       layers: [],
       connectionFilter: 'all' as const,
       minConnections: 5,
+    };
+
+    // Convert GraphFilterSettings to GraphFilter (layers: string[] -> DiagramType[])
+    const filter = {
+      layers: filterSettings.layers as DiagramType[],
+      connectionFilter: filterSettings.connectionFilter,
+      minConnections: filterSettings.minConnections,
     };
 
     const { nodes, edges } = await GraphGenerationService.generateGraph(this.app.vault, layoutType, filter);
@@ -1249,8 +1241,8 @@ export default class BAC4Plugin extends Plugin {
 
     try {
       // Get nodes and edges from the view
-      const nodes = view.getNodes ? view.getNodes() : [];
-      const edges = view.getEdges ? view.getEdges() : [];
+      const nodes = (view.getNodes ? view.getNodes() : null) || [];
+      const edges = (view.getEdges ? view.getEdges() : null) || [];
       const diagramType = view.getDiagramType ? view.getDiagramType() : 'context';
       const filePath = view.file?.path || 'Unknown';
 
@@ -1291,8 +1283,8 @@ export default class BAC4Plugin extends Plugin {
     new Notice('Running architecture analysis...');
 
     try {
-      const nodes = view.getNodes ? view.getNodes() : [];
-      const edges = view.getEdges ? view.getEdges() : [];
+      const nodes = (view.getNodes ? view.getNodes() : null) || [];
+      const edges = (view.getEdges ? view.getEdges() : null) || [];
       const diagramType = view.getDiagramType ? view.getDiagramType() : 'context';
       const filePath = view.file?.path || 'Unknown';
 
@@ -1333,8 +1325,8 @@ export default class BAC4Plugin extends Plugin {
     new Notice('Generating AI suggestions...');
 
     try {
-      const nodes = view.getNodes ? view.getNodes() : [];
-      const edges = view.getEdges ? view.getEdges() : [];
+      const nodes = (view.getNodes ? view.getNodes() : null) || [];
+      const edges = (view.getEdges ? view.getEdges() : null) || [];
       const diagramType = view.getDiagramType ? view.getDiagramType() : 'context';
       const filePath = view.file?.path || 'Unknown';
 

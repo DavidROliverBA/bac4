@@ -126,9 +126,10 @@ export async function writeBAC4File(
     // File not found in cache, try to create it
     try {
       await vault.create(filePath, content);
-    } catch (error) {
+    } catch (error: unknown) {
       // If "file already exists", try to find and modify it (handles case-insensitive FS)
-      if (error.message && error.message.includes('already exists')) {
+      const errorMessage = error instanceof Error ? error.message : '';
+      if (errorMessage && errorMessage.includes('already exists')) {
         // Try exact path first
         let existingFile = vault.getAbstractFileByPath(filePath);
 
@@ -139,8 +140,9 @@ export async function writeBAC4File(
           const dir = vault.getAbstractFileByPath(dirPath);
 
           if (dir && 'children' in dir) {
-            const match = dir.children.find(
-              (child) => child.name.toLowerCase() === fileName.toLowerCase()
+            const children = (dir as any).children;
+            const match = children.find(
+              (child: any) => child.name?.toLowerCase() === fileName.toLowerCase()
             );
             if (match instanceof TFile) {
               existingFile = match;
@@ -180,9 +182,10 @@ export async function writeBAC4GraphFile(
     // File not found in cache, try to create it
     try {
       await vault.create(filePath, content);
-    } catch (error) {
+    } catch (error: unknown) {
       // If "file already exists", try to find and modify it (handles case-insensitive FS)
-      if (error.message && error.message.includes('already exists')) {
+      const errorMessage = error instanceof Error ? error.message : '';
+      if (errorMessage && errorMessage.includes('already exists')) {
         // Try exact path first
         let existingFile = vault.getAbstractFileByPath(filePath);
 
@@ -193,8 +196,9 @@ export async function writeBAC4GraphFile(
           const dir = vault.getAbstractFileByPath(dirPath);
 
           if (dir && 'children' in dir) {
-            const match = dir.children.find(
-              (child) => child.name.toLowerCase() === fileName.toLowerCase()
+            const children = (dir as any).children;
+            const match = children.find(
+              (child: any) => child.name?.toLowerCase() === fileName.toLowerCase()
             );
             if (match instanceof TFile) {
               existingFile = match;

@@ -1401,6 +1401,16 @@ export class BAC4CanvasView extends ItemView {
     return this.filePath;
   }
 
+  /**
+   * Get diagram type (for AI features)
+   * Returns the diagram type from metadata or defaults to 'context'
+   */
+  getDiagramType(): DiagramType {
+    // TODO: Read from file metadata when available
+    // For now, return a default
+    return 'context';
+  }
+
   async setState(state: { file?: string; filePath?: string }, result: unknown): Promise<void> {
     console.log('BAC4CanvasView: ⚠️ setState called with', state);
 

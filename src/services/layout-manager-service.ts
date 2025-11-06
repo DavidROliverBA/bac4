@@ -360,11 +360,10 @@ export class LayoutManagerService {
       },
       config: {
         layoutAlgorithm: 'manual',
-        showGrid: true,
+        gridEnabled: true,
         showMinimap: true,
         gridSize: 20,
         snapToGrid: false,
-        nodeSpacing: { x: 200, y: 150 },
         axisLabels: undefined,
       },
     };
