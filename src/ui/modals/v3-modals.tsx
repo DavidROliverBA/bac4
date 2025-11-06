@@ -6,7 +6,6 @@
  * @version 3.0.0
  */
 
-import * as React from 'react';
 import { Modal, App } from 'obsidian';
 import { GlobalNode, GlobalEdge } from '../../types/graph-v3-types';
 

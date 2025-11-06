@@ -31,10 +31,14 @@ export const GraphNode: React.FC<NodeProps<GraphNodeData>> = ({ data, selected }
 
   // Map diagram type to display label
   const typeLabel = {
+    market: 'Market',
+    organisation: 'Organisation',
+    capability: 'Capability',
     context: 'Context',
     container: 'Container',
     component: 'Component',
-    capability: 'Capability',
+    code: 'Code',
+    wardley: 'Wardley',
   }[data.diagramType];
 
   return (
