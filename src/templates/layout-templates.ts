@@ -127,12 +127,8 @@ export function getAllLayoutTemplates(): LayoutTemplate[] {
 /**
  * Get template by display name
  */
-export function getLayoutTemplateByName(
-  displayName: string
-): LayoutTemplate | undefined {
-  return Object.values(LAYOUT_TEMPLATES).find(
-    (template) => template.displayName === displayName
-  );
+export function getLayoutTemplateByName(displayName: string): LayoutTemplate | undefined {
+  return Object.values(LAYOUT_TEMPLATES).find((template) => template.displayName === displayName);
 }
 
 /**

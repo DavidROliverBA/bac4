@@ -156,11 +156,13 @@ export const WardleyComponentNode: React.FC<NodeProps<WardleyNodeData>> = ({ dat
       />
 
       {/* Component label */}
-      <div style={{
-        marginBottom: SPACING.small,
-        fontSize: FONT_SIZES.normal,
-        fontWeight: 700,
-      }}>
+      <div
+        style={{
+          marginBottom: SPACING.small,
+          fontSize: FONT_SIZES.normal,
+          fontWeight: 700,
+        }}
+      >
         {data.label}
       </div>
 

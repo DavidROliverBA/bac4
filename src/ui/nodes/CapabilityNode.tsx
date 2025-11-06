@@ -36,12 +36,7 @@ export const CapabilityNode: React.FC<NodeProps<CapabilityNodeData>> = ({ data, 
   return (
     <>
       {/* Node Resizer - allows interactive resizing */}
-      <NodeResizer
-        color={color}
-        isVisible={selected}
-        minWidth={120}
-        minHeight={60}
-      />
+      <NodeResizer color={color} isVisible={selected} minWidth={120} minHeight={60} />
 
       <div
         style={{
@@ -89,7 +84,7 @@ export const CapabilityNode: React.FC<NodeProps<CapabilityNodeData>> = ({ data, 
               boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
               zIndex: 10,
             }}
-            title={`Shared across ${data.crossReferences.length + 1} diagrams:\n${data.crossReferences.map(path => path.split('/').pop()?.replace('.bac4', '')).join('\n')}`}
+            title={`Shared across ${data.crossReferences.length + 1} diagrams:\n${data.crossReferences.map((path) => path.split('/').pop()?.replace('.bac4', '')).join('\n')}`}
           >
             {data.crossReferences.length + 1}
           </div>

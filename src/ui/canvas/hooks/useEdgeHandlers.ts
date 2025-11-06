@@ -20,7 +20,7 @@ import { getEdgeMarkers } from '../utils/canvas-utils';
 export interface UseEdgeHandlersProps {
   setEdges: React.Dispatch<React.SetStateAction<Edge<EdgeData>[]>>;
   onEdgeSelect: (edge: Edge<EdgeData> | null) => void;
-  diagramType?: DiagramType;  // v2.5.0: Used to determine edge type (wardley vs directional)
+  diagramType?: DiagramType; // v2.5.0: Used to determine edge type (wardley vs directional)
 }
 
 export interface EdgeHandlers {
@@ -63,9 +63,9 @@ export function useEdgeHandlers(props: UseEdgeHandlersProps): EdgeHandlers {
         animated: false,
         ...markers,
         data: {
-          label: diagramType === 'wardley' ? '' : 'uses',  // No default label for Wardley edges
+          label: diagramType === 'wardley' ? '' : 'uses', // No default label for Wardley edges
           direction,
-          style: defaultStyle,  // v2.5.0: Default edge style
+          style: defaultStyle, // v2.5.0: Default edge style
         },
       };
       console.log('BAC4: Creating edge:', edge);

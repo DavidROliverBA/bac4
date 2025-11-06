@@ -59,18 +59,24 @@ export const ComponentPalette: React.FC<ComponentPaletteProps> = ({
   }, [filteredComponents]);
 
   // Dragging handlers
-  const handleDragMouseDown = React.useCallback((e: React.MouseEvent) => {
-    setIsDragging(true);
-    setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y });
-    e.preventDefault();
-  }, [position]);
+  const handleDragMouseDown = React.useCallback(
+    (e: React.MouseEvent) => {
+      setIsDragging(true);
+      setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y });
+      e.preventDefault();
+    },
+    [position]
+  );
 
-  const handleResizeMouseDown = React.useCallback((e: React.MouseEvent) => {
-    setIsResizing(true);
-    setDragStart({ x: e.clientX - size.width, y: e.clientY - size.height });
-    e.preventDefault();
-    e.stopPropagation();
-  }, [size]);
+  const handleResizeMouseDown = React.useCallback(
+    (e: React.MouseEvent) => {
+      setIsResizing(true);
+      setDragStart({ x: e.clientX - size.width, y: e.clientY - size.height });
+      e.preventDefault();
+      e.stopPropagation();
+    },
+    [size]
+  );
 
   // Global mouse move and up handlers
   React.useEffect(() => {
@@ -160,9 +166,7 @@ export const ComponentPalette: React.FC<ComponentPaletteProps> = ({
           userSelect: 'none',
         }}
       >
-        <h3 style={{ margin: 0, fontSize: FONT_SIZES.large, fontWeight: 600 }}>
-          Components
-        </h3>
+        <h3 style={{ margin: 0, fontSize: FONT_SIZES.large, fontWeight: 600 }}>Components</h3>
         <button
           onClick={() => setIsCollapsed(true)}
           onMouseDown={(e) => e.stopPropagation()}

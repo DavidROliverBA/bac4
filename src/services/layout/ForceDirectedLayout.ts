@@ -19,11 +19,7 @@ import type {
   LayoutConfig,
   NodePosition,
 } from './LayoutEngine';
-import {
-  DEFAULT_LAYOUT_CONFIG,
-  calculateNodeSize,
-  countRelationships,
-} from './LayoutEngine';
+import { DEFAULT_LAYOUT_CONFIG, calculateNodeSize, countRelationships } from './LayoutEngine';
 
 /**
  * Node in force simulation
@@ -139,7 +135,7 @@ export class ForceDirectedLayout implements LayoutEngine {
 
           if (distance < MIN_DISTANCE) {
             // Strong repulsion when too close
-            const force = REPULSION_STRENGTH * 10 / (distance * distance);
+            const force = (REPULSION_STRENGTH * 10) / (distance * distance);
             const fx = (dx / distance) * force;
             const fy = (dy / distance) * force;
 

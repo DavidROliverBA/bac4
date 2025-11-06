@@ -39,7 +39,9 @@ export interface PropertyPanelProps {
   currentDiagramPath: string;
   plugin: BAC4Plugin;
   diagramType: 'context' | 'container' | 'component' | 'capability' | 'graph';
-  onDiagramTypeChange?: (newType: 'context' | 'container' | 'component' | 'capability' | 'graph') => void;
+  onDiagramTypeChange?: (
+    newType: 'context' | 'container' | 'component' | 'capability' | 'graph'
+  ) => void;
 }
 
 /**
@@ -52,7 +54,9 @@ export interface UnifiedToolbarProps {
   onExportJPEG: () => void;
   currentDiagramPath: string;
   plugin: BAC4Plugin;
-  onDiagramTypeChange: (newType: 'context' | 'container' | 'component' | 'capability' | 'graph') => void;
+  onDiagramTypeChange: (
+    newType: 'context' | 'container' | 'component' | 'capability' | 'graph'
+  ) => void;
   breadcrumbs: BreadcrumbItemType[];
   onBreadcrumbClick: (path: string) => void;
   onRenameDiagram: () => void;

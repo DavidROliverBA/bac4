@@ -34,10 +34,7 @@ export const LayoutSelector: React.FC<LayoutSelectorProps> = ({
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
     };
@@ -66,19 +63,13 @@ export const LayoutSelector: React.FC<LayoutSelectorProps> = ({
     setIsOpen(false);
   };
 
-  const handleRenameClick = (
-    e: React.MouseEvent,
-    graphPath: string
-  ) => {
+  const handleRenameClick = (e: React.MouseEvent, graphPath: string) => {
     e.stopPropagation();
     onRenameLayout(graphPath);
     setIsOpen(false);
   };
 
-  const handleDeleteClick = (
-    e: React.MouseEvent,
-    graphPath: string
-  ) => {
+  const handleDeleteClick = (e: React.MouseEvent, graphPath: string) => {
     e.stopPropagation();
     onDeleteLayout(graphPath);
     setIsOpen(false);
@@ -94,12 +85,8 @@ export const LayoutSelector: React.FC<LayoutSelectorProps> = ({
         aria-label="Switch layout"
         aria-expanded={isOpen}
       >
-        <span className="bac4-layout-selector-icon">
-          {getViewTypeIcon(currentLayout.viewType)}
-        </span>
-        <span className="bac4-layout-selector-title">
-          {currentLayout.title}
-        </span>
+        <span className="bac4-layout-selector-icon">{getViewTypeIcon(currentLayout.viewType)}</span>
+        <span className="bac4-layout-selector-title">{currentLayout.title}</span>
         <span className="bac4-layout-selector-arrow">▾</span>
       </button>
 
@@ -121,14 +108,10 @@ export const LayoutSelector: React.FC<LayoutSelectorProps> = ({
                 <span className="bac4-layout-selector-item-title">
                   {layout.title}
                   {layout.isDefault && (
-                    <span className="bac4-layout-selector-item-badge">
-                      default
-                    </span>
+                    <span className="bac4-layout-selector-item-badge">default</span>
                   )}
                 </span>
-                {layout.isCurrent && (
-                  <span className="bac4-layout-selector-item-checkmark">✓</span>
-                )}
+                {layout.isCurrent && <span className="bac4-layout-selector-item-checkmark">✓</span>}
                 {!layout.isDefault && (
                   <div className="bac4-layout-selector-item-actions">
                     <button
@@ -155,10 +138,7 @@ export const LayoutSelector: React.FC<LayoutSelectorProps> = ({
 
           <div className="bac4-layout-selector-divider" />
 
-          <button
-            className="bac4-layout-selector-create"
-            onClick={handleCreateClick}
-          >
+          <button className="bac4-layout-selector-create" onClick={handleCreateClick}>
             <span className="bac4-layout-selector-create-icon">+</span>
             <span>Create New Layout</span>
           </button>

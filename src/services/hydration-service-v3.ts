@@ -39,18 +39,14 @@ export class HydrationServiceV3 {
   /**
    * Hydrate: Load diagram and convert to React Flow format
    */
-  async hydrateDiagram(
-    diagramPath: string
-  ): Promise<{ nodes: Node[]; edges: Edge[] }> {
+  async hydrateDiagram(diagramPath: string): Promise<{ nodes: Node[]; edges: Edge[] }> {
     const [graph, diagram] = await Promise.all([
       this.graphService.readGraph(),
       this.diagramService.readDiagram(diagramPath),
     ]);
 
     // Get current snapshot
-    const snapshot = diagram.snapshots.find(
-      (s) => s.id === diagram.currentSnapshotId
-    );
+    const snapshot = diagram.snapshots.find((s) => s.id === diagram.currentSnapshotId);
 
     if (!snapshot) {
       throw new Error('No current snapshot found');
@@ -68,11 +64,7 @@ export class HydrationServiceV3 {
   /**
    * Hydrate nodes: Combine global nodes + local nodes with layout
    */
-  private hydrateNodes(
-    graph: GraphFileV3,
-    diagram: DiagramFileV3,
-    snapshot: Snapshot
-  ): Node[] {
+  private hydrateNodes(graph: GraphFileV3, diagram: DiagramFileV3, snapshot: Snapshot): Node[] {
     const nodes: Node[] = [];
 
     // Hydrate global nodes (from diagram.view.nodes)
@@ -137,16 +129,9 @@ export class HydrationServiceV3 {
   /**
    * Hydrate edges: Filter global edges + add local edges
    */
-  private hydrateEdges(
-    graph: GraphFileV3,
-    diagram: DiagramFileV3,
-    snapshot: Snapshot
-  ): Edge[] {
+  private hydrateEdges(graph: GraphFileV3, diagram: DiagramFileV3, snapshot: Snapshot): Edge[] {
     const edges: Edge[] = [];
-    const nodeIds = new Set([
-      ...diagram.view.nodes,
-      ...Object.keys(snapshot.localNodes),
-    ]);
+    const nodeIds = new Set([...diagram.view.nodes, ...Object.keys(snapshot.localNodes)]);
 
     // Hydrate global edges (only if both nodes are on this diagram)
     for (const globalEdge of graph.relationships.edges) {
@@ -184,11 +169,12 @@ export class HydrationServiceV3 {
           edge.style.lineType === 'dashed'
             ? '5 5'
             : edge.style.lineType === 'dotted'
-            ? '2 2'
-            : undefined,
+              ? '2 2'
+              : undefined,
       },
       markerEnd: edge.direction !== 'left' ? 'arrowclosed' : undefined,
-      markerStart: edge.direction === 'left' || edge.direction === 'both' ? 'arrowclosed' : undefined,
+      markerStart:
+        edge.direction === 'left' || edge.direction === 'both' ? 'arrowclosed' : undefined,
     };
   }
 
@@ -213,11 +199,12 @@ export class HydrationServiceV3 {
           edge.style.lineType === 'dashed'
             ? '5 5'
             : edge.style.lineType === 'dotted'
-            ? '2 2'
-            : undefined,
+              ? '2 2'
+              : undefined,
       },
       markerEnd: edge.direction !== 'left' ? 'arrowclosed' : undefined,
-      markerStart: edge.direction === 'left' || edge.direction === 'both' ? 'arrowclosed' : undefined,
+      markerStart:
+        edge.direction === 'left' || edge.direction === 'both' ? 'arrowclosed' : undefined,
     };
   }
 
@@ -235,9 +222,7 @@ export class HydrationServiceV3 {
     ]);
 
     // Get current snapshot
-    const snapshot = diagram.snapshots.find(
-      (s) => s.id === diagram.currentSnapshotId
-    );
+    const snapshot = diagram.snapshots.find((s) => s.id === diagram.currentSnapshotId);
 
     if (!snapshot) {
       throw new Error('No current snapshot found');
@@ -259,10 +244,7 @@ export class HydrationServiceV3 {
   /**
    * Dehydrate nodes: Update global nodes in __graph__.json
    */
-  private async dehydrateNodes(
-    graph: GraphFileV3,
-    reactFlowNodes: Node[]
-  ): Promise<void> {
+  private async dehydrateNodes(graph: GraphFileV3, reactFlowNodes: Node[]): Promise<void> {
     // Track which nodes need updating
     const nodesToUpdate: GlobalNode[] = [];
 

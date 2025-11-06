@@ -45,9 +45,7 @@ export class SnapshotServiceV3 {
     const diagram = await this.diagramService.readDiagram(diagramPath);
 
     // Get current snapshot to copy from
-    const currentSnapshot = diagram.snapshots.find(
-      (s) => s.id === diagram.currentSnapshotId
-    );
+    const currentSnapshot = diagram.snapshots.find((s) => s.id === diagram.currentSnapshotId);
 
     if (!currentSnapshot) {
       throw new Error('No current snapshot found');
@@ -139,9 +137,7 @@ export class SnapshotServiceV3 {
     }
 
     // Check against local nodes in this snapshot
-    const localNameExists = Object.values(snapshot.localNodes).some(
-      (n) => n.label === node.label
-    );
+    const localNameExists = Object.values(snapshot.localNodes).some((n) => n.label === node.label);
     if (localNameExists) {
       throw new Error(`Node name "${node.label}" already exists in this snapshot`);
     }
@@ -257,9 +253,7 @@ export class SnapshotServiceV3 {
    */
   async getCurrentSnapshot(diagramPath: string): Promise<Snapshot> {
     const diagram = await this.diagramService.readDiagram(diagramPath);
-    const snapshot = diagram.snapshots.find(
-      (s) => s.id === diagram.currentSnapshotId
-    );
+    const snapshot = diagram.snapshots.find((s) => s.id === diagram.currentSnapshotId);
 
     if (!snapshot) {
       throw new Error('No current snapshot found');

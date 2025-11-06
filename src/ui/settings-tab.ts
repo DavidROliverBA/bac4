@@ -78,9 +78,7 @@ export class BAC4SettingsTab extends PluginSettingTab {
     if (this.plugin.settings.mcp.enabled) {
       new Setting(containerEl)
         .setName('Anthropic API key')
-        .setDesc(
-          'Your Anthropic API key for Claude AI. Get one at https://console.anthropic.com/'
-        )
+        .setDesc('Your Anthropic API key for Claude AI. Get one at https://console.anthropic.com/')
         .addText((text) => {
           text
             .setPlaceholder('sk-ant-...')

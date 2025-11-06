@@ -11,13 +11,20 @@
  */
 
 import * as React from 'react';
-import { EdgeProps, getSmoothStepPath, getBezierPath, EdgeLabelRenderer, BaseEdge, Position } from 'reactflow';
+import {
+  EdgeProps,
+  getSmoothStepPath,
+  getBezierPath,
+  EdgeLabelRenderer,
+  BaseEdge,
+  Position,
+} from 'reactflow';
 import { FONT_SIZES, SPACING, UI_COLORS, BORDER_RADIUS } from '../../constants';
 
 export interface DirectionalEdgeData {
   label?: string;
   direction?: 'right' | 'left' | 'both';
-  style?: 'diagonal' | 'rightAngle' | 'curved';  // v2.5.0: Edge path style
+  style?: 'diagonal' | 'rightAngle' | 'curved'; // v2.5.0: Edge path style
 }
 
 /**

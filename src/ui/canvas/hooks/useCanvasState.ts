@@ -97,7 +97,10 @@ export function useCanvasState(props: UseCanvasStateProps): CanvasStateHandlers 
 
       // Get all references to this node name (including current diagram)
       const allReferences = registry.getReferences(label);
-      console.log(`BAC4: 📋 Registry returned ${allReferences.length} references for "${label}":`, allReferences);
+      console.log(
+        `BAC4: 📋 Registry returned ${allReferences.length} references for "${label}":`,
+        allReferences
+      );
 
       if (allReferences.length <= 1) {
         // No cross-references - this is the only node with this name
@@ -105,7 +108,9 @@ export function useCanvasState(props: UseCanvasStateProps): CanvasStateHandlers 
         return;
       }
 
-      console.log(`BAC4: ✨ Found ${allReferences.length} instances of "${label}" - starting cross-reference sync`);
+      console.log(
+        `BAC4: ✨ Found ${allReferences.length} instances of "${label}" - starting cross-reference sync`
+      );
 
       // Get paths to other diagrams (excluding current)
       const otherDiagrams = allReferences
@@ -159,7 +164,9 @@ export function useCanvasState(props: UseCanvasStateProps): CanvasStateHandlers 
           // v1.0.0 format: nodes are in timeline snapshots
           if (diagramData.timeline?.snapshots && Array.isArray(diagramData.timeline.snapshots)) {
             const currentSnapshotId = diagramData.timeline.currentSnapshotId;
-            const currentSnapshot = diagramData.timeline.snapshots.find((s: any) => s.id === currentSnapshotId);
+            const currentSnapshot = diagramData.timeline.snapshots.find(
+              (s: any) => s.id === currentSnapshotId
+            );
 
             if (currentSnapshot?.nodes && Array.isArray(currentSnapshot.nodes)) {
               nodes = currentSnapshot.nodes;
@@ -204,7 +211,9 @@ export function useCanvasState(props: UseCanvasStateProps): CanvasStateHandlers 
           console.log('BAC4: 📝 Updating diagram data structure at path:', nodesPath);
           if (nodesPath === 'timeline.snapshots[current].nodes') {
             const currentSnapshotId = diagramData.timeline.currentSnapshotId;
-            const snapshotIndex = diagramData.timeline.snapshots.findIndex((s: any) => s.id === currentSnapshotId);
+            const snapshotIndex = diagramData.timeline.snapshots.findIndex(
+              (s: any) => s.id === currentSnapshotId
+            );
             if (snapshotIndex !== -1) {
               diagramData.timeline.snapshots[snapshotIndex].nodes = updatedNodes;
               console.log('BAC4: ✅ Updated snapshot nodes at index:', snapshotIndex);
@@ -220,7 +229,6 @@ export function useCanvasState(props: UseCanvasStateProps): CanvasStateHandlers 
           console.log('BAC4: 💾 Writing updated diagram to disk:', ref.diagramPath);
           await plugin.app.vault.modify(diagramFile, JSON.stringify(diagramData, null, 2));
           console.log('BAC4: ✅ Successfully updated cross-references in:', ref.diagramPath);
-
         } catch (error) {
           console.error('BAC4: Error updating cross-references in:', ref.diagramPath, error);
         }
@@ -266,67 +274,73 @@ export function useCanvasState(props: UseCanvasStateProps): CanvasStateHandlers 
    * Generate markdown file path for cloud component
    * Creates path in docs/ folder next to current diagram
    */
-  const generateMarkdownPath = React.useCallback((label: string): string | null => {
-    if (!filePath) return null;
+  const generateMarkdownPath = React.useCallback(
+    (label: string): string | null => {
+      if (!filePath) return null;
 
-    // Get parent directory of current diagram
-    const lastSlash = filePath.lastIndexOf('/');
-    const parentDir = lastSlash >= 0 ? filePath.substring(0, lastSlash) : '';
+      // Get parent directory of current diagram
+      const lastSlash = filePath.lastIndexOf('/');
+      const parentDir = lastSlash >= 0 ? filePath.substring(0, lastSlash) : '';
 
-    // Sanitize label for filename
-    const sanitizedLabel = label.replace(/[^a-zA-Z0-9_\-\s]/g, '').replace(/\s+/g, '_');
+      // Sanitize label for filename
+      const sanitizedLabel = label.replace(/[^a-zA-Z0-9_\-\s]/g, '').replace(/\s+/g, '_');
 
-    // Create path: parent/docs/Label.md
-    return parentDir ? `${parentDir}/docs/${sanitizedLabel}.md` : `docs/${sanitizedLabel}.md`;
-  }, [filePath]);
+      // Create path: parent/docs/Label.md
+      return parentDir ? `${parentDir}/docs/${sanitizedLabel}.md` : `docs/${sanitizedLabel}.md`;
+    },
+    [filePath]
+  );
 
   /**
    * Create markdown documentation file for cloud component
    */
-  const createCloudComponentDocs = React.useCallback(async (
-    _nodeId: string,
-    label: string,
-    _component: ComponentDefinition
-  ): Promise<string | null> => {
-    const markdownPath = generateMarkdownPath(label);
-    if (!markdownPath) {
-      console.log('BAC4: Cannot create markdown - diagram not saved');
-      return null;
-    }
-
-    try {
-      // Check if docs folder exists, create if not
-      const docsFolder = markdownPath.substring(0, markdownPath.lastIndexOf('/'));
-      const folderExists = plugin.app.vault.getAbstractFileByPath(docsFolder);
-
-      if (!folderExists) {
-        console.log('BAC4: Creating docs folder:', docsFolder);
-        await plugin.app.vault.createFolder(docsFolder);
+  const createCloudComponentDocs = React.useCallback(
+    async (
+      _nodeId: string,
+      label: string,
+      _component: ComponentDefinition
+    ): Promise<string | null> => {
+      const markdownPath = generateMarkdownPath(label);
+      if (!markdownPath) {
+        console.log('BAC4: Cannot create markdown - diagram not saved');
+        return null;
       }
 
-      // Check if markdown file already exists
-      const fileExists = await MarkdownLinkService.fileExists(plugin.app.vault, markdownPath);
-      if (fileExists) {
-        console.log('BAC4: Markdown file already exists:', markdownPath);
-        return markdownPath; // Return existing path
+      try {
+        // Check if docs folder exists, create if not
+        const docsFolder = markdownPath.substring(0, markdownPath.lastIndexOf('/'));
+        const folderExists = plugin.app.vault.getAbstractFileByPath(docsFolder);
+
+        if (!folderExists) {
+          console.log('BAC4: Creating docs folder:', docsFolder);
+          await plugin.app.vault.createFolder(docsFolder);
+        }
+
+        // Check if markdown file already exists
+        const fileExists = await MarkdownLinkService.fileExists(plugin.app.vault, markdownPath);
+        if (fileExists) {
+          console.log('BAC4: Markdown file already exists:', markdownPath);
+          return markdownPath; // Return existing path
+        }
+
+        // Create markdown file with cloud component template
+        console.log('BAC4: Creating markdown file for cloud component:', markdownPath);
+        await MarkdownLinkService.createMarkdownFile(
+          plugin.app.vault,
+          markdownPath,
+          label,
+          'cloudComponent'
+        );
+        console.log('BAC4: ✅ Markdown file created');
+
+        return markdownPath;
+      } catch (error) {
+        console.error('BAC4: Error creating markdown file:', error);
+        return null; // Don't fail node creation if markdown creation fails
       }
-
-      // Create markdown file with cloud component template
-      console.log('BAC4: Creating markdown file for cloud component:', markdownPath);
-      await MarkdownLinkService.createMarkdownFile(
-        plugin.app.vault,
-        markdownPath,
-        label,
-        'cloudComponent'
-      );
-      console.log('BAC4: ✅ Markdown file created');
-
-      return markdownPath;
-    } catch (error) {
-      console.error('BAC4: Error creating markdown file:', error);
-      return null; // Don't fail node creation if markdown creation fails
-    }
-  }, [plugin, generateMarkdownPath]);
+    },
+    [plugin, generateMarkdownPath]
+  );
 
   /**
    * React Flow initialization callback
@@ -441,7 +455,16 @@ export function useCanvasState(props: UseCanvasStateProps): CanvasStateHandlers 
         });
       }
     },
-    [reactFlowInstance, setNodes, nodeCounterRef, nodes, onCreateChildDiagram, reactFlowWrapper, createCloudComponentDocs, registerNode]
+    [
+      reactFlowInstance,
+      setNodes,
+      nodeCounterRef,
+      nodes,
+      onCreateChildDiagram,
+      reactFlowWrapper,
+      createCloudComponentDocs,
+      registerNode,
+    ]
   );
 
   /**
@@ -476,7 +499,15 @@ export function useCanvasState(props: UseCanvasStateProps): CanvasStateHandlers 
         AUTO_CREATE_CHILD_DELAY_MS
       );
     },
-    [setNodes, nodeCounterRef, nodes, mousePosition, onCreateChildDiagram, registerNode, diagramType]
+    [
+      setNodes,
+      nodeCounterRef,
+      nodes,
+      mousePosition,
+      onCreateChildDiagram,
+      registerNode,
+      diagramType,
+    ]
   );
 
   /**
@@ -511,9 +542,7 @@ export function useCanvasState(props: UseCanvasStateProps): CanvasStateHandlers 
         if (markdownPath) {
           setNodes((nds) =>
             nds.map((n) =>
-              n.id === nodeId
-                ? { ...n, data: { ...n.data, linkedMarkdownPath: markdownPath } }
-                : n
+              n.id === nodeId ? { ...n, data: { ...n.data, linkedMarkdownPath: markdownPath } } : n
             )
           );
           console.log('BAC4: ✅ Auto-linked markdown file:', markdownPath);

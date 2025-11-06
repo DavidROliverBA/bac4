@@ -121,14 +121,9 @@ export const NodePalette: React.FC<NodePaletteProps> = ({
                     {node.description && (
                       <p className="bac4-node-description">{node.description}</p>
                     )}
-                    {node.technology && (
-                      <p className="bac4-node-tech">Tech: {node.technology}</p>
-                    )}
+                    {node.technology && <p className="bac4-node-tech">Tech: {node.technology}</p>}
                   </div>
-                  <button
-                    onClick={() => onAddExistingNode(node)}
-                    className="bac4-add-node-btn"
-                  >
+                  <button onClick={() => onAddExistingNode(node)} className="bac4-add-node-btn">
                     Add to Diagram
                   </button>
                 </div>

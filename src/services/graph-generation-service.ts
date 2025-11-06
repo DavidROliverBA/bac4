@@ -97,7 +97,9 @@ export class GraphGenerationService {
       if (data.timeline && data.timeline.snapshots && Array.isArray(data.timeline.snapshots)) {
         // Get current snapshot
         const currentSnapshotId = data.timeline.currentSnapshotId;
-        const currentSnapshot = data.timeline.snapshots.find((s: any) => s.id === currentSnapshotId);
+        const currentSnapshot = data.timeline.snapshots.find(
+          (s: any) => s.id === currentSnapshotId
+        );
 
         if (currentSnapshot && currentSnapshot.nodes && Array.isArray(currentSnapshot.nodes)) {
           for (const node of currentSnapshot.nodes) {
@@ -139,7 +141,6 @@ export class GraphGenerationService {
     }
   }
 
-
   /**
    * Generate graph nodes and edges from all diagrams in vault
    *
@@ -180,9 +181,7 @@ export class GraphGenerationService {
 
     // Load saved layout positions (v2.0.1)
     const savedLayout = await GraphLayoutService.loadLayout(vault);
-    console.log(
-      `BAC4: Loaded ${Object.keys(savedLayout.layout).length} saved node positions`
-    );
+    console.log(`BAC4: Loaded ${Object.keys(savedLayout.layout).length} saved node positions`);
 
     // Get all diagram files
     const diagramFiles = await this.getAllDiagrams(vault);
@@ -203,7 +202,9 @@ export class GraphGenerationService {
     let filteredMetadata = allMetadata;
     if (filter) {
       filteredMetadata = GraphFilterService.filterDiagrams(allMetadata, filter);
-      console.log(`BAC4: Applied filters, ${filteredMetadata.length}/${allMetadata.length} diagrams match`);
+      console.log(
+        `BAC4: Applied filters, ${filteredMetadata.length}/${allMetadata.length} diagrams match`
+      );
     }
 
     // Get layout engine and calculate positions (v2.0.2)
@@ -239,9 +240,7 @@ export class GraphGenerationService {
         y = savedPosition.y;
         width = savedPosition.width;
         height = savedPosition.height;
-        console.log(
-          `BAC4: Using saved position for ${metadata.displayName}: (${x}, ${y})`
-        );
+        console.log(`BAC4: Using saved position for ${metadata.displayName}: (${x}, ${y})`);
       } else {
         // Use layout engine position
         x = layoutPosition.x;

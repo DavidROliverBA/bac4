@@ -59,7 +59,7 @@ export function useResponsiveLayout(): ResponsiveLayout {
 
   // Determine compact mode (laptop screens)
   const isCompact = screenWidth < BREAKPOINTS.md; // < 1440px
-  const isSmall = screenWidth < BREAKPOINTS.sm;   // < 1024px
+  const isSmall = screenWidth < BREAKPOINTS.sm; // < 1024px
 
   return {
     screenWidth,

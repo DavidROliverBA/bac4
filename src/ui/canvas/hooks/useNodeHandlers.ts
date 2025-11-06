@@ -106,7 +106,10 @@ export function useNodeHandlers(props: UseNodeHandlersProps): NodeHandlers {
         console.log('BAC4: ✅ Markdown file opened');
       } catch (error) {
         console.error('BAC4: Error opening markdown file:', error);
-        ErrorHandler.handleError(error, 'Failed to open markdown file. File may have been moved or deleted.');
+        ErrorHandler.handleError(
+          error,
+          'Failed to open markdown file. File may have been moved or deleted.'
+        );
       }
     },
     [nodes, plugin]
@@ -175,9 +178,7 @@ export function useNodeHandlers(props: UseNodeHandlersProps): NodeHandlers {
           // Auto-save will persist to disk after 1 second debounce
           setNodes((nds) =>
             nds.map((n) =>
-              n.id === node.id
-                ? { ...n, data: { ...n.data, linkedDiagramPath: childPath } }
-                : n
+              n.id === node.id ? { ...n, data: { ...n.data, linkedDiagramPath: childPath } } : n
             )
           );
           console.log('BAC4: ✅ Updated node with linkedDiagramPath in React state');
@@ -237,7 +238,10 @@ export function useNodeHandlers(props: UseNodeHandlersProps): NodeHandlers {
 
       // Priority 1: Check if node has linkedDiagramPath (embedded in node data)
       if ('linkedDiagramPath' in node.data && node.data.linkedDiagramPath) {
-        console.log('BAC4: Node has linkedDiagramPath, opening diagram:', node.data.linkedDiagramPath);
+        console.log(
+          'BAC4: Node has linkedDiagramPath, opening diagram:',
+          node.data.linkedDiagramPath
+        );
         try {
           await plugin.openCanvasViewInNewTab(node.data.linkedDiagramPath);
           console.log('BAC4: ✅ Opened linked diagram');
@@ -252,7 +256,10 @@ export function useNodeHandlers(props: UseNodeHandlersProps): NodeHandlers {
 
       // Priority 2: Check if node has linkedMarkdownPath
       if (node.data.linkedMarkdownPath) {
-        console.log('BAC4: Node has linkedMarkdownPath, opening markdown:', node.data.linkedMarkdownPath);
+        console.log(
+          'BAC4: Node has linkedMarkdownPath, opening markdown:',
+          node.data.linkedMarkdownPath
+        );
         await openLinkedMarkdownFile(node.id);
         console.log('=== BAC4 DOUBLE-CLICK END ===');
         return;
@@ -268,7 +275,9 @@ export function useNodeHandlers(props: UseNodeHandlersProps): NodeHandlers {
 
       // Priority 4: Nothing available
       console.log('BAC4: No action available for double-click');
-      ErrorHandler.showInfo('No linked diagram or documentation. Use Property Panel to link files.');
+      ErrorHandler.showInfo(
+        'No linked diagram or documentation. Use Property Panel to link files.'
+      );
       console.log('=== BAC4 DOUBLE-CLICK END ===');
     },
     [handleCreateOrOpenChildDiagram, openLinkedMarkdownFile, plugin, diagramType]
@@ -547,7 +556,9 @@ export function useNodeHandlers(props: UseNodeHandlersProps): NodeHandlers {
           // v1.0.0 format: nodes are in timeline snapshots
           if (diagramData.timeline?.snapshots && Array.isArray(diagramData.timeline.snapshots)) {
             const currentSnapshotId = diagramData.timeline.currentSnapshotId;
-            const currentSnapshot = diagramData.timeline.snapshots.find((s: any) => s.id === currentSnapshotId);
+            const currentSnapshot = diagramData.timeline.snapshots.find(
+              (s: any) => s.id === currentSnapshotId
+            );
 
             if (currentSnapshot?.nodes && Array.isArray(currentSnapshot.nodes)) {
               nodes = currentSnapshot.nodes;
@@ -581,7 +592,9 @@ export function useNodeHandlers(props: UseNodeHandlersProps): NodeHandlers {
           // Update the diagram data structure
           if (nodesPath === 'timeline.snapshots[current].nodes') {
             const currentSnapshotId = diagramData.timeline.currentSnapshotId;
-            const snapshotIndex = diagramData.timeline.snapshots.findIndex((s: any) => s.id === currentSnapshotId);
+            const snapshotIndex = diagramData.timeline.snapshots.findIndex(
+              (s: any) => s.id === currentSnapshotId
+            );
             if (snapshotIndex !== -1) {
               diagramData.timeline.snapshots[snapshotIndex].nodes = updatedNodes;
             }
@@ -592,7 +605,6 @@ export function useNodeHandlers(props: UseNodeHandlersProps): NodeHandlers {
           // Save the updated diagram
           await plugin.app.vault.modify(diagramFile, JSON.stringify(diagramData, null, 2));
           console.log('BAC4: ✅ Synced properties to:', ref.diagramPath);
-
         } catch (error) {
           console.error('BAC4: Error syncing to diagram:', ref.diagramPath, error);
         }

@@ -23,7 +23,6 @@ interface IconSelectorProps {
   placeholder?: string;
 }
 
-
 /**
  * IconSelector - Searchable icon picker with Lucide icons
  *
@@ -51,9 +50,7 @@ export const IconSelector: React.FC<IconSelectorProps> = React.memo(
 
       if (search) {
         // Filter by search term
-        filtered = allIcons.filter((id) =>
-          id.toLowerCase().includes(search.toLowerCase())
-        );
+        filtered = allIcons.filter((id) => id.toLowerCase().includes(search.toLowerCase()));
       } else {
         // Show all icons
         filtered = allIcons;
@@ -64,15 +61,18 @@ export const IconSelector: React.FC<IconSelectorProps> = React.memo(
     }, [search]);
 
     // Handle scroll for infinite loading
-    const handleScroll = React.useCallback((e: React.UIEvent<HTMLDivElement>) => {
-      const element = e.currentTarget;
-      const scrollPercentage = (element.scrollTop + element.clientHeight) / element.scrollHeight;
+    const handleScroll = React.useCallback(
+      (e: React.UIEvent<HTMLDivElement>) => {
+        const element = e.currentTarget;
+        const scrollPercentage = (element.scrollTop + element.clientHeight) / element.scrollHeight;
 
-      // Load more when scrolled 80% down
-      if (scrollPercentage > 0.8 && displayLimit < filteredIcons.length) {
-        setDisplayLimit(prev => Math.min(prev + 50, filteredIcons.length));
-      }
-    }, [filteredIcons.length, displayLimit]);
+        // Load more when scrolled 80% down
+        if (scrollPercentage > 0.8 && displayLimit < filteredIcons.length) {
+          setDisplayLimit((prev) => Math.min(prev + 50, filteredIcons.length));
+        }
+      },
+      [filteredIcons.length, displayLimit]
+    );
 
     // Render preview icon
     React.useEffect(() => {
@@ -208,7 +208,8 @@ export const IconSelector: React.FC<IconSelectorProps> = React.memo(
                   borderBottom: `1px solid ${UI_COLORS.backgroundModifierBorder}`,
                 }}
               >
-                Showing {Math.min(displayLimit, filteredIcons.length)} of {filteredIcons.length} icons
+                Showing {Math.min(displayLimit, filteredIcons.length)} of {filteredIcons.length}{' '}
+                icons
                 {displayLimit < filteredIcons.length && ' • Scroll for more'}
               </div>
 
@@ -254,7 +255,6 @@ export const IconSelector: React.FC<IconSelectorProps> = React.memo(
             </div>
           </>
         )}
-
       </div>
     );
   }

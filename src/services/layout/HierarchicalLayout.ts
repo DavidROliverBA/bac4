@@ -23,11 +23,7 @@ import type {
   LayoutConfig,
   NodePosition,
 } from './LayoutEngine';
-import {
-  DEFAULT_LAYOUT_CONFIG,
-  calculateNodeSize,
-  countRelationships,
-} from './LayoutEngine';
+import { DEFAULT_LAYOUT_CONFIG, calculateNodeSize, countRelationships } from './LayoutEngine';
 
 /**
  * Hierarchical layout engine

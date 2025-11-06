@@ -117,8 +117,11 @@ export class AIValidationService {
         title: 'God Object Detected',
         description: `Node "${node.data.label}" has too many connections (${this.getConnectionCount(node.id, edges)}). This violates the Single Responsibility Principle.`,
         affectedNodes: [node.id],
-        affectedEdges: edges.filter((e) => e.source === node.id || e.target === node.id).map((e) => e.id),
-        suggestion: 'Split this component into smaller, more focused components with single responsibilities.',
+        affectedEdges: edges
+          .filter((e) => e.source === node.id || e.target === node.id)
+          .map((e) => e.id),
+        suggestion:
+          'Split this component into smaller, more focused components with single responsibilities.',
         autoFixable: false,
       });
     }
@@ -133,10 +136,13 @@ export class AIValidationService {
         title: 'Tight Coupling Detected',
         description: `Nodes "${pair[0]}" and "${pair[1]}" have bidirectional dependencies, indicating tight coupling.`,
         affectedNodes: pair,
-        affectedEdges: edges.filter((e) =>
-          (e.source === pair[0] && e.target === pair[1]) ||
-          (e.source === pair[1] && e.target === pair[0])
-        ).map((e) => e.id),
+        affectedEdges: edges
+          .filter(
+            (e) =>
+              (e.source === pair[0] && e.target === pair[1]) ||
+              (e.source === pair[1] && e.target === pair[0])
+          )
+          .map((e) => e.id),
         suggestion: 'Consider using interfaces or events to decouple these components.',
         autoFixable: false,
       });
@@ -229,13 +235,15 @@ export class AIValidationService {
         description: `Node "${node.data.label}" doesn't follow recommended naming conventions.`,
         affectedNodes: [node.id],
         affectedEdges: [],
-        suggestion: 'Use clear, descriptive names that explain the component\'s purpose.',
+        suggestion: "Use clear, descriptive names that explain the component's purpose.",
         autoFixable: false,
       });
     }
 
     // Compliance: Missing descriptions
-    const noDescription = nodes.filter((node) => !node.data.description || node.data.description.trim() === '');
+    const noDescription = nodes.filter(
+      (node) => !node.data.description || node.data.description.trim() === ''
+    );
     if (noDescription.length > 0) {
       issues.push({
         id: 'missing-descriptions',
@@ -245,7 +253,8 @@ export class AIValidationService {
         description: `${noDescription.length} node(s) are missing descriptions. Documentation is important for maintainability.`,
         affectedNodes: noDescription.map((n) => n.id),
         affectedEdges: [],
-        suggestion: 'Add descriptions to all components explaining their purpose and responsibilities.',
+        suggestion:
+          'Add descriptions to all components explaining their purpose and responsibilities.',
         autoFixable: false,
       });
     }
@@ -289,7 +298,8 @@ export class AIValidationService {
         description: `${unlabeledEdges.length} of ${edges.length} relationships are unlabeled. Labels improve diagram clarity.`,
         affectedNodes: [],
         affectedEdges: unlabeledEdges.map((e) => e.id),
-        suggestion: 'Add labels to relationships describing the interaction (e.g., "uses", "sends data to", "depends on").',
+        suggestion:
+          'Add labels to relationships describing the interaction (e.g., "uses", "sends data to", "depends on").',
         autoFixable: false,
       });
     }

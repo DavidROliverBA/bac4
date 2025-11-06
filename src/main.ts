@@ -1,10 +1,6 @@
 import { Plugin, WorkspaceLeaf, TFile, Notice } from 'obsidian';
 import { BAC4Settings } from './core/settings';
-import {
-  DEFAULT_SETTINGS,
-  COMMAND_OPEN_DASHBOARD,
-  VIEW_TYPE_CANVAS,
-} from './core/constants';
+import { DEFAULT_SETTINGS, COMMAND_OPEN_DASHBOARD, VIEW_TYPE_CANVAS } from './core/constants';
 import { BAC4SettingsTab } from './ui/settings-tab';
 import { BAC4CanvasView } from './ui/canvas-view';
 import { BAC4CanvasViewV3, VIEW_TYPE_CANVAS_V3 } from './ui/canvas-view-v3';
@@ -82,17 +78,27 @@ export default class BAC4Plugin extends Plugin {
     // Initialize Node Registry (v1.0.1: Track node names across all diagrams)
     const registry = NodeRegistryService.getInstance();
     await registry.initialize(this.app.vault);
-    console.log('BAC4: Node registry initialized with', registry.getUniqueNodeCount(), 'unique node names');
+    console.log(
+      'BAC4: Node registry initialized with',
+      registry.getUniqueNodeCount(),
+      'unique node names'
+    );
 
     // Register canvas view (legacy)
     this.registerView(VIEW_TYPE_CANVAS, (leaf: WorkspaceLeaf) => new BAC4CanvasView(leaf, this));
 
     // Register v3.0.0 canvas view
-    this.registerView(VIEW_TYPE_CANVAS_V3, (leaf: WorkspaceLeaf) => new BAC4CanvasViewV3(leaf, this));
+    this.registerView(
+      VIEW_TYPE_CANVAS_V3,
+      (leaf: WorkspaceLeaf) => new BAC4CanvasViewV3(leaf, this)
+    );
     console.log('BAC4: Registered v3.0.0 canvas view');
 
     // Register Node Explorer view
-    this.registerView(VIEW_TYPE_NODE_EXPLORER, (leaf: WorkspaceLeaf) => new NodeExplorerView(leaf, this));
+    this.registerView(
+      VIEW_TYPE_NODE_EXPLORER,
+      (leaf: WorkspaceLeaf) => new NodeExplorerView(leaf, this)
+    );
     console.log('BAC4: Registered Node Explorer view');
 
     // Register .bac4 file extension to open with canvas view
@@ -262,7 +268,12 @@ export default class BAC4Plugin extends Plugin {
             // v2.5.0: Rename companion .bac4-graph file
             try {
               await this.app.vault.rename(graphFile, newGraphPath);
-              console.log('BAC4 v2.5: ✅ Renamed companion graph file:', oldGraphPath, '→', newGraphPath);
+              console.log(
+                'BAC4 v2.5: ✅ Renamed companion graph file:',
+                oldGraphPath,
+                '→',
+                newGraphPath
+              );
             } catch (error) {
               console.error('BAC4 v2.5: Error renaming graph file:', error);
             }
@@ -281,7 +292,11 @@ export default class BAC4Plugin extends Plugin {
         // Find all .bac4 files in vault
         const allBac4Files = this.app.vault.getFiles().filter((f) => f.extension === 'bac4');
 
-        console.log('BAC4: Checking', allBac4Files.length, '.bac4 files for references to renamed file');
+        console.log(
+          'BAC4: Checking',
+          allBac4Files.length,
+          '.bac4 files for references to renamed file'
+        );
 
         let updatedCount = 0;
 
@@ -296,7 +311,12 @@ export default class BAC4Plugin extends Plugin {
             let needsUpdate = false;
 
             // Update linkedDiagramPath and linkedMarkdownPath in nodes
-            const updatedNodes = (data.nodes as Array<{ id: string; data?: { linkedDiagramPath?: string; linkedMarkdownPath?: string } }>).map((node) => {
+            const updatedNodes = (
+              data.nodes as Array<{
+                id: string;
+                data?: { linkedDiagramPath?: string; linkedMarkdownPath?: string };
+              }>
+            ).map((node) => {
               const updatedNode = { ...node };
 
               // Check linkedDiagramPath
@@ -430,7 +450,9 @@ export default class BAC4Plugin extends Plugin {
       }
 
       // Create empty Context diagram (v2.5.0 dual-file format)
-      const { createDefaultBAC4File, createDefaultGraphFile } = await import('./types/bac4-v2-types');
+      const { createDefaultBAC4File, createDefaultGraphFile } = await import(
+        './types/bac4-v2-types'
+      );
       const { writeDiagram } = await import('./services/file-io-service');
 
       const nodeFile = createDefaultBAC4File('Context', 'context', 'context');
@@ -573,8 +595,8 @@ export default class BAC4Plugin extends Plugin {
 
       // ✅ FIX: Use adapter.exists() to check filesystem directly (handles case-insensitive FS)
       while (
-        await this.app.vault.adapter.exists(fullPath) ||
-        await this.app.vault.adapter.exists(graphPath)
+        (await this.app.vault.adapter.exists(fullPath)) ||
+        (await this.app.vault.adapter.exists(graphPath))
       ) {
         counter++;
         fileName = `Untitled ${counter}.bac4`;
@@ -585,11 +607,17 @@ export default class BAC4Plugin extends Plugin {
       console.log('BAC4: Creating new diagram file:', fullPath);
 
       // Create in BAC4 folder (v2.5.0 dual-file format)
-      const { createDefaultBAC4File, createDefaultGraphFile } = await import('./types/bac4-v2-types');
+      const { createDefaultBAC4File, createDefaultGraphFile } = await import(
+        './types/bac4-v2-types'
+      );
       const { writeDiagram } = await import('./services/file-io-service');
 
       const nodeFile = createDefaultBAC4File(fileName.replace('.bac4', ''), 'context', 'context');
-      const graphFile = createDefaultGraphFile(fileName, fileName.replace('.bac4', ''), 'c4-context');
+      const graphFile = createDefaultGraphFile(
+        fileName,
+        fileName.replace('.bac4', ''),
+        'c4-context'
+      );
 
       await writeDiagram(this.app.vault, fullPath, nodeFile, graphFile);
 
@@ -849,7 +877,14 @@ export default class BAC4Plugin extends Plugin {
    * @param diagramType - Type of diagram to create
    */
   private async createNewDiagram(
-    diagramType: 'market' | 'organisation' | 'capability' | 'context' | 'container' | 'component' | 'code'
+    diagramType:
+      | 'market'
+      | 'organisation'
+      | 'capability'
+      | 'context'
+      | 'container'
+      | 'component'
+      | 'code'
   ): Promise<void> {
     console.log('BAC4 v2.5: Creating new diagram:', diagramType);
 
@@ -868,8 +903,8 @@ export default class BAC4Plugin extends Plugin {
 
     // ✅ FIX: Use adapter.exists() to check filesystem directly (handles case-insensitive FS)
     while (
-      await this.app.vault.adapter.exists(filePath) ||
-      await this.app.vault.adapter.exists(graphPath)
+      (await this.app.vault.adapter.exists(filePath)) ||
+      (await this.app.vault.adapter.exists(graphPath))
     ) {
       counter++;
       fileName = `New ${typeLabel} ${counter}.bac4`;
@@ -889,11 +924,7 @@ export default class BAC4Plugin extends Plugin {
       diagramType as any
     );
 
-    const graphFile = createDefaultGraphFile(
-      fileName,
-      `New ${typeLabel}`,
-      'c4-context'
-    );
+    const graphFile = createDefaultGraphFile(fileName, `New ${typeLabel}`, 'c4-context');
 
     await writeDiagram(this.app.vault, filePath, nodeFile, graphFile);
     console.log('BAC4 v2.5: Created dual files (node + graph):', filePath);
@@ -1056,7 +1087,6 @@ export default class BAC4Plugin extends Plugin {
 
       console.log('BAC4: Exported to', exportPath);
       new Notice(`✅ Exported to ${exportPath.split('/').pop()}`);
-
     } catch (error) {
       console.error('BAC4: Export to Canvas failed:', error);
       new Notice('Failed to export diagram to Canvas');
@@ -1116,8 +1146,14 @@ export default class BAC4Plugin extends Plugin {
       minConnections: filterSettings.minConnections,
     };
 
-    const { nodes, edges } = await GraphGenerationService.generateGraph(this.app.vault, layoutType, filter);
-    console.log(`BAC4: Generated ${nodes.length} nodes, ${edges.length} edges with ${layoutType} layout`);
+    const { nodes, edges } = await GraphGenerationService.generateGraph(
+      this.app.vault,
+      layoutType,
+      filter
+    );
+    console.log(
+      `BAC4: Generated ${nodes.length} nodes, ${edges.length} edges with ${layoutType} layout`
+    );
 
     // Convert to JSONCanvas format
     const canvasData = JSONCanvasExporter.exportGraphToCanvas(nodes, edges);
@@ -1269,7 +1305,9 @@ export default class BAC4Plugin extends Plugin {
         await leaf.openFile(reportFile);
       }
 
-      new Notice(`Validation complete! Score: ${report.score}/100 (${report.summary.errors} errors, ${report.summary.warnings} warnings)`);
+      new Notice(
+        `Validation complete! Score: ${report.score}/100 (${report.summary.errors} errors, ${report.summary.warnings} warnings)`
+      );
     } catch (error) {
       console.error('BAC4: Validation error:', error);
       new Notice('Validation failed. See console for details.');
@@ -1289,7 +1327,12 @@ export default class BAC4Plugin extends Plugin {
       const filePath = view.file?.path || 'Unknown';
 
       // Run analysis
-      const report = await this.architectureAnalyzer.analyzeArchitecture(nodes, edges, diagramType, filePath);
+      const report = await this.architectureAnalyzer.analyzeArchitecture(
+        nodes,
+        edges,
+        diagramType,
+        filePath
+      );
 
       // Create analysis report markdown
       const reportContent = this.formatAnalysisReport(report);
@@ -1311,7 +1354,9 @@ export default class BAC4Plugin extends Plugin {
         await leaf.openFile(reportFile);
       }
 
-      new Notice(`Analysis complete! Grade: ${report.qualityGrade} (Score: ${report.overallScore}/100)`);
+      new Notice(
+        `Analysis complete! Grade: ${report.qualityGrade} (Score: ${report.overallScore}/100)`
+      );
     } catch (error) {
       console.error('BAC4: Analysis error:', error);
       new Notice('Analysis failed. See console for details.');
@@ -1331,7 +1376,12 @@ export default class BAC4Plugin extends Plugin {
       const filePath = view.file?.path || 'Unknown';
 
       // Generate suggestions
-      const report = await this.aiSuggestions.generateSuggestions(nodes, edges, diagramType, filePath);
+      const report = await this.aiSuggestions.generateSuggestions(
+        nodes,
+        edges,
+        diagramType,
+        filePath
+      );
 
       // Create suggestions report markdown
       const reportContent = this.formatSuggestionsReport(report);
@@ -1353,7 +1403,9 @@ export default class BAC4Plugin extends Plugin {
         await leaf.openFile(reportFile);
       }
 
-      new Notice(`${report.summary.total} suggestions generated (${report.summary.highPriority} high priority)`);
+      new Notice(
+        `${report.summary.total} suggestions generated (${report.summary.highPriority} high priority)`
+      );
     } catch (error) {
       console.error('BAC4: Suggestions error:', error);
       new Notice('Suggestion generation failed. See console for details.');
@@ -1379,7 +1431,12 @@ export default class BAC4Plugin extends Plugin {
 
 ## Issues
 
-${report.issues.length === 0 ? '✅ No issues found!' : report.issues.map((issue: any) => `
+${
+  report.issues.length === 0
+    ? '✅ No issues found!'
+    : report.issues
+        .map(
+          (issue: any) => `
 ### ${this.getSeverityIcon(issue.severity)} ${issue.title}
 
 **Severity:** ${issue.severity}
@@ -1391,7 +1448,10 @@ ${issue.suggestion ? `**Suggestion:** ${issue.suggestion}` : ''}
 
 ${issue.affectedNodes.length > 0 ? `**Affected Nodes:** ${issue.affectedNodes.join(', ')}` : ''}
 ${issue.affectedEdges.length > 0 ? `**Affected Edges:** ${issue.affectedEdges.join(', ')}` : ''}
-`).join('\n---\n')}
+`
+        )
+        .join('\n---\n')
+}
 
 ---
 
@@ -1439,7 +1499,12 @@ ${issue.affectedEdges.length > 0 ? `**Affected Edges:** ${issue.affectedEdges.jo
 
 ## Detected Architectural Patterns
 
-${report.technologyStack.detectedPatterns.length === 0 ? '*No patterns detected*' : report.technologyStack.detectedPatterns.map((pattern: any) => `
+${
+  report.technologyStack.detectedPatterns.length === 0
+    ? '*No patterns detected*'
+    : report.technologyStack.detectedPatterns
+        .map(
+          (pattern: any) => `
 ### ${pattern.name} (Confidence: ${pattern.confidence}%)
 
 ${pattern.description}
@@ -1449,11 +1514,16 @@ ${pattern.benefits.map((b: string) => `- ${b}`).join('\n')}
 
 **Concerns:**
 ${pattern.concerns.map((c: string) => `- ${c}`).join('\n')}
-`).join('\n')}
+`
+        )
+        .join('\n')
+}
 
 ## Recommendations
 
-${report.recommendations.map((rec: any, i: number) => `
+${report.recommendations
+  .map(
+    (rec: any, i: number) => `
 ### ${i + 1}. ${rec.title}
 
 **Priority:** ${rec.priority.toUpperCase()}
@@ -1464,7 +1534,9 @@ ${rec.description}
 
 **Benefits:**
 ${rec.benefits.map((b: string) => `- ${b}`).join('\n')}
-`).join('\n')}
+`
+  )
+  .join('\n')}
 
 ---
 
@@ -1492,7 +1564,9 @@ ${rec.benefits.map((b: string) => `- ${b}`).join('\n')}
 
 ## Suggestions
 
-${report.suggestions.map((sug: any, i: number) => `
+${report.suggestions
+  .map(
+    (sug: any, i: number) => `
 ### ${i + 1}. ${sug.title}
 
 **Priority:** ${sug.priority.toUpperCase()} | **Type:** ${sug.type} | **Confidence:** ${sug.confidence}%
@@ -1502,7 +1576,9 @@ ${sug.description}
 **Rationale:** ${sug.rationale}
 
 ${sug.autoApplicable ? '✅ **Can be auto-applied**' : ''}
-`).join('\n---\n')}
+`
+  )
+  .join('\n---\n')}
 
 ---
 
@@ -1515,11 +1591,14 @@ ${sug.autoApplicable ? '✅ **Can be auto-applied**' : ''}
    */
   private getSeverityIcon(severity: string): string {
     switch (severity) {
-      case 'error': return '❌';
-      case 'warning': return '⚠️';
-      case 'info': return 'ℹ️';
-      default: return '•';
+      case 'error':
+        return '❌';
+      case 'warning':
+        return '⚠️';
+      case 'info':
+        return 'ℹ️';
+      default:
+        return '•';
     }
   }
 }
-

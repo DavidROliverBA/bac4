@@ -128,7 +128,14 @@ export function normalizeEdges(edges: Edge[]): Edge<EdgeData>[] {
     const direction = (edge.data?.direction || 'right') as 'right' | 'left' | 'both';
     const markers = getEdgeMarkers(direction);
 
-    console.log('BAC4: Normalizing edge', edge.id, '- direction:', direction, '- markers:', markers);
+    console.log(
+      'BAC4: Normalizing edge',
+      edge.id,
+      '- direction:',
+      direction,
+      '- markers:',
+      markers
+    );
 
     return {
       ...edge,

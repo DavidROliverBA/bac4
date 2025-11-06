@@ -43,7 +43,7 @@ import {
   NameCollisionModal,
   DeleteNodeModal,
   EdgeChangeWarningModal,
-  EdgeDeleteWarningModal
+  EdgeDeleteWarningModal,
 } from './modals/v3-modals';
 
 // Existing node components (reuse from old code)
@@ -178,46 +178,54 @@ const CanvasEditorV3: React.FC<CanvasEditorV3Props> = ({ plugin, filePath, onClo
   /**
    * Handle new connection (edge creation)
    */
-  const onConnect = React.useCallback(async (connection: Connection) => {
-    if (!connection.source || !connection.target) return;
+  const onConnect = React.useCallback(
+    async (connection: Connection) => {
+      if (!connection.source || !connection.target) return;
 
-    try {
-      // Create global edge
-      const newEdge = await edgeService.createEdge({
-        source: connection.source,
-        target: connection.target,
-        type: 'default',
-        label: '',
-        direction: 'right',
-        style: {
-          color: '#888888',
-          lineType: 'solid',
-          strokeWidth: 2,
-        },
-      });
+      try {
+        // Create global edge
+        const newEdge = await edgeService.createEdge({
+          source: connection.source,
+          target: connection.target,
+          type: 'default',
+          label: '',
+          direction: 'right',
+          style: {
+            color: '#888888',
+            lineType: 'solid',
+            strokeWidth: 2,
+          },
+        });
 
-      // Add to canvas
-      setEdges((eds) => addEdge({
-        id: newEdge.id,
-        source: newEdge.source,
-        target: newEdge.target,
-        type: 'directional',
-        data: {
-          label: newEdge.label,
-          direction: newEdge.direction,
-        },
-        style: {
-          stroke: newEdge.style.color,
-          strokeWidth: newEdge.style.strokeWidth,
-        },
-      }, eds));
+        // Add to canvas
+        setEdges((eds) =>
+          addEdge(
+            {
+              id: newEdge.id,
+              source: newEdge.source,
+              target: newEdge.target,
+              type: 'directional',
+              data: {
+                label: newEdge.label,
+                direction: newEdge.direction,
+              },
+              style: {
+                stroke: newEdge.style.color,
+                strokeWidth: newEdge.style.strokeWidth,
+              },
+            },
+            eds
+          )
+        );
 
-      new Notice('Edge created');
-    } catch (error) {
-      console.error('Error creating edge:', error);
-      new Notice('Error creating edge');
-    }
-  }, [edgeService]);
+        new Notice('Edge created');
+      } catch (error) {
+        console.error('Error creating edge:', error);
+        new Notice('Error creating edge');
+      }
+    },
+    [edgeService]
+  );
 
   /**
    * Handle edge delete
@@ -346,20 +354,24 @@ const CanvasEditorV3: React.FC<CanvasEditorV3Props> = ({ plugin, filePath, onClo
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>
       {/* Toolbar */}
-      <div style={{
-        position: 'absolute',
-        top: 10,
-        left: 10,
-        zIndex: 10,
-        display: 'flex',
-        gap: '8px'
-      }}>
+      <div
+        style={{
+          position: 'absolute',
+          top: 10,
+          left: 10,
+          zIndex: 10,
+          display: 'flex',
+          gap: '8px',
+        }}
+      >
         <button onClick={() => setShowNodePalette(!showNodePalette)}>
           {showNodePalette ? 'Hide' : 'Show'} Node Palette
         </button>
         <button onClick={saveDiagram}>Save</button>
         <button onClick={loadDiagram}>Reload</button>
-        <span style={{ padding: '8px', background: 'var(--background-secondary)', borderRadius: '4px' }}>
+        <span
+          style={{ padding: '8px', background: 'var(--background-secondary)', borderRadius: '4px' }}
+        >
           Type: {diagramType}
         </span>
       </div>

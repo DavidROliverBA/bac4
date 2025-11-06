@@ -60,7 +60,12 @@ export const DiagramActions: React.FC<DiagramActionsProps> = ({
   // Prepare delete button properties
   const handleDelete = () => {
     console.log('BAC4: DiagramActions handleDelete called');
-    console.log('BAC4: isNodeSelected =', isNodeSelected, ', isAnnotationSelected =', isAnnotationSelected);
+    console.log(
+      'BAC4: isNodeSelected =',
+      isNodeSelected,
+      ', isAnnotationSelected =',
+      isAnnotationSelected
+    );
 
     if (isNodeSelected) {
       console.log('BAC4: Calling onDeleteNode()');

@@ -8,11 +8,7 @@
  */
 
 import { Vault, TFile } from 'obsidian';
-import {
-  GraphFileV3,
-  EMPTY_GRAPH_V3,
-  isGraphFileV3,
-} from '../types/graph-v3-types';
+import { GraphFileV3, EMPTY_GRAPH_V3, isGraphFileV3 } from '../types/graph-v3-types';
 
 /**
  * Path to centralized graph file
