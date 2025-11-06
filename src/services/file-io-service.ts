@@ -31,10 +31,7 @@ import type {
 /**
  * Read .bac4 file (nodes only)
  */
-export async function readBAC4File(
-  vault: Vault,
-  filePath: string
-): Promise<BAC4FileV2> {
+export async function readBAC4File(vault: Vault, filePath: string): Promise<BAC4FileV2> {
   const file = vault.getAbstractFileByPath(filePath);
 
   if (!(file instanceof TFile)) {
@@ -57,10 +54,7 @@ export async function readBAC4File(
 /**
  * Read .bac4-graph file (relationships + layout)
  */
-export async function readBAC4GraphFile(
-  vault: Vault,
-  filePath: string
-): Promise<BAC4GraphFileV2> {
+export async function readBAC4GraphFile(vault: Vault, filePath: string): Promise<BAC4GraphFileV2> {
   const file = vault.getAbstractFileByPath(filePath);
 
   if (!(file instanceof TFile)) {
@@ -72,9 +66,7 @@ export async function readBAC4GraphFile(
 
   // Validate format
   if (data.version !== '2.5.0' && data.version !== '2.5.1') {
-    throw new Error(
-      `Invalid graph file version: ${data.version}. Expected 2.5.0 or 2.5.1.`
-    );
+    throw new Error(`Invalid graph file version: ${data.version}. Expected 2.5.0 or 2.5.1.`);
   }
 
   return data as BAC4GraphFileV2;
@@ -126,9 +118,10 @@ export async function writeBAC4File(
     // File not found in cache, try to create it
     try {
       await vault.create(filePath, content);
-    } catch (error) {
+    } catch (error: unknown) {
       // If "file already exists", try to find and modify it (handles case-insensitive FS)
-      if (error.message && error.message.includes('already exists')) {
+      const errorMessage = error instanceof Error ? error.message : '';
+      if (errorMessage && errorMessage.includes('already exists')) {
         // Try exact path first
         let existingFile = vault.getAbstractFileByPath(filePath);
 
@@ -139,8 +132,9 @@ export async function writeBAC4File(
           const dir = vault.getAbstractFileByPath(dirPath);
 
           if (dir && 'children' in dir) {
-            const match = dir.children.find(
-              (child) => child.name.toLowerCase() === fileName.toLowerCase()
+            const children = (dir as any).children;
+            const match = children.find(
+              (child: any) => child.name?.toLowerCase() === fileName.toLowerCase()
             );
             if (match instanceof TFile) {
               existingFile = match;
@@ -180,9 +174,10 @@ export async function writeBAC4GraphFile(
     // File not found in cache, try to create it
     try {
       await vault.create(filePath, content);
-    } catch (error) {
+    } catch (error: unknown) {
       // If "file already exists", try to find and modify it (handles case-insensitive FS)
-      if (error.message && error.message.includes('already exists')) {
+      const errorMessage = error instanceof Error ? error.message : '';
+      if (errorMessage && errorMessage.includes('already exists')) {
         // Try exact path first
         let existingFile = vault.getAbstractFileByPath(filePath);
 
@@ -193,8 +188,9 @@ export async function writeBAC4GraphFile(
           const dir = vault.getAbstractFileByPath(dirPath);
 
           if (dir && 'children' in dir) {
-            const match = dir.children.find(
-              (child) => child.name.toLowerCase() === fileName.toLowerCase()
+            const children = (dir as any).children;
+            const match = children.find(
+              (child: any) => child.name?.toLowerCase() === fileName.toLowerCase()
             );
             if (match instanceof TFile) {
               existingFile = match;
@@ -244,9 +240,7 @@ export function mergeNodesAndLayout(
   // Get current snapshot
   const snapshot = snapshotId
     ? graphFile.timeline.snapshots.find((s) => s.id === snapshotId)
-    : graphFile.timeline.snapshots.find(
-        (s) => s.id === graphFile.timeline.currentSnapshotId
-      );
+    : graphFile.timeline.snapshots.find((s) => s.id === graphFile.timeline.currentSnapshotId);
 
   if (!snapshot) {
     throw new Error('No current snapshot found in graph file');
@@ -268,7 +262,9 @@ export function mergeNodesAndLayout(
   for (const nodeId of snapshotNodeIds) {
     const node = nodeFile.nodes[nodeId];
     if (!node) {
-      console.warn(`⚠️ BAC4 v2.5: Node ${nodeId} in snapshot layout not found in node file, skipping`);
+      console.warn(
+        `⚠️ BAC4 v2.5: Node ${nodeId} in snapshot layout not found in node file, skipping`
+      );
       continue;
     }
 
@@ -290,13 +286,15 @@ export function mergeNodesAndLayout(
 
         // ✅ v2.5.1 FIX: Override with snapshot-specific properties if available
         // This allows each snapshot to have independent colors, labels, etc.
-        ...(snapshotProps ? {
-          label: snapshotProps.properties.label,
-          description: snapshotProps.properties.description,
-          technology: snapshotProps.properties.technology,
-          team: snapshotProps.properties.team,
-          status: snapshotProps.properties.status,
-        } : {}),
+        ...(snapshotProps
+          ? {
+              label: snapshotProps.properties.label,
+              description: snapshotProps.properties.description,
+              technology: snapshotProps.properties.technology,
+              team: snapshotProps.properties.team,
+              status: snapshotProps.properties.status,
+            }
+          : {}),
 
         // Knowledge (invariant across snapshots)
         knowledge: node.knowledge,
@@ -324,16 +322,11 @@ export function mergeNodesAndLayout(
 /**
  * Get edges from graph file
  */
-export function getEdgesFromGraph(
-  graphFile: BAC4GraphFileV2,
-  snapshotId?: string
-): Edge[] {
+export function getEdgesFromGraph(graphFile: BAC4GraphFileV2, snapshotId?: string): Edge[] {
   // Get current snapshot
   const snapshot = snapshotId
     ? graphFile.timeline.snapshots.find((s) => s.id === snapshotId)
-    : graphFile.timeline.snapshots.find(
-        (s) => s.id === graphFile.timeline.currentSnapshotId
-      );
+    : graphFile.timeline.snapshots.find((s) => s.id === graphFile.timeline.currentSnapshotId);
 
   if (!snapshot) {
     throw new Error('No current snapshot found in graph file');
@@ -343,7 +336,12 @@ export function getEdgesFromGraph(
   const edges: Edge[] = snapshot.edges.map((edge) => {
     // ✅ FIX: Extract direction and style from properties (they may have been saved there)
     // to avoid data duplication and ensure correct loading
-    const { direction: propDirection, style: propStyle, label, ...otherProperties } = edge.properties || {};
+    const {
+      direction: propDirection,
+      style: propStyle,
+      label,
+      ...otherProperties
+    } = edge.properties || {};
 
     return {
       id: edge.id,
@@ -352,10 +350,10 @@ export function getEdgesFromGraph(
       type: edge.type || 'default',
       data: {
         // ✅ FIX: Set label, direction, and style explicitly to prevent overwriting
-        label: label,                                // Edge label (user-editable)
-        direction: edge.style.direction,             // Arrow direction (right/left/both)
-        style: propStyle || 'curved',                // Edge path style (curved/diagonal/rightAngle)
-        ...otherProperties,                          // Any other custom properties
+        label: label, // Edge label (user-editable)
+        direction: edge.style.direction, // Arrow direction (right/left/both)
+        style: propStyle || 'curved', // Edge path style (curved/diagonal/rightAngle)
+        ...otherProperties, // Any other custom properties
       },
       style: {
         stroke: edge.style.color,
@@ -494,16 +492,26 @@ export function splitNodesAndEdges(
   // Update edges
   const graphEdges: EdgeV2[] = edges.map((edge) => {
     const direction = (edge.data?.direction as Direction) || 'right';
-    const markerEnd = (typeof edge.markerEnd === 'string' ? edge.markerEnd : edge.markerEnd?.type || 'arrowclosed') as MarkerType;
-    const edgeType = (edge.type && ['uses', 'sends-data-to', 'depends-on', 'contains', 'implements'].includes(edge.type)
-      ? edge.type
-      : 'default') as EdgeType;
+    const markerEnd = (
+      typeof edge.markerEnd === 'string' ? edge.markerEnd : edge.markerEnd?.type || 'arrowclosed'
+    ) as MarkerType;
+    const edgeType = (
+      edge.type &&
+      ['uses', 'sends-data-to', 'depends-on', 'contains', 'implements'].includes(edge.type)
+        ? edge.type
+        : 'default'
+    ) as EdgeType;
     const sourceHandle = (edge.sourceHandle || 'right') as HandlePosition;
     const targetHandle = (edge.targetHandle || 'left') as HandlePosition;
 
     // ✅ FIX: Extract direction and style from edge.data before spreading
     // These are stored in separate fields to avoid data duplication
-    const { direction: _direction, style: edgePathStyle, label, ...otherEdgeData } = edge.data || {};
+    const {
+      direction: _direction,
+      style: edgePathStyle,
+      label,
+      ...otherEdgeData
+    } = edge.data || {};
 
     return {
       id: edge.id,
@@ -513,13 +521,13 @@ export function splitNodesAndEdges(
       properties: {
         // ✅ FIX: Store only label and custom properties, not implementation details
         label: label,
-        style: edgePathStyle,  // Edge path style (curved/diagonal/rightAngle) goes in properties
-        ...otherEdgeData,      // Any other custom edge data (excluding direction which goes in style)
+        style: edgePathStyle, // Edge path style (curved/diagonal/rightAngle) goes in properties
+        ...otherEdgeData, // Any other custom edge data (excluding direction which goes in style)
       },
       style: {
-        direction,  // Arrow direction stored here (not in properties)
+        direction, // Arrow direction stored here (not in properties)
         lineType: 'solid',
-        color: (typeof edge.style?.stroke === 'string' ? edge.style.stroke : '#888888'),
+        color: typeof edge.style?.stroke === 'string' ? edge.style.stroke : '#888888',
         markerEnd,
       },
       handles: {
@@ -621,10 +629,7 @@ export function createSnapshot(
 /**
  * Switch to different snapshot
  */
-export function switchSnapshot(
-  graphFile: BAC4GraphFileV2,
-  snapshotId: string
-): BAC4GraphFileV2 {
+export function switchSnapshot(graphFile: BAC4GraphFileV2, snapshotId: string): BAC4GraphFileV2 {
   const snapshot = graphFile.timeline.snapshots.find((s) => s.id === snapshotId);
 
   if (!snapshot) {
@@ -643,10 +648,7 @@ export function switchSnapshot(
 /**
  * Delete snapshot
  */
-export function deleteSnapshot(
-  graphFile: BAC4GraphFileV2,
-  snapshotId: string
-): BAC4GraphFileV2 {
+export function deleteSnapshot(graphFile: BAC4GraphFileV2, snapshotId: string): BAC4GraphFileV2 {
   // Can't delete last snapshot
   if (graphFile.timeline.snapshots.length === 1) {
     throw new Error('Cannot delete last snapshot');
@@ -662,9 +664,7 @@ export function deleteSnapshot(
     timeline: {
       ...graphFile.timeline,
       snapshots: graphFile.timeline.snapshots.filter((s) => s.id !== snapshotId),
-      snapshotOrder: graphFile.timeline.snapshotOrder.filter(
-        (id) => id !== snapshotId
-      ),
+      snapshotOrder: graphFile.timeline.snapshotOrder.filter((id) => id !== snapshotId),
     },
   };
 }
@@ -714,9 +714,7 @@ export function validateFileCompatibility(
   // Check that graph file references correct node file
   const nodeFileName = nodeFile.metadata.title.replace(/[^a-zA-Z0-9-]/g, '_') + '.bac4';
   if (graphFile.metadata.nodeFile && graphFile.metadata.nodeFile !== nodeFileName) {
-    console.warn(
-      `Graph file references different node file: ${graphFile.metadata.nodeFile}`
-    );
+    console.warn(`Graph file references different node file: ${graphFile.metadata.nodeFile}`);
     // Not an error, just a warning
   }
 
@@ -724,9 +722,7 @@ export function validateFileCompatibility(
   for (const snapshot of graphFile.timeline.snapshots) {
     for (const nodeId of Object.keys(snapshot.layout)) {
       if (!nodeFile.nodes[nodeId]) {
-        errors.push(
-          `Snapshot ${snapshot.id} references non-existent node: ${nodeId}`
-        );
+        errors.push(`Snapshot ${snapshot.id} references non-existent node: ${nodeId}`);
       }
     }
 

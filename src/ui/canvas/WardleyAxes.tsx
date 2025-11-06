@@ -160,10 +160,7 @@ export const WardleyAxes: React.FC<WardleyAxesProps> = ({
             refY="5"
             orient="auto"
           >
-            <polygon
-              points="0 0, 10 5, 0 10"
-              fill={UI_COLORS.textMuted}
-            />
+            <polygon points="0 0, 10 5, 0 10" fill={UI_COLORS.textMuted} />
           </marker>
           <marker
             id="arrowhead-y"
@@ -173,10 +170,7 @@ export const WardleyAxes: React.FC<WardleyAxesProps> = ({
             refY="5"
             orient="auto"
           >
-            <polygon
-              points="0 0, 10 5, 0 10"
-              fill={UI_COLORS.textMuted}
-            />
+            <polygon points="0 0, 10 5, 0 10" fill={UI_COLORS.textMuted} />
           </marker>
         </defs>
 
@@ -271,7 +265,7 @@ export const WardleyAxes: React.FC<WardleyAxesProps> = ({
 
       {/* Evolution stage labels */}
       {evolutionStages.map((stage, index) => {
-        const centerX = marginLeft + (stage.start + stage.end) / 2 * usableWidth;
+        const centerX = marginLeft + ((stage.start + stage.end) / 2) * usableWidth;
 
         return (
           <div

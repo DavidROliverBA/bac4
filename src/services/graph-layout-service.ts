@@ -74,9 +74,7 @@ export class GraphLayoutService {
         return this.createEmptyLayout();
       }
 
-      console.log(
-        `BAC4: Loaded layout with ${Object.keys(layout.layout).length} saved positions`
-      );
+      console.log(`BAC4: Loaded layout with ${Object.keys(layout.layout).length} saved positions`);
       return layout;
     } catch (error) {
       console.error('BAC4: Error loading layout file:', error);
@@ -101,10 +99,7 @@ export class GraphLayoutService {
    * await GraphLayoutService.saveLayout(vault, positions);
    * ```
    */
-  static async saveLayout(
-    vault: Vault,
-    nodePositions: Map<string, NodeLayout>
-  ): Promise<void> {
+  static async saveLayout(vault: Vault, nodePositions: Map<string, NodeLayout>): Promise<void> {
     try {
       const layout: GraphLayout = {
         version: this.LAYOUT_VERSION,
@@ -125,9 +120,7 @@ export class GraphLayoutService {
         await vault.create(this.LAYOUT_FILE_PATH, content);
       }
 
-      console.log(
-        `BAC4: Saved layout with ${nodePositions.size} node positions`
-      );
+      console.log(`BAC4: Saved layout with ${nodePositions.size} node positions`);
     } catch (error) {
       console.error('BAC4: Error saving layout file:', error);
     }
@@ -186,10 +179,7 @@ export class GraphLayoutService {
    * }
    * ```
    */
-  static getSavedPosition(
-    layout: GraphLayout,
-    diagramPath: string
-  ): NodeLayout | undefined {
+  static getSavedPosition(layout: GraphLayout, diagramPath: string): NodeLayout | undefined {
     return layout.layout[diagramPath];
   }
 
@@ -209,10 +199,7 @@ export class GraphLayoutService {
    * }
    * ```
    */
-  static hasSavedPosition(
-    layout: GraphLayout,
-    diagramPath: string
-  ): boolean {
+  static hasSavedPosition(layout: GraphLayout, diagramPath: string): boolean {
     return diagramPath in layout.layout;
   }
 
@@ -251,11 +238,7 @@ export class GraphLayoutService {
    * });
    * ```
    */
-  static async handleDiagramRename(
-    vault: Vault,
-    oldPath: string,
-    newPath: string
-  ): Promise<void> {
+  static async handleDiagramRename(vault: Vault, oldPath: string, newPath: string): Promise<void> {
     try {
       const layout = await this.loadLayout(vault);
 
@@ -273,9 +256,7 @@ export class GraphLayoutService {
         const positions = new Map(Object.entries(layout.layout));
         await this.saveLayout(vault, positions);
 
-        console.log(
-          `BAC4: Updated layout for renamed diagram: ${oldPath} → ${newPath}`
-        );
+        console.log(`BAC4: Updated layout for renamed diagram: ${oldPath} → ${newPath}`);
       }
     } catch (error) {
       console.error('BAC4: Error handling diagram rename in layout:', error);
@@ -301,10 +282,7 @@ export class GraphLayoutService {
    * });
    * ```
    */
-  static async handleDiagramDeletion(
-    vault: Vault,
-    diagramPath: string
-  ): Promise<void> {
+  static async handleDiagramDeletion(vault: Vault, diagramPath: string): Promise<void> {
     try {
       const layout = await this.loadLayout(vault);
 
@@ -317,15 +295,10 @@ export class GraphLayoutService {
         const positions = new Map(Object.entries(layout.layout));
         await this.saveLayout(vault, positions);
 
-        console.log(
-          `BAC4: Removed layout for deleted diagram: ${diagramPath}`
-        );
+        console.log(`BAC4: Removed layout for deleted diagram: ${diagramPath}`);
       }
     } catch (error) {
-      console.error(
-        'BAC4: Error handling diagram deletion in layout:',
-        error
-      );
+      console.error('BAC4: Error handling diagram deletion in layout:', error);
     }
   }
 }

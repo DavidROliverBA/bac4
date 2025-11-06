@@ -138,7 +138,11 @@ export const NodeExplorer: React.FC<NodeExplorerProps> = ({
           className="bac4-search"
         />
 
-        <select value={filterType} onChange={(e) => setFilterType(e.target.value as any)} className="bac4-select">
+        <select
+          value={filterType}
+          onChange={(e) => setFilterType(e.target.value as any)}
+          className="bac4-select"
+        >
           <option value="all">All Types</option>
           <option value="person">Person</option>
           <option value="system">System</option>
@@ -150,7 +154,11 @@ export const NodeExplorer: React.FC<NodeExplorerProps> = ({
           <option value="capability">Capability</option>
         </select>
 
-        <select value={sortBy} onChange={(e) => setSortBy(e.target.value as any)} className="bac4-select">
+        <select
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value as any)}
+          className="bac4-select"
+        >
           <option value="name">Sort by Name</option>
           <option value="type">Sort by Type</option>
           <option value="usage">Sort by Usage</option>
@@ -194,9 +202,7 @@ export const NodeExplorer: React.FC<NodeExplorerProps> = ({
                   <div className="bac4-node-meta">
                     Type: {node.type} • Edges: {getNodeUsage(node.id)}
                   </div>
-                  {node.technology && (
-                    <div className="bac4-node-tech">Tech: {node.technology}</div>
-                  )}
+                  {node.technology && <div className="bac4-node-tech">Tech: {node.technology}</div>}
                 </div>
               </div>
             ))

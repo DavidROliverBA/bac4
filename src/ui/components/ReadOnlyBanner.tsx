@@ -49,9 +49,7 @@ export const ReadOnlyBanner: React.FC<ReadOnlyBannerProps> = ({
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-        <span style={{ fontSize: '11px', opacity: 0.9 }}>
-          Frozen snapshots cannot be edited
-        </span>
+        <span style={{ fontSize: '11px', opacity: 0.9 }}>Frozen snapshots cannot be edited</span>
         <button
           onClick={onSwitchToCurrent}
           style={{

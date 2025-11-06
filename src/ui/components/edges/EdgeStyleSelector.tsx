@@ -20,7 +20,11 @@ interface EdgeStyleSelectorProps {
 }
 
 export const EdgeStyleSelector: React.FC<EdgeStyleSelectorProps> = ({ label, value, onChange }) => {
-  const buttons: Array<{ value: 'diagonal' | 'rightAngle' | 'curved'; label: string; icon: string }> = [
+  const buttons: Array<{
+    value: 'diagonal' | 'rightAngle' | 'curved';
+    label: string;
+    icon: string;
+  }> = [
     { value: 'diagonal', label: 'Diagonal', icon: '⟍' },
     { value: 'rightAngle', label: 'Right Angle', icon: '⌐' },
     { value: 'curved', label: 'Curved', icon: '⌒' },
@@ -36,8 +40,12 @@ export const EdgeStyleSelector: React.FC<EdgeStyleSelectorProps> = ({ label, val
             style={{
               flex: 1,
               padding: SPACING.padding.button,
-              background: value === button.value ? UI_COLORS.interactiveAccent : UI_COLORS.backgroundSecondary,
-              border: value === button.value ? 'none' : `1px solid ${UI_COLORS.backgroundModifierBorder}`,
+              background:
+                value === button.value
+                  ? UI_COLORS.interactiveAccent
+                  : UI_COLORS.backgroundSecondary,
+              border:
+                value === button.value ? 'none' : `1px solid ${UI_COLORS.backgroundModifierBorder}`,
               borderRadius: BORDER_RADIUS.normal,
               color: value === button.value ? '#fff' : UI_COLORS.textNormal,
               cursor: 'pointer',

@@ -38,10 +38,14 @@ export interface ExportHandlers {
 function getExportElement(reactFlowId?: string): HTMLElement | null {
   // If reactFlowId is provided, find the specific React Flow instance first
   if (reactFlowId) {
-    const specificReactFlow = document.querySelector(`.react-flow[id="${reactFlowId}"]`) as HTMLElement;
+    const specificReactFlow = document.querySelector(
+      `.react-flow[id="${reactFlowId}"]`
+    ) as HTMLElement;
     if (specificReactFlow) {
       // Get the parent export container
-      const exportContainer = specificReactFlow.closest('.bac4-canvas-export-container') as HTMLElement;
+      const exportContainer = specificReactFlow.closest(
+        '.bac4-canvas-export-container'
+      ) as HTMLElement;
       if (exportContainer) {
         const rect = exportContainer.getBoundingClientRect();
         if (rect.width > 0 && rect.height > 0) {
@@ -98,7 +102,9 @@ function hideUIControlsForExport(): HTMLElement[] {
   const hiddenElements: HTMLElement[] = [];
 
   // Hide zoom controls (canvas controls)
-  const zoomControls = document.querySelectorAll('.bac4-canvas-export-container > div[style*="position: absolute"][style*="bottom: 16px"]');
+  const zoomControls = document.querySelectorAll(
+    '.bac4-canvas-export-container > div[style*="position: absolute"][style*="bottom: 16px"]'
+  );
   zoomControls.forEach((el) => {
     const element = el as HTMLElement;
     hiddenElements.push(element);
@@ -106,7 +112,9 @@ function hideUIControlsForExport(): HTMLElement[] {
   });
 
   // Hide component palette
-  const palette = document.querySelector('.bac4-canvas-export-container .component-palette') as HTMLElement;
+  const palette = document.querySelector(
+    '.bac4-canvas-export-container .component-palette'
+  ) as HTMLElement;
   if (palette) {
     hiddenElements.push(palette);
     palette.style.display = 'none';
@@ -120,10 +128,13 @@ function hideUIControlsForExport(): HTMLElement[] {
   }
 
   // Hide formatting toolbars (annotation toolbars)
-  const toolbars = document.querySelectorAll('.bac4-canvas-export-container > div > div[style*="position: absolute"][style*="top"][style*="px"]');
+  const toolbars = document.querySelectorAll(
+    '.bac4-canvas-export-container > div > div[style*="position: absolute"][style*="top"][style*="px"]'
+  );
   toolbars.forEach((el) => {
     const element = el as HTMLElement;
-    if (element.style.zIndex === '101') { // Formatting toolbar has z-index 101
+    if (element.style.zIndex === '101') {
+      // Formatting toolbar has z-index 101
       hiddenElements.push(element);
       element.style.display = 'none';
     }
@@ -284,7 +295,9 @@ export function useExport(options: UseExportOptions = {}): ExportHandlers {
             link.download = `${diagramName}.${getExportExtension(format)}`;
             link.href = dataUrl;
             link.click();
-            console.log(`BAC4: ✅ ${format.toUpperCase()} export successful (${dataUrl.length} bytes)`);
+            console.log(
+              `BAC4: ✅ ${format.toUpperCase()} export successful (${dataUrl.length} bytes)`
+            );
           })
           .catch((error) => {
             console.error(`BAC4: ❌ Error exporting ${format.toUpperCase()}:`, error);

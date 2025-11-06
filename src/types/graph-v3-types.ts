@@ -400,10 +400,7 @@ export const EMPTY_GRAPH_V3: GraphFileV3 = {
 /**
  * Empty diagram file template
  */
-export function createEmptyDiagramV3(
-  name: string,
-  type: DiagramType
-): DiagramFileV3 {
+export function createEmptyDiagramV3(name: string, type: DiagramType): DiagramFileV3 {
   const now = new Date().toISOString();
   return {
     version: '3.0.0',
@@ -546,10 +543,7 @@ export function getAllowedNodeTypes(diagramType: DiagramType): NodeType[] {
 /**
  * Validate node type for diagram
  */
-export function isNodeTypeAllowed(
-  nodeType: NodeType,
-  diagramType: DiagramType
-): boolean {
+export function isNodeTypeAllowed(nodeType: NodeType, diagramType: DiagramType): boolean {
   const allowed = getAllowedNodeTypes(diagramType);
   return allowed.includes(nodeType);
 }

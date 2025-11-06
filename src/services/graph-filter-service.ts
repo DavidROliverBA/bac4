@@ -65,9 +65,10 @@ export class GraphFilterService {
     // Search term filter
     if (filter.searchTerm && filter.searchTerm.trim().length > 0) {
       const searchLower = filter.searchTerm.toLowerCase().trim();
-      filtered = filtered.filter((d) =>
-        d.displayName.toLowerCase().includes(searchLower) ||
-        d.path.toLowerCase().includes(searchLower)
+      filtered = filtered.filter(
+        (d) =>
+          d.displayName.toLowerCase().includes(searchLower) ||
+          d.path.toLowerCase().includes(searchLower)
       );
     }
 
@@ -115,7 +116,7 @@ export class GraphFilterService {
         // Show only diagrams with many connections (default: >= 5)
         return diagrams.filter((d) => {
           const { parentCount, childCount } = countRelationships(d.path, allDiagrams);
-          return (parentCount + childCount) >= minConnections;
+          return parentCount + childCount >= minConnections;
         });
 
       case 'connected-to':

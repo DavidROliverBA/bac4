@@ -15,7 +15,13 @@
  */
 
 import * as React from 'react';
-import { EdgeProps, getBezierPath, getSmoothStepPath, EdgeLabelRenderer, Position } from 'reactflow';
+import {
+  EdgeProps,
+  getBezierPath,
+  getSmoothStepPath,
+  EdgeLabelRenderer,
+  Position,
+} from 'reactflow';
 import { UI_COLORS, FONT_SIZES } from '../../constants';
 
 export const WardleyEdge: React.FC<EdgeProps> = ({
@@ -82,9 +88,7 @@ export const WardleyEdge: React.FC<EdgeProps> = ({
   const label = data?.label || '';
 
   // Determine edge color based on selection or relationship type
-  const edgeColor = selected
-    ? UI_COLORS.interactiveAccent
-    : data?.color || UI_COLORS.textMuted;
+  const edgeColor = selected ? UI_COLORS.interactiveAccent : data?.color || UI_COLORS.textMuted;
 
   // Calculate label rotation to align with edge
   const angle = Math.atan2(targetY - sourceY, targetX - sourceX) * (180 / Math.PI);

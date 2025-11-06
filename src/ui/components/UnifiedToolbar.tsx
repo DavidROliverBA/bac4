@@ -147,19 +147,24 @@ export const UnifiedToolbar: React.FC<UnifiedToolbarProps> = ({
       <DiagramTypeSelector currentType={currentType} onTypeChange={onTypeChange} />
 
       {/* Layout Selector (v2.6.0 - Multiple Layouts) */}
-      {layouts && currentLayout && onLayoutSwitch && onCreateLayout && onRenameLayout && onDeleteLayout && (
-        <>
-          <Divider />
-          <LayoutSelector
-            layouts={layouts}
-            currentLayout={currentLayout}
-            onLayoutSwitch={onLayoutSwitch}
-            onCreateLayout={onCreateLayout}
-            onRenameLayout={onRenameLayout}
-            onDeleteLayout={onDeleteLayout}
-          />
-        </>
-      )}
+      {layouts &&
+        currentLayout &&
+        onLayoutSwitch &&
+        onCreateLayout &&
+        onRenameLayout &&
+        onDeleteLayout && (
+          <>
+            <Divider />
+            <LayoutSelector
+              layouts={layouts}
+              currentLayout={currentLayout}
+              onLayoutSwitch={onLayoutSwitch}
+              onCreateLayout={onCreateLayout}
+              onRenameLayout={onRenameLayout}
+              onDeleteLayout={onDeleteLayout}
+            />
+          </>
+        )}
 
       <Divider />
 

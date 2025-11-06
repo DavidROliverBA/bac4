@@ -36,6 +36,9 @@ export const LAYER_NODE_TYPES: Record<DiagramType, string[]> = {
 
   // Meta-diagram: Visualization of diagram relationships
   graph: ['graph'],
+
+  // Wardley Mapping: Strategic positioning
+  wardley: ['wardley-component', 'wardley-inertia'],
 };
 
 /**
@@ -51,6 +54,7 @@ export function getLayerName(diagramType: DiagramType): string {
     component: 'Layer 6: Component',
     code: 'Layer 7: Code',
     graph: 'Meta: Graph View',
+    wardley: 'Wardley Map',
   };
 
   return layerNames[diagramType] || diagramType;

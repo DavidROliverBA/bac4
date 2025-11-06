@@ -64,11 +64,7 @@ export class DiagramServiceV3 {
   /**
    * Create new diagram
    */
-  async createDiagram(
-    filePath: string,
-    name: string,
-    type: DiagramType
-  ): Promise<DiagramFileV3> {
+  async createDiagram(filePath: string, name: string, type: DiagramType): Promise<DiagramFileV3> {
     const diagram = createEmptyDiagramV3(name, type);
     await this.writeDiagram(filePath, diagram);
     return diagram;
@@ -77,11 +73,7 @@ export class DiagramServiceV3 {
   /**
    * Add node to diagram view
    */
-  async addNodeToDiagram(
-    filePath: string,
-    nodeId: string,
-    layout?: NodeLayout
-  ): Promise<void> {
+  async addNodeToDiagram(filePath: string, nodeId: string, layout?: NodeLayout): Promise<void> {
     const diagram = await this.readDiagram(filePath);
 
     // Check if node already in view
@@ -102,9 +94,7 @@ export class DiagramServiceV3 {
     }
 
     // Also add to current snapshot layout
-    const currentSnapshot = diagram.snapshots.find(
-      (s) => s.id === diagram.currentSnapshotId
-    );
+    const currentSnapshot = diagram.snapshots.find((s) => s.id === diagram.currentSnapshotId);
     if (currentSnapshot) {
       if (layout) {
         currentSnapshot.layout[nodeId] = layout;
@@ -142,20 +132,14 @@ export class DiagramServiceV3 {
   /**
    * Update node layout in diagram
    */
-  async updateNodeLayout(
-    filePath: string,
-    nodeId: string,
-    layout: NodeLayout
-  ): Promise<void> {
+  async updateNodeLayout(filePath: string, nodeId: string, layout: NodeLayout): Promise<void> {
     const diagram = await this.readDiagram(filePath);
 
     // Update in view
     diagram.view.layout[nodeId] = layout;
 
     // Update in current snapshot
-    const currentSnapshot = diagram.snapshots.find(
-      (s) => s.id === diagram.currentSnapshotId
-    );
+    const currentSnapshot = diagram.snapshots.find((s) => s.id === diagram.currentSnapshotId);
     if (currentSnapshot) {
       currentSnapshot.layout[nodeId] = layout;
     }
@@ -222,9 +206,7 @@ export class DiagramServiceV3 {
   /**
    * Get all diagram files
    */
-  async getAllDiagrams(): Promise<
-    Array<{ path: string; metadata: DiagramFileV3['metadata'] }>
-  > {
+  async getAllDiagrams(): Promise<Array<{ path: string; metadata: DiagramFileV3['metadata'] }>> {
     const diagrams: Array<{ path: string; metadata: DiagramFileV3['metadata'] }> = [];
     const allFiles = this.vault.getFiles();
 

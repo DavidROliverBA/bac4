@@ -60,10 +60,7 @@ export function canDrillDown(
  * @param hasParent - Whether the diagram has a parent diagram
  * @returns true if minus icon should be shown
  */
-export function canGoToParent(
-  diagramType: DiagramType,
-  hasParent: boolean
-): boolean {
+export function canGoToParent(diagramType: DiagramType, hasParent: boolean): boolean {
   // Context is the top level - no parent
   if (diagramType === 'context') {
     return false;
@@ -184,7 +181,7 @@ export function calculateIconPosition(
     wrapperRect: { left: wrapperRect.left, top: wrapperRect.top },
     nodeScreenPos: { x: nodeScreenX, y: nodeScreenY },
     scaledDimensions: { width: scaledWidth, height: scaledHeight },
-    finalIconPos: { x, y }
+    finalIconPos: { x, y },
   });
 
   return { x, y };

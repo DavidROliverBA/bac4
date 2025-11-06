@@ -58,10 +58,7 @@ export class CreateLayoutModal extends Modal {
       .setDesc('Choose a template for your layout')
       .addDropdown((dropdown) => {
         templates.forEach((template) => {
-          dropdown.addOption(
-            template.viewType,
-            `${template.icon} ${template.displayName}`
-          );
+          dropdown.addOption(template.viewType, `${template.icon} ${template.displayName}`);
         });
         dropdown.setValue(this.viewType).onChange((value) => {
           this.viewType = value as ViewType;
@@ -80,10 +77,7 @@ export class CreateLayoutModal extends Modal {
         toggle.setValue(this.copyFromCurrent).onChange((value) => {
           this.copyFromCurrent = value;
         });
-        toggle.toggleEl.setAttribute(
-          'aria-label',
-          'Copy current layout'
-        );
+        toggle.toggleEl.setAttribute('aria-label', 'Copy current layout');
       });
 
     // Buttons
@@ -140,11 +134,7 @@ export class RenameLayoutModal extends Modal {
   private layoutName: string;
   private onSubmit: (newName: string) => void;
 
-  constructor(
-    app: App,
-    currentName: string,
-    onSubmit: (newName: string) => void
-  ) {
+  constructor(app: App, currentName: string, onSubmit: (newName: string) => void) {
     super(app);
     this.layoutName = currentName;
     this.onSubmit = onSubmit;
@@ -219,11 +209,7 @@ export class DeleteLayoutModal extends Modal {
   private layoutName: string;
   private onConfirm: () => void;
 
-  constructor(
-    app: App,
-    layoutName: string,
-    onConfirm: () => void
-  ) {
+  constructor(app: App, layoutName: string, onConfirm: () => void) {
     super(app);
     this.layoutName = layoutName;
     this.onConfirm = onConfirm;

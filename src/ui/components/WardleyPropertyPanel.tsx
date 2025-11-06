@@ -16,7 +16,11 @@
 import * as React from 'react';
 import { Node } from 'reactflow';
 import { FONT_SIZES, SPACING, UI_COLORS, BORDER_RADIUS } from '../../constants';
-import { getEvolutionStage, getEvolutionStageColor, EvolutionStage } from '../../types/bac4-v2-types';
+import {
+  getEvolutionStage,
+  getEvolutionStageColor,
+  EvolutionStage,
+} from '../../types/bac4-v2-types';
 import { FormField } from './form/FormField';
 import { FormSection } from './form/FormSection';
 
@@ -99,7 +103,7 @@ export const WardleyPropertyPanel: React.FC<WardleyPropertyPanelProps> = ({
       wardley: {
         ...wardley,
         inertia: checked,
-        inertiaReason: checked ? (wardley.inertiaReason || '') : undefined,
+        inertiaReason: checked ? wardley.inertiaReason || '' : undefined,
       },
     });
   };
@@ -320,7 +324,8 @@ export const WardleyPropertyPanel: React.FC<WardleyPropertyPanelProps> = ({
                   marginLeft: '28px', // Align with checkbox label
                 }}
               >
-                Components with inertia resist evolution (e.g., legacy systems, regulatory constraints)
+                Components with inertia resist evolution (e.g., legacy systems, regulatory
+                constraints)
               </div>
             </div>
 

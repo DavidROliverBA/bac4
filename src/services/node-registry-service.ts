@@ -94,7 +94,9 @@ export class NodeRegistryService {
       // v1.0.0 format: nodes are in timeline snapshots
       if (data.timeline && data.timeline.snapshots && Array.isArray(data.timeline.snapshots)) {
         const currentSnapshotId = data.timeline.currentSnapshotId;
-        const currentSnapshot = data.timeline.snapshots.find((s: any) => s.id === currentSnapshotId);
+        const currentSnapshot = data.timeline.snapshots.find(
+          (s: any) => s.id === currentSnapshotId
+        );
 
         if (currentSnapshot && currentSnapshot.nodes && Array.isArray(currentSnapshot.nodes)) {
           nodes = currentSnapshot.nodes;

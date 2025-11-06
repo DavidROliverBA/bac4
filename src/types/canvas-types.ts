@@ -22,15 +22,15 @@ import type { Node, Edge, NodeChange, EdgeChange, Connection } from 'reactflow';
  * v2.5.0: Added Wardley Mapping support
  */
 export type DiagramType =
-  | 'market'        // Layer 1: Market segments and customer needs
-  | 'organisation'  // Layer 2: Business units, departments, teams
-  | 'capability'    // Layer 3: Business capabilities and functions
-  | 'context'       // Layer 4: C4 Level 1 - System landscape
-  | 'container'     // Layer 5: C4 Level 2 - Technical containers
-  | 'component'     // Layer 6: C4 Level 3 - Internal components
-  | 'code'          // Layer 7: Implementation code and data
-  | 'wardley'       // v2.5.0: Wardley Mapping
-  | 'graph';        // Meta-diagram: Visualization of diagram relationships
+  | 'market' // Layer 1: Market segments and customer needs
+  | 'organisation' // Layer 2: Business units, departments, teams
+  | 'capability' // Layer 3: Business capabilities and functions
+  | 'context' // Layer 4: C4 Level 1 - System landscape
+  | 'container' // Layer 5: C4 Level 2 - Technical containers
+  | 'component' // Layer 6: C4 Level 3 - Internal components
+  | 'code' // Layer 7: Implementation code and data
+  | 'wardley' // v2.5.0: Wardley Mapping
+  | 'graph'; // Meta-diagram: Visualization of diagram relationships
 
 /**
  * Base node data interface
@@ -145,10 +145,10 @@ export interface CloudComponentNodeData extends BaseNodeData {
  * Represents market segments, customer types, and market trends
  */
 export interface MarketNodeData extends BaseNodeData {
-  marketSize?: string;      // e.g., "$50B", "500K customers"
-  growthRate?: string;      // e.g., "12% CAGR", "High growth"
-  competitors?: string[];   // Competitor names
-  trends?: string[];        // Market trends
+  marketSize?: string; // e.g., "$50B", "500K customers"
+  growthRate?: string; // e.g., "12% CAGR", "High growth"
+  competitors?: string[]; // Competitor names
+  trends?: string[]; // Market trends
   linkedDiagramPath?: string; // Path to child Organisation diagram
   changeIndicator?: 'new' | 'modified' | 'removed' | null;
 }
@@ -158,10 +158,10 @@ export interface MarketNodeData extends BaseNodeData {
  * Represents business units, departments, and teams
  */
 export interface OrganisationNodeData extends BaseNodeData {
-  businessUnit?: string;    // e.g., "Digital Health Division"
-  department?: string;      // e.g., "Engineering", "Product"
-  headcount?: number;       // Team size
-  location?: string;        // e.g., "London", "Remote"
+  businessUnit?: string; // e.g., "Digital Health Division"
+  department?: string; // e.g., "Engineering", "Product"
+  headcount?: number; // Team size
+  location?: string; // e.g., "London", "Remote"
   linkedDiagramPath?: string; // Path to child Capability diagram
   changeIndicator?: 'new' | 'modified' | 'removed' | null;
 }
@@ -188,14 +188,14 @@ export interface CapabilityNodeData extends BaseNodeData {
  * Includes GitHub integration for linking to actual code
  */
 export interface CodeNodeData extends BaseNodeData {
-  githubUrl?: string;       // GitHub repository or file URL
-  language?: string;        // Programming language (e.g., "TypeScript", "Python")
+  githubUrl?: string; // GitHub repository or file URL
+  language?: string; // Programming language (e.g., "TypeScript", "Python")
   codeType?: 'file' | 'class' | 'function' | 'schema' | 'table'; // Type of code artifact
-  repo?: string;            // Repository name (e.g., "org/repo")
-  branch?: string;          // Git branch (e.g., "main", "develop")
-  path?: string;            // File path within repo (e.g., "src/AuthController.ts")
-  lastCommit?: string;      // Last commit hash or message
-  authors?: string[];       // Code authors
+  repo?: string; // Repository name (e.g., "org/repo")
+  branch?: string; // Git branch (e.g., "main", "develop")
+  path?: string; // File path within repo (e.g., "src/AuthController.ts")
+  lastCommit?: string; // Last commit hash or message
+  authors?: string[]; // Code authors
   linkedDiagramPath?: string; // Path to parent Component diagram
   changeIndicator?: 'new' | 'modified' | 'removed' | null;
 }
@@ -244,12 +244,12 @@ export type CanvasNodeData =
   | PersonNodeData
   | ContainerNodeData
   | CloudComponentNodeData
-  | MarketNodeData          // v2.0.0: Layer 1
-  | OrganisationNodeData    // v2.0.0: Layer 2
-  | CapabilityNodeData      // Layer 3 (previously existing)
-  | CodeNodeData            // v2.0.0: Layer 7
+  | MarketNodeData // v2.0.0: Layer 1
+  | OrganisationNodeData // v2.0.0: Layer 2
+  | CapabilityNodeData // Layer 3 (previously existing)
+  | CodeNodeData // v2.0.0: Layer 7
   | WardleyComponentNodeData // v2.5.0: Wardley components
-  | WardleyInertiaNodeData   // v2.5.0: Wardley inertia barriers
+  | WardleyInertiaNodeData // v2.5.0: Wardley inertia barriers
   | GraphNodeData
   | BaseNodeData;
 

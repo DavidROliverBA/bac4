@@ -83,9 +83,9 @@ const nodeTypes: NodeTypes = {
   person: PersonNode,
   container: ContainerNode,
   capability: CapabilityNode,
-  market: MarketNode,                      // v2.0.0: Layer 1 - Market segments
-  organisation: OrganisationNode,          // v2.0.0: Layer 2 - Business units
-  code: CodeNode,                          // v2.0.0: Layer 7 - Implementation
+  market: MarketNode, // v2.0.0: Layer 1 - Market segments
+  organisation: OrganisationNode, // v2.0.0: Layer 2 - Business units
+  code: CodeNode, // v2.0.0: Layer 7 - Implementation
   graph: GraphNode,
 };
 
@@ -126,7 +126,9 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath, view }) =
   // Wardley Map state (v2.5.0)
   const [showWardleyAxes, setShowWardleyAxes] = React.useState(true);
   const [showWardleyGrid, setShowWardleyGrid] = React.useState(false);
-  const [wardleyBackgroundImage, setWardleyBackgroundImage] = React.useState<string | undefined>(undefined);
+  const [wardleyBackgroundImage, setWardleyBackgroundImage] = React.useState<string | undefined>(
+    undefined
+  );
   const [wardleyBackgroundOpacity, setWardleyBackgroundOpacity] = React.useState(0.3);
 
   // Navigation state (v2.3.0)
@@ -328,7 +330,7 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath, view }) =
   const edgeHandlers = useEdgeHandlers({
     setEdges,
     onEdgeSelect: handleEdgeSelect,
-    diagramType,  // v2.5.0: Pass diagram type to determine edge type (wardley vs directional)
+    diagramType, // v2.5.0: Pass diagram type to determine edge type (wardley vs directional)
   });
 
   const diagramActions = useDiagramActions({
@@ -395,7 +397,7 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath, view }) =
         setLayouts(availableLayouts);
 
         // Set current layout (default or first available)
-        const defaultLayout = availableLayouts.find(l => l.isDefault) || availableLayouts[0];
+        const defaultLayout = availableLayouts.find((l) => l.isDefault) || availableLayouts[0];
         if (defaultLayout) {
           setCurrentLayout(defaultLayout);
           setCurrentGraphFilePath(defaultLayout.graphPath);
@@ -473,11 +475,16 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath, view }) =
 
       const generateGraphView = async () => {
         try {
-          const { nodes: graphNodes, edges: graphEdges } = await GraphGenerationService.generateGraph(
-            plugin.app.vault
-          );
+          const { nodes: graphNodes, edges: graphEdges } =
+            await GraphGenerationService.generateGraph(plugin.app.vault);
 
-          console.log('BAC4: Generated graph with', graphNodes.length, 'nodes and', graphEdges.length, 'edges');
+          console.log(
+            'BAC4: Generated graph with',
+            graphNodes.length,
+            'nodes and',
+            graphEdges.length,
+            'edges'
+          );
 
           setNodes(graphNodes);
           setEdges(graphEdges);
@@ -546,12 +553,7 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath, view }) =
       selectedNode.data.linkedDiagramPath
     );
 
-    return getNavigationIconVisibility(
-      selectedNode.type,
-      diagramType,
-      hasChildDiagram,
-      hasParent
-    );
+    return getNavigationIconVisibility(selectedNode.type, diagramType, hasChildDiagram, hasParent);
   }, [selectedNode, filePath, diagramType]);
 
   /**
@@ -609,10 +611,7 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath, view }) =
         const currentSnapshot = TimelineService.getSnapshotById(snapshotId, updatedTimeline);
 
         if (baseSnapshot && currentSnapshot) {
-          const changes = ChangeDetectionService.compareSnapshots(
-            baseSnapshot,
-            currentSnapshot
-          );
+          const changes = ChangeDetectionService.compareSnapshots(baseSnapshot, currentSnapshot);
 
           // Store changeSet and before snapshot data for ChangesSummaryPanel
           setCurrentChangeSet(changes);
@@ -632,7 +631,10 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath, view }) =
           );
 
           console.log('BAC4: Applied change indicators', {
-            nodeChanges: changes.addedNodes.length + changes.modifiedNodes.length + changes.removedNodes.length,
+            nodeChanges:
+              changes.addedNodes.length +
+              changes.modifiedNodes.length +
+              changes.removedNodes.length,
             edgeChanges: changes.addedEdges.length + changes.removedEdges.length,
           });
         }
@@ -655,7 +657,17 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath, view }) =
 
       console.log('BAC4: Switched to snapshot:', snapshotId);
     },
-    [timeline, nodes, edges, annotations, setNodes, setEdges, setAnnotations, showChanges, baseSnapshotId]
+    [
+      timeline,
+      nodes,
+      edges,
+      annotations,
+      setNodes,
+      setEdges,
+      setAnnotations,
+      showChanges,
+      baseSnapshotId,
+    ]
   );
 
   const handleAddSnapshot = React.useCallback(() => {
@@ -673,9 +685,9 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath, view }) =
 
     const modal = new AddSnapshotModal(
       plugin.app,
-      nodes,         // ← FIXED: Use current canvas state
-      edges,         // ← FIXED: Use current canvas state
-      annotations,   // ← FIXED: Use current canvas state
+      nodes, // ← FIXED: Use current canvas state
+      edges, // ← FIXED: Use current canvas state
+      annotations, // ← FIXED: Use current canvas state
       timeline,
       (updatedTimeline: Timeline, newSnapshotId: string) => {
         console.log('BAC4: 📸 Snapshot created:', newSnapshotId);
@@ -684,7 +696,7 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath, view }) =
         // ✅ v2.5.1 FIX: Auto-switch to new snapshot (approved spec behavior)
         // Timeline service already set currentSnapshotId to new snapshot
         // Now load the new snapshot's state into canvas
-        const newSnapshot = updatedTimeline.snapshots.find(s => s.id === newSnapshotId);
+        const newSnapshot = updatedTimeline.snapshots.find((s) => s.id === newSnapshotId);
 
         if (newSnapshot) {
           console.log('BAC4: 🔄 Auto-switching to new snapshot:', newSnapshotId);
@@ -705,7 +717,17 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath, view }) =
       }
     );
     modal.open();
-  }, [plugin.app, timeline, nodes, edges, annotations, setNodes, setEdges, setAnnotations, setTimeline]);
+  }, [
+    plugin.app,
+    timeline,
+    nodes,
+    edges,
+    annotations,
+    setNodes,
+    setEdges,
+    setAnnotations,
+    setTimeline,
+  ]);
 
   // Expose handleAddSnapshot to the view instance for command palette access
   React.useEffect(() => {
@@ -736,13 +758,9 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath, view }) =
   const handleManageSnapshots = React.useCallback(() => {
     if (!timeline) return;
 
-    const modal = new SnapshotManagerModal(
-      plugin.app,
-      timeline,
-      (updatedTimeline: Timeline) => {
-        setTimeline(updatedTimeline);
-      }
-    );
+    const modal = new SnapshotManagerModal(plugin.app, timeline, (updatedTimeline: Timeline) => {
+      setTimeline(updatedTimeline);
+    });
     modal.open();
   }, [plugin.app, timeline]);
 
@@ -836,7 +854,10 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath, view }) =
       // Use screenToFlowPosition (project is deprecated in React Flow 11+)
       // Type assertion needed as TS types not yet updated
       const viewportCenter = reactFlowInstance
-        ? (reactFlowInstance as any).screenToFlowPosition({ x: window.innerWidth / 2, y: window.innerHeight / 2 })
+        ? (reactFlowInstance as any).screenToFlowPosition({
+            x: window.innerWidth / 2,
+            y: window.innerHeight / 2,
+          })
         : { x: 200, y: 200 };
 
       const annotation = AnnotationService.createAnnotation({
@@ -879,16 +900,17 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath, view }) =
     [annotations]
   );
 
-  const handleAnnotationDragEnd = React.useCallback(
-    (id: string) => {
-      console.log('BAC4: Annotation drag ended:', id);
-      // Save is handled by auto-save effect
-    },
-    []
-  );
+  const handleAnnotationDragEnd = React.useCallback((id: string) => {
+    console.log('BAC4: Annotation drag ended:', id);
+    // Save is handled by auto-save effect
+  }, []);
 
   const handleAnnotationTextUpdate = React.useCallback(
-    (id: string, text: string, formatting?: { fontSize?: number; bold?: boolean; underline?: boolean }) => {
+    (
+      id: string,
+      text: string,
+      formatting?: { fontSize?: number; bold?: boolean; underline?: boolean }
+    ) => {
       const updated = annotations.map((ann) =>
         ann.id === id ? { ...ann, data: { ...ann.data, text, ...formatting } } : ann
       );
@@ -909,7 +931,10 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath, view }) =
   );
 
   const handleDeleteAnnotation = React.useCallback(() => {
-    console.log('BAC4: handleDeleteAnnotation called, selectedAnnotationId =', selectedAnnotationId);
+    console.log(
+      'BAC4: handleDeleteAnnotation called, selectedAnnotationId =',
+      selectedAnnotationId
+    );
     console.log('BAC4: Current annotations count =', annotations.length);
 
     if (!selectedAnnotationId) {
@@ -937,29 +962,32 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath, view }) =
    */
 
   // Switch to a different layout
-  const handleLayoutSwitch = React.useCallback(async (graphPath: string) => {
-    if (!filePath) return;
+  const handleLayoutSwitch = React.useCallback(
+    async (graphPath: string) => {
+      if (!filePath) return;
 
-    try {
-      // Force save current state before switching
-      if (forceSaveRef.current) {
-        await forceSaveRef.current();
+      try {
+        // Force save current state before switching
+        if (forceSaveRef.current) {
+          await forceSaveRef.current();
+        }
+
+        // Layout switching will be handled by useFileOperations hook
+        // when currentGraphFilePath changes
+        setCurrentGraphFilePath(graphPath);
+
+        // Update current layout in state
+        const newLayout = layouts.find((l) => l.graphPath === graphPath);
+        if (newLayout) {
+          setCurrentLayout(newLayout);
+          plugin.app.workspace.trigger('bac4:layout-switched', { layoutPath: graphPath });
+        }
+      } catch (error) {
+        console.error('Failed to switch layout:', error);
       }
-
-      // Layout switching will be handled by useFileOperations hook
-      // when currentGraphFilePath changes
-      setCurrentGraphFilePath(graphPath);
-
-      // Update current layout in state
-      const newLayout = layouts.find(l => l.graphPath === graphPath);
-      if (newLayout) {
-        setCurrentLayout(newLayout);
-        plugin.app.workspace.trigger('bac4:layout-switched', { layoutPath: graphPath });
-      }
-    } catch (error) {
-      console.error('Failed to switch layout:', error);
-    }
-  }, [filePath, forceSaveRef, layouts, plugin]);
+    },
+    [filePath, forceSaveRef, layouts, plugin]
+  );
 
   // Create a new layout
   const handleCreateLayout = React.useCallback(() => {
@@ -967,11 +995,15 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath, view }) =
 
     // Determine suggested view type based on current diagram
     const suggestedType =
-      diagramType === 'wardley' ? 'wardley' :
-      diagramType === 'context' ? 'c4-context' :
-      diagramType === 'container' ? 'c4-container' :
-      diagramType === 'component' ? 'c4-component' :
-      'custom';
+      diagramType === 'wardley'
+        ? 'wardley'
+        : diagramType === 'context'
+          ? 'c4-context'
+          : diagramType === 'container'
+            ? 'c4-container'
+            : diagramType === 'component'
+              ? 'c4-component'
+              : 'custom';
 
     new CreateLayoutModal(
       plugin.app,
@@ -1007,14 +1039,12 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath, view }) =
   }, [filePath, diagramType, currentGraphFilePath, layoutManager, plugin, handleLayoutSwitch]);
 
   // Rename an existing layout
-  const handleRenameLayout = React.useCallback((graphPath: string) => {
-    const layout = layouts.find(l => l.graphPath === graphPath);
-    if (!layout || !filePath) return;
+  const handleRenameLayout = React.useCallback(
+    (graphPath: string) => {
+      const layout = layouts.find((l) => l.graphPath === graphPath);
+      if (!layout || !filePath) return;
 
-    new RenameLayoutModal(
-      plugin.app,
-      layout.title,
-      async (newName) => {
+      new RenameLayoutModal(plugin.app, layout.title, async (newName) => {
         try {
           await layoutManager.renameLayout(graphPath, newName);
 
@@ -1024,7 +1054,7 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath, view }) =
 
           // Update current layout if it was renamed
           if (graphPath === currentGraphFilePath) {
-            const renamedLayout = updatedLayouts.find(l => l.graphPath !== graphPath);
+            const renamedLayout = updatedLayouts.find((l) => l.graphPath !== graphPath);
             if (renamedLayout) {
               setCurrentLayout(renamedLayout);
             }
@@ -1032,19 +1062,18 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath, view }) =
         } catch (error) {
           console.error('Failed to rename layout:', error);
         }
-      }
-    ).open();
-  }, [layouts, filePath, layoutManager, plugin, currentGraphFilePath]);
+      }).open();
+    },
+    [layouts, filePath, layoutManager, plugin, currentGraphFilePath]
+  );
 
   // Delete a layout
-  const handleDeleteLayout = React.useCallback((graphPath: string) => {
-    const layout = layouts.find(l => l.graphPath === graphPath);
-    if (!layout || !filePath) return;
+  const handleDeleteLayout = React.useCallback(
+    (graphPath: string) => {
+      const layout = layouts.find((l) => l.graphPath === graphPath);
+      if (!layout || !filePath) return;
 
-    new DeleteLayoutModal(
-      plugin.app,
-      layout.title,
-      async () => {
+      new DeleteLayoutModal(plugin.app, layout.title, async () => {
         try {
           await layoutManager.deleteLayout(graphPath);
 
@@ -1054,7 +1083,7 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath, view }) =
 
           // If current layout was deleted, switch to default
           if (graphPath === currentGraphFilePath) {
-            const defaultLayout = updatedLayouts.find(l => l.isDefault);
+            const defaultLayout = updatedLayouts.find((l) => l.isDefault);
             if (defaultLayout) {
               await handleLayoutSwitch(defaultLayout.graphPath);
             }
@@ -1062,9 +1091,10 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath, view }) =
         } catch (error) {
           console.error('Failed to delete layout:', error);
         }
-      }
-    ).open();
-  }, [layouts, filePath, layoutManager, plugin, currentGraphFilePath, handleLayoutSwitch]);
+      }).open();
+    },
+    [layouts, filePath, layoutManager, plugin, currentGraphFilePath, handleLayoutSwitch]
+  );
 
   return (
     <div
@@ -1101,7 +1131,16 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ plugin, filePath, view }) =
       />
 
       {/* Navigation Controls & Breadcrumbs (v2.3.0) */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 16px', background: 'var(--background-secondary)', borderBottom: '1px solid var(--background-modifier-border)' }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          padding: '8px 16px',
+          background: 'var(--background-secondary)',
+          borderBottom: '1px solid var(--background-modifier-border)',
+        }}
+      >
         <NavigationControls
           plugin={plugin}
           navigationService={navigationHistoryService}
@@ -1401,6 +1440,16 @@ export class BAC4CanvasView extends ItemView {
     return this.filePath;
   }
 
+  /**
+   * Get diagram type (for AI features)
+   * Returns the diagram type from metadata or defaults to 'context'
+   */
+  getDiagramType(): DiagramType {
+    // TODO: Read from file metadata when available
+    // For now, return a default
+    return 'context';
+  }
+
   async setState(state: { file?: string; filePath?: string }, result: unknown): Promise<void> {
     console.log('BAC4CanvasView: ⚠️ setState called with', state);
 
@@ -1505,7 +1554,9 @@ export class BAC4CanvasView extends ItemView {
 
     // If file already open in another leaf, activate it and close this one
     if (leavesWithThisFile.length > 0) {
-      console.log('BAC4CanvasView: ❌ DUPLICATE DETECTED! Closing this leaf and activating existing');
+      console.log(
+        'BAC4CanvasView: ❌ DUPLICATE DETECTED! Closing this leaf and activating existing'
+      );
       const otherLeaf = leavesWithThisFile[0];
       this.app.workspace.setActiveLeaf(otherLeaf, { focus: true });
       this.leaf.detach();

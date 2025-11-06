@@ -73,7 +73,7 @@ export const MarketNode: React.FC<NodeProps<MarketNodeData>> = ({ data, selected
             boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
             zIndex: 10,
           }}
-          title={`Shared across ${data.crossReferences.length + 1} diagrams:\n${data.crossReferences.map(path => path.split('/').pop()?.replace('.bac4', '')).join('\n')}`}
+          title={`Shared across ${data.crossReferences.length + 1} diagrams:\n${data.crossReferences.map((path) => path.split('/').pop()?.replace('.bac4', '')).join('\n')}`}
         >
           {data.crossReferences.length + 1}
         </div>

@@ -41,7 +41,7 @@ export const CodeNode: React.FC<NodeProps<CodeNodeData>> = ({ data, selected }) 
   // Render Lucide icon using Obsidian API
   React.useEffect(() => {
     if (iconRef.current) {
-      iconRef.current.innerHTML = '';  // Clear existing
+      iconRef.current.innerHTML = ''; // Clear existing
       setIcon(iconRef.current, icon);
     }
   }, [icon]);
@@ -96,7 +96,7 @@ export const CodeNode: React.FC<NodeProps<CodeNodeData>> = ({ data, selected }) 
             boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
             zIndex: 10,
           }}
-          title={`Shared across ${data.crossReferences.length + 1} diagrams:\n${data.crossReferences.map(path => path.split('/').pop()?.replace('.bac4', '')).join('\n')}`}
+          title={`Shared across ${data.crossReferences.length + 1} diagrams:\n${data.crossReferences.map((path) => path.split('/').pop()?.replace('.bac4', '')).join('\n')}`}
         >
           {data.crossReferences.length + 1}
         </div>
@@ -157,8 +157,16 @@ export const CodeNode: React.FC<NodeProps<CodeNodeData>> = ({ data, selected }) 
           gap: SPACING.small,
         }}
       >
-        {data.language && <span><strong>Language:</strong> {data.language}</span>}
-        {data.codeType && <span><strong>Type:</strong> {data.codeType}</span>}
+        {data.language && (
+          <span>
+            <strong>Language:</strong> {data.language}
+          </span>
+        )}
+        {data.codeType && (
+          <span>
+            <strong>Type:</strong> {data.codeType}
+          </span>
+        )}
       </div>
 
       {/* Repository Info */}

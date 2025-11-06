@@ -486,7 +486,9 @@ Add any additional context, decisions, or considerations here.
       // Re-query in case React re-rendered
       reactFlow = document.querySelector('.react-flow') as HTMLElement;
       if (!reactFlow) {
-        console.log(`BAC4: React Flow container disappeared, waiting... (attempt ${attempts + 1}/${maxAttempts})`);
+        console.log(
+          `BAC4: React Flow container disappeared, waiting... (attempt ${attempts + 1}/${maxAttempts})`
+        );
         await new Promise((resolve) => setTimeout(resolve, delayMs));
         attempts++;
         continue;
@@ -500,7 +502,9 @@ Add any additional context, decisions, or considerations here.
       const hasNodesContainer = nodesContainer !== null;
 
       if (hasDimensions && hasNodesContainer) {
-        console.log(`BAC4: React Flow ready after ${attempts} retries (${rect.width}x${rect.height})`);
+        console.log(
+          `BAC4: React Flow ready after ${attempts} retries (${rect.width}x${rect.height})`
+        );
         break;
       }
 
@@ -517,7 +521,7 @@ Add any additional context, decisions, or considerations here.
       console.error('BAC4: Diagram dimensions after waiting:', rect);
       throw new Error(
         `Diagram container has zero dimensions after ${attempts} attempts (${attempts * delayMs}ms). ` +
-        `Try waiting a moment and clicking "Update Image" again.`
+          `Try waiting a moment and clicking "Update Image" again.`
       );
     }
 
@@ -547,11 +551,7 @@ Add any additional context, decisions, or considerations here.
    * @param dataUrl - Base64 data URL of the image
    * @returns Promise<TFile> - Created image file
    */
-  static async saveDiagramImage(
-    vault: Vault,
-    imagePath: string,
-    dataUrl: string
-  ): Promise<TFile> {
+  static async saveDiagramImage(vault: Vault, imagePath: string, dataUrl: string): Promise<TFile> {
     const normalizedPath = normalizePath(imagePath);
 
     // Ensure parent folder exists
@@ -620,12 +620,7 @@ Add any additional context, decisions, or considerations here.
 
     // Get markdown template with image reference
     const imageName = imageFile ? this.getFileName(imageFile.path) : null;
-    const content = this.getMarkdownTemplateWithImage(
-      nodeLabel,
-      nodeType,
-      diagramType,
-      imageName
-    );
+    const content = this.getMarkdownTemplateWithImage(nodeLabel, nodeType, diagramType, imageName);
 
     // Create markdown file
     const normalizedPath = normalizePath(filePath);
@@ -677,8 +672,7 @@ Add any additional context, decisions, or considerations here.
     imageName: string | null
   ): string {
     const timestamp = new Date().toISOString().split('T')[0];
-    const diagramTypeLabel =
-      diagramType.charAt(0).toUpperCase() + diagramType.slice(1);
+    const diagramTypeLabel = diagramType.charAt(0).toUpperCase() + diagramType.slice(1);
 
     // Build image section
     const imageSection = imageName

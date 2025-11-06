@@ -220,12 +220,7 @@ export interface GraphMetadata {
   updated: string;
 }
 
-export type ViewType =
-  | 'c4-context'
-  | 'c4-container'
-  | 'c4-component'
-  | 'wardley'
-  | 'custom';
+export type ViewType = 'c4-context' | 'c4-container' | 'c4-component' | 'wardley' | 'custom';
 
 export interface Timeline {
   snapshots: Snapshot[];
@@ -471,10 +466,7 @@ export function canvasToWardley(
   canvasHeight: number = 800,
   margin: number = 100
 ): { visibility: number; evolution: number } {
-  const evolution = Math.max(
-    0,
-    Math.min(1, (x - margin) / (canvasWidth - 2 * margin))
-  );
+  const evolution = Math.max(0, Math.min(1, (x - margin) / (canvasWidth - 2 * margin)));
   const visibility = Math.max(
     0,
     Math.min(1, 1 - (y - margin) / (canvasHeight - 2 * margin)) // Flip Y-axis
@@ -486,10 +478,7 @@ export function canvasToWardley(
 /**
  * Create default node
  */
-export function createDefaultNode(
-  type: NodeType,
-  label: string = 'New Node'
-): NodeV2 {
+export function createDefaultNode(type: NodeType, label: string = 'New Node'): NodeV2 {
   return {
     id: `node-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
     type,

@@ -281,7 +281,9 @@ export const WardleyToolbar: React.FC<WardleyToolbarProps> = ({
               alignItems: 'center',
               gap: SPACING.small,
               padding: SPACING.padding.button,
-              background: backgroundImage ? UI_COLORS.interactiveNormal : UI_COLORS.backgroundSecondary,
+              background: backgroundImage
+                ? UI_COLORS.interactiveNormal
+                : UI_COLORS.backgroundSecondary,
               border: `1px solid ${UI_COLORS.backgroundModifierBorder}`,
               borderRadius: BORDER_RADIUS.normal,
               color: UI_COLORS.textNormal,
@@ -340,7 +342,9 @@ export const WardleyToolbar: React.FC<WardleyToolbarProps> = ({
                   cursor: 'pointer',
                 }}
               />
-              <span style={{ fontSize: FONT_SIZES.tiny, color: UI_COLORS.textNormal, minWidth: '30px' }}>
+              <span
+                style={{ fontSize: FONT_SIZES.tiny, color: UI_COLORS.textNormal, minWidth: '30px' }}
+              >
                 {Math.round(backgroundOpacity * 100)}%
               </span>
             </div>

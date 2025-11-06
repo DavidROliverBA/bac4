@@ -1,8 +1,6 @@
 import { TFile } from 'obsidian';
 import type BAC4Plugin from '../main';
-import type {
-  DiagramNode,
-} from '../types/canvas-types';
+import type { DiagramNode } from '../types/canvas-types';
 import { TimelineService } from './TimelineService';
 
 /** Path to the central relationships file */
@@ -296,7 +294,9 @@ export class DiagramNavigationService {
       } else if (parentData.timeline) {
         // v1.0.0 format - get working snapshot (first in order)
         const workingSnapshotId = parentData.timeline.snapshotOrder?.[0];
-        const workingSnapshot = parentData.timeline.snapshots?.find((s: { id: string }) => s.id === workingSnapshotId);
+        const workingSnapshot = parentData.timeline.snapshots?.find(
+          (s: { id: string }) => s.id === workingSnapshotId
+        );
 
         if (!workingSnapshot) {
           console.error('BAC4 NavService: Working snapshot not found in timeline');
@@ -304,7 +304,10 @@ export class DiagramNavigationService {
         }
 
         nodes = workingSnapshot.nodes || [];
-        console.log('BAC4 NavService: Using v1.0.0 timeline format, working snapshot:', workingSnapshotId);
+        console.log(
+          'BAC4 NavService: Using v1.0.0 timeline format, working snapshot:',
+          workingSnapshotId
+        );
       } else {
         // Legacy format (v0.x)
         nodes = parentData.nodes || [];
@@ -371,7 +374,9 @@ export class DiagramNavigationService {
           } else if (data.timeline) {
             // v1.0.0 format - get working snapshot (first in order)
             const workingSnapshotId = data.timeline.snapshotOrder?.[0];
-            const workingSnapshot = data.timeline.snapshots?.find((s: { id: string }) => s.id === workingSnapshotId);
+            const workingSnapshot = data.timeline.snapshots?.find(
+              (s: { id: string }) => s.id === workingSnapshotId
+            );
             nodes = workingSnapshot?.nodes || [];
           } else {
             // Legacy format (v0.x)
@@ -379,9 +384,7 @@ export class DiagramNavigationService {
           }
 
           // Check if any node links to current diagram
-          const hasLink = nodes.some(
-            (node) => node.data?.linkedDiagramPath === currentPath
-          );
+          const hasLink = nodes.some((node) => node.data?.linkedDiagramPath === currentPath);
 
           if (hasLink) {
             console.log('BAC4: Found parent diagram:', file.path);
@@ -538,7 +541,9 @@ export class DiagramNavigationService {
       if (data.timeline) {
         // v1.0.0 format - update working snapshot (first in order)
         const workingSnapshotId = data.timeline.snapshotOrder?.[0];
-        const snapshotIndex = data.timeline.snapshots?.findIndex((s: { id: string }) => s.id === workingSnapshotId);
+        const snapshotIndex = data.timeline.snapshots?.findIndex(
+          (s: { id: string }) => s.id === workingSnapshotId
+        );
 
         if (snapshotIndex === -1 || snapshotIndex === undefined) {
           throw new Error('Working snapshot not found in timeline');
@@ -627,7 +632,9 @@ export class DiagramNavigationService {
       if (data.timeline) {
         // v1.0.0 format - update working snapshot (first in order)
         const workingSnapshotId = data.timeline.snapshotOrder?.[0];
-        const snapshotIndex = data.timeline.snapshots?.findIndex((s: { id: string }) => s.id === workingSnapshotId);
+        const snapshotIndex = data.timeline.snapshots?.findIndex(
+          (s: { id: string }) => s.id === workingSnapshotId
+        );
 
         if (snapshotIndex === -1 || snapshotIndex === undefined) {
           throw new Error('Working snapshot not found in timeline');

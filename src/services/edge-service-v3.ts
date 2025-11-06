@@ -29,9 +29,7 @@ export class EdgeServiceV3 {
   /**
    * Create new global edge
    */
-  async createEdge(
-    edge: Omit<GlobalEdge, 'id' | 'created' | 'updated'>
-  ): Promise<GlobalEdge> {
+  async createEdge(edge: Omit<GlobalEdge, 'id' | 'created' | 'updated'>): Promise<GlobalEdge> {
     const now = new Date().toISOString();
     const newEdge: GlobalEdge = {
       ...edge,
@@ -107,9 +105,7 @@ export class EdgeServiceV3 {
    */
   async deleteEdge(edgeId: string): Promise<void> {
     await this.graphService.update((graph) => {
-      graph.relationships.edges = graph.relationships.edges.filter(
-        (edge) => edge.id !== edgeId
-      );
+      graph.relationships.edges = graph.relationships.edges.filter((edge) => edge.id !== edgeId);
       return graph;
     });
 

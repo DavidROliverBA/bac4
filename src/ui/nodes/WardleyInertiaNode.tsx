@@ -49,7 +49,8 @@ export const WardleyInertiaNode: React.FC<NodeProps<InertiaNodeData>> = ({ data,
       position: 'relative',
       cursor: 'pointer',
       // Striped pattern to make it look like a barrier
-      backgroundImage: 'repeating-linear-gradient(45deg, rgba(239, 68, 68, 0.05) 0px, rgba(239, 68, 68, 0.05) 10px, transparent 10px, transparent 20px)',
+      backgroundImage:
+        'repeating-linear-gradient(45deg, rgba(239, 68, 68, 0.05) 0px, rgba(239, 68, 68, 0.05) 10px, transparent 10px, transparent 20px)',
     };
   };
 

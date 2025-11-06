@@ -24,7 +24,7 @@ export const ContainerNode: React.FC<NodeProps<ContainerNodeData>> = ({ data, se
   // Render Lucide icon using Obsidian API
   React.useEffect(() => {
     if (iconRef.current) {
-      iconRef.current.innerHTML = '';  // Clear existing
+      iconRef.current.innerHTML = ''; // Clear existing
       setIcon(iconRef.current, data.icon || DEFAULT_ICON);
     }
   }, [data.icon]);
@@ -79,7 +79,7 @@ export const ContainerNode: React.FC<NodeProps<ContainerNodeData>> = ({ data, se
             boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
             zIndex: 10,
           }}
-          title={`Shared across ${data.crossReferences.length + 1} diagrams:\n${data.crossReferences.map(path => path.split('/').pop()?.replace('.bac4', '')).join('\n')}`}
+          title={`Shared across ${data.crossReferences.length + 1} diagrams:\n${data.crossReferences.map((path) => path.split('/').pop()?.replace('.bac4', '')).join('\n')}`}
         >
           {data.crossReferences.length + 1}
         </div>

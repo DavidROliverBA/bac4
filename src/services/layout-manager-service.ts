@@ -124,19 +124,14 @@ export class LayoutManagerService {
    * })
    * → Creates "Context-Wardley.bac4-graph"
    */
-  async createLayout(
-    nodeFilePath: string,
-    options: CreateLayoutOptions
-  ): Promise<string> {
+  async createLayout(nodeFilePath: string, options: CreateLayoutOptions): Promise<string> {
     const baseName = this.getBaseName(nodeFilePath);
     const folder = this.getFolder(nodeFilePath);
 
     // Generate file name
     const layoutSlug = this.slugify(options.layoutName);
     const graphFileName = `${baseName}-${layoutSlug}.bac4-graph`;
-    const graphFilePath = folder
-      ? `${folder}/${graphFileName}`
-      : graphFileName;
+    const graphFilePath = folder ? `${folder}/${graphFileName}` : graphFileName;
 
     // Check if file already exists
     const existing = this.vault.getAbstractFileByPath(graphFilePath);
@@ -197,10 +192,7 @@ export class LayoutManagerService {
    * renameLayout("Context-Old.bac4-graph", "New View Name")
    * → Renames to "Context-New-View-Name.bac4-graph"
    */
-  async renameLayout(
-    oldGraphPath: string,
-    newLayoutName: string
-  ): Promise<string> {
+  async renameLayout(oldGraphPath: string, newLayoutName: string): Promise<string> {
     const file = this.vault.getAbstractFileByPath(oldGraphPath);
     if (!file || !(file instanceof TFile)) {
       throw new Error(`Layout not found: ${oldGraphPath}`);
@@ -216,9 +208,7 @@ export class LayoutManagerService {
     const baseName = match[1];
     const layoutSlug = this.slugify(newLayoutName);
     const newFileName = `${baseName}-${layoutSlug}.bac4-graph`;
-    const newPath = file.parent
-      ? `${file.parent.path}/${newFileName}`
-      : newFileName;
+    const newPath = file.parent ? `${file.parent.path}/${newFileName}` : newFileName;
 
     // Check if new name already exists
     const existing = this.vault.getAbstractFileByPath(newPath);
@@ -360,11 +350,10 @@ export class LayoutManagerService {
       },
       config: {
         layoutAlgorithm: 'manual',
-        showGrid: true,
+        gridEnabled: true,
         showMinimap: true,
         gridSize: 20,
         snapToGrid: false,
-        nodeSpacing: { x: 200, y: 150 },
         axisLabels: undefined,
       },
     };

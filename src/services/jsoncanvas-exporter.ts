@@ -105,7 +105,8 @@ export class JSONCanvasExporter {
         'diagramPath' in node.data ? (node.data.diagramPath as string) : node.data.label || '';
 
       // Extract display name for the file node
-      const displayName = node.data.label || diagramPath.split('/').pop()?.replace('.bac4', '') || 'Diagram';
+      const displayName =
+        node.data.label || diagramPath.split('/').pop()?.replace('.bac4', '') || 'Diagram';
 
       return {
         id: node.id,

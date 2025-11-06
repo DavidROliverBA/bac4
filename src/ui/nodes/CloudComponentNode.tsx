@@ -59,8 +59,8 @@ export const CloudComponentNode: React.FC<NodeProps<CloudComponentNodeData>> = (
       boxShadow: selected
         ? `0 0 0 3px ${UI_COLORS.interactiveAccent}`
         : isContainer
-        ? `inset 0 0 10px ${hexToRgba(color, 0.2)}`
-        : '0 2px 4px rgba(0,0,0,0.1)',
+          ? `inset 0 0 10px ${hexToRgba(color, 0.2)}`
+          : '0 2px 4px rgba(0,0,0,0.1)',
       position: 'relative' as const,
       // Container nodes stay in background, regular nodes on top
       zIndex: isContainer ? 0 : 1,
@@ -114,7 +114,9 @@ export const CloudComponentNode: React.FC<NodeProps<CloudComponentNodeData>> = (
 
       {/* Change badge (v1.0.0 timeline) - positioned center-top to avoid other badges */}
       {data.changeIndicator && (
-        <div style={{ position: 'absolute', top: '-10px', left: '50%', transform: 'translateX(-50%)' }}>
+        <div
+          style={{ position: 'absolute', top: '-10px', left: '50%', transform: 'translateX(-50%)' }}
+        >
           <NodeChangeBadge changeType={data.changeIndicator} />
         </div>
       )}
@@ -124,9 +126,7 @@ export const CloudComponentNode: React.FC<NodeProps<CloudComponentNodeData>> = (
       <Handle type="source" position={Position.Left} id="left" style={{ background: color }} />
 
       {/* Component Type badge (left side) */}
-      {data.componentType && (
-        <div style={componentTypeBadgeStyles}>{data.componentType}</div>
-      )}
+      {data.componentType && <div style={componentTypeBadgeStyles}>{data.componentType}</div>}
 
       {/* Provider badge (right side) */}
       <div style={providerBadgeStyles}>{data.provider || 'CLOUD'}</div>

@@ -154,9 +154,7 @@ export class FormatConverter {
         updated: v1File.metadata.updatedAt,
       },
       timeline: {
-        snapshots: v1File.timeline.snapshots.map((s) =>
-          this.convertSnapshot(s)
-        ),
+        snapshots: v1File.timeline.snapshots.map((s) => this.convertSnapshot(s)),
         currentSnapshotId: v1File.timeline.currentSnapshotId,
         snapshotOrder: v1File.timeline.snapshotOrder,
       },
@@ -352,14 +350,7 @@ export class FormatConverter {
    * Extract other properties from v1 data
    */
   private static extractOtherProperties(data: any): Record<string, any> {
-    const {
-      label,
-      description,
-      technology,
-      color,
-      linkedDiagramPath,
-      ...rest
-    } = data;
+    const { label, description, technology, color, linkedDiagramPath, ...rest } = data;
 
     return rest;
   }
@@ -403,10 +394,7 @@ export class FormatConverter {
    * Convert v2 format back to v1 (for backward compatibility during transition)
    * NOTE: This is lossy - some v2 features won't convert back
    */
-  static convertV2ToV1(
-    nodeFile: BAC4FileV2,
-    graphFile: BAC4GraphFileV2
-  ): BAC4FileV1 {
+  static convertV2ToV1(nodeFile: BAC4FileV2, graphFile: BAC4GraphFileV2): BAC4FileV1 {
     console.log('Converting v2 back to v1 format (lossy conversion)...');
 
     const snapshots: SnapshotV1[] = graphFile.timeline.snapshots.map((snapshot) => {
@@ -500,10 +488,8 @@ export class FormatConverter {
     if (!nodeFile.metadata.title) errors.push('Node file missing metadata.title');
     if (!nodeFile.metadata.layer) errors.push('Node file missing metadata.layer');
 
-    if (!graphFile.metadata.nodeFile)
-      errors.push('Graph file missing metadata.nodeFile');
-    if (!graphFile.metadata.viewType)
-      errors.push('Graph file missing metadata.viewType');
+    if (!graphFile.metadata.nodeFile) errors.push('Graph file missing metadata.nodeFile');
+    if (!graphFile.metadata.viewType) errors.push('Graph file missing metadata.viewType');
 
     // Check nodes
     if (!nodeFile.nodes || typeof nodeFile.nodes !== 'object') {
@@ -519,9 +505,7 @@ export class FormatConverter {
     for (const snapshot of graphFile.timeline.snapshots || []) {
       for (const nodeId of Object.keys(snapshot.layout || {})) {
         if (!nodeFile.nodes[nodeId]) {
-          errors.push(
-            `Snapshot ${snapshot.id} references non-existent node: ${nodeId}`
-          );
+          errors.push(`Snapshot ${snapshot.id} references non-existent node: ${nodeId}`);
         }
       }
     }
@@ -530,14 +514,10 @@ export class FormatConverter {
     for (const snapshot of graphFile.timeline.snapshots || []) {
       for (const edge of snapshot.edges || []) {
         if (!nodeFile.nodes[edge.source]) {
-          errors.push(
-            `Edge ${edge.id} references non-existent source node: ${edge.source}`
-          );
+          errors.push(`Edge ${edge.id} references non-existent source node: ${edge.source}`);
         }
         if (!nodeFile.nodes[edge.target]) {
-          errors.push(
-            `Edge ${edge.id} references non-existent target node: ${edge.target}`
-          );
+          errors.push(`Edge ${edge.id} references non-existent target node: ${edge.target}`);
         }
       }
     }

@@ -312,8 +312,8 @@ describe('Snapshot Isolation (v2.5.1 Fix)', () => {
 
       // Initial state: 2 green nodes
       const greenNodes = [
-        createMockNode('node-1', 'Node 1', '#00ff00', 100, 100),
-        createMockNode('node-2', 'Node 2', '#00ff00', 400, 100),
+        createMockNode('node-1', 'Green Node 1', '#00ff00', 100, 100),
+        createMockNode('node-2', 'Green Node 2', '#00ff00', 400, 100),
       ];
 
       const nodeFile1 = createMockNodeFile();

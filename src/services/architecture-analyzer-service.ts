@@ -115,7 +115,12 @@ export class ArchitectureAnalyzerService {
     const technologyStack = this.analyzeTechnologyStack(nodes, edges, diagramType);
 
     // Calculate overall score and grade
-    const overallScore = this.calculateOverallScore(complexity, dependencies, cohesion, technologyStack);
+    const overallScore = this.calculateOverallScore(
+      complexity,
+      dependencies,
+      cohesion,
+      technologyStack
+    );
     const qualityGrade = this.calculateQualityGrade(overallScore);
 
     // Generate recommendations
@@ -182,10 +187,7 @@ export class ArchitectureAnalyzerService {
   /**
    * Analyze dependencies
    */
-  private analyzeDependencies(
-    nodes: Node<CanvasNodeData>[],
-    edges: Edge[]
-  ): DependencyAnalysis {
+  private analyzeDependencies(nodes: Node<CanvasNodeData>[], edges: Edge[]): DependencyAnalysis {
     const fanIn = new Map<string, number>();
     const fanOut = new Map<string, number>();
 
@@ -230,10 +232,7 @@ export class ArchitectureAnalyzerService {
   /**
    * Analyze component cohesion
    */
-  private analyzeCohesion(
-    nodes: Node<CanvasNodeData>[],
-    edges: Edge[]
-  ): CohesionAnalysis {
+  private analyzeCohesion(nodes: Node<CanvasNodeData>[], edges: Edge[]): CohesionAnalysis {
     // Detect component groups using community detection algorithm
     const componentGroups = this.detectComponentGroups(nodes, edges);
 
@@ -328,7 +327,15 @@ export class ArchitectureAnalyzerService {
     edges: Edge[]
   ): ArchitecturalPattern | null {
     // Look for typical layer names
-    const layerKeywords = ['presentation', 'ui', 'service', 'business', 'data', 'persistence', 'infrastructure'];
+    const layerKeywords = [
+      'presentation',
+      'ui',
+      'service',
+      'business',
+      'data',
+      'persistence',
+      'infrastructure',
+    ];
 
     const layerNodes = nodes.filter((node) =>
       layerKeywords.some((keyword) => node.data.label.toLowerCase().includes(keyword))
@@ -343,16 +350,14 @@ export class ArchitectureAnalyzerService {
       name: 'Layered Architecture',
       confidence: Math.round(confidence),
       components: layerNodes.map((n) => n.id),
-      description: 'Components are organized into distinct layers with clear separation of concerns.',
+      description:
+        'Components are organized into distinct layers with clear separation of concerns.',
       benefits: [
         'Clear separation of concerns',
         'Easy to understand and maintain',
         'Well-established pattern',
       ],
-      concerns: [
-        'Potential for tight coupling between layers',
-        'May become monolithic over time',
-      ],
+      concerns: ['Potential for tight coupling between layers', 'May become monolithic over time'],
     };
   }
 
@@ -384,11 +389,7 @@ export class ArchitectureAnalyzerService {
       confidence: Math.round(confidence),
       components: serviceNodes.map((n) => n.id),
       description: 'Architecture composed of loosely coupled, independently deployable services.',
-      benefits: [
-        'Independent deployment and scaling',
-        'Technology diversity',
-        'Fault isolation',
-      ],
+      benefits: ['Independent deployment and scaling', 'Technology diversity', 'Fault isolation'],
       concerns: [
         'Increased operational complexity',
         'Distributed system challenges',
@@ -404,7 +405,16 @@ export class ArchitectureAnalyzerService {
     nodes: Node<CanvasNodeData>[],
     edges: Edge[]
   ): ArchitecturalPattern | null {
-    const eventKeywords = ['event', 'queue', 'broker', 'pub', 'sub', 'message', 'kafka', 'rabbitmq'];
+    const eventKeywords = [
+      'event',
+      'queue',
+      'broker',
+      'pub',
+      'sub',
+      'message',
+      'kafka',
+      'rabbitmq',
+    ];
 
     const eventNodes = nodes.filter((node) =>
       eventKeywords.some((keyword) => node.data.label.toLowerCase().includes(keyword))
@@ -453,26 +463,21 @@ export class ArchitectureAnalyzerService {
       name: 'Hexagonal Architecture (Ports & Adapters)',
       confidence: Math.round(confidence),
       components: portNodes.map((n) => n.id),
-      description: 'Core business logic is isolated from external dependencies through ports and adapters.',
+      description:
+        'Core business logic is isolated from external dependencies through ports and adapters.',
       benefits: [
         'Testability through dependency inversion',
         'Technology independence',
         'Clear domain boundaries',
       ],
-      concerns: [
-        'Initial complexity overhead',
-        'More boilerplate code',
-      ],
+      concerns: ['Initial complexity overhead', 'More boilerplate code'],
     };
   }
 
   /**
    * Detect CQRS pattern
    */
-  private detectCQRS(
-    nodes: Node<CanvasNodeData>[],
-    edges: Edge[]
-  ): ArchitecturalPattern | null {
+  private detectCQRS(nodes: Node<CanvasNodeData>[], edges: Edge[]): ArchitecturalPattern | null {
     const cqrsKeywords = ['command', 'query', 'read', 'write', 'cqrs'];
 
     const cqrsNodes = nodes.filter((node) =>
@@ -480,13 +485,14 @@ export class ArchitectureAnalyzerService {
     );
 
     // Need both command and query sides
-    const hasCommand = cqrsNodes.some((n) =>
-      n.data.label.toLowerCase().includes('command') ||
-      n.data.label.toLowerCase().includes('write')
+    const hasCommand = cqrsNodes.some(
+      (n) =>
+        n.data.label.toLowerCase().includes('command') ||
+        n.data.label.toLowerCase().includes('write')
     );
-    const hasQuery = cqrsNodes.some((n) =>
-      n.data.label.toLowerCase().includes('query') ||
-      n.data.label.toLowerCase().includes('read')
+    const hasQuery = cqrsNodes.some(
+      (n) =>
+        n.data.label.toLowerCase().includes('query') || n.data.label.toLowerCase().includes('read')
     );
 
     if (!hasCommand || !hasQuery) return null;
@@ -518,7 +524,15 @@ export class ArchitectureAnalyzerService {
     nodes: Node<CanvasNodeData>[],
     diagramType: DiagramType
   ): TechnologyLayer[] {
-    const layers: DiagramType[] = ['market', 'organisation', 'capability', 'context', 'container', 'component', 'code'];
+    const layers: DiagramType[] = [
+      'market',
+      'organisation',
+      'capability',
+      'context',
+      'container',
+      'component',
+      'code',
+    ];
     const result: TechnologyLayer[] = [];
 
     for (const layer of layers) {
@@ -548,10 +562,27 @@ export class ArchitectureAnalyzerService {
   private extractTechnologies(nodes: Node<CanvasNodeData>[]): string[] {
     const technologies = new Set<string>();
     const techPatterns = [
-      /react/i, /angular/i, /vue/i, /node/i, /python/i, /java/i,
-      /aws/i, /azure/i, /gcp/i, /docker/i, /kubernetes/i, /k8s/i,
-      /postgres/i, /mysql/i, /mongo/i, /redis/i, /kafka/i,
-      /rest/i, /graphql/i, /grpc/i, /http/i,
+      /react/i,
+      /angular/i,
+      /vue/i,
+      /node/i,
+      /python/i,
+      /java/i,
+      /aws/i,
+      /azure/i,
+      /gcp/i,
+      /docker/i,
+      /kubernetes/i,
+      /k8s/i,
+      /postgres/i,
+      /mysql/i,
+      /mongo/i,
+      /redis/i,
+      /kafka/i,
+      /rest/i,
+      /graphql/i,
+      /grpc/i,
+      /http/i,
     ];
 
     for (const node of nodes) {
@@ -570,14 +601,13 @@ export class ArchitectureAnalyzerService {
   /**
    * Calculate layer compliance score
    */
-  private calculateLayerCompliance(
-    nodes: Node<CanvasNodeData>[],
-    layer: DiagramType
-  ): number {
+  private calculateLayerCompliance(nodes: Node<CanvasNodeData>[], layer: DiagramType): number {
     let score = 100;
 
     // Check for proper naming conventions
-    const hasDescriptions = nodes.filter((n) => n.data.description && n.data.description.trim() !== '').length;
+    const hasDescriptions = nodes.filter(
+      (n) => n.data.description && n.data.description.trim() !== ''
+    ).length;
     score -= (nodes.length - hasDescriptions) * 5;
 
     // Check for reasonable size (not too many components in one layer)
@@ -604,7 +634,8 @@ export class ArchitectureAnalyzerService {
         priority: 'medium',
         category: 'pattern',
         title: 'Consider Implementing Architectural Pattern',
-        description: 'Your diagram has grown complex. Consider adopting a well-known architectural pattern to improve maintainability.',
+        description:
+          'Your diagram has grown complex. Consider adopting a well-known architectural pattern to improve maintainability.',
         benefits: [
           'Improved code organization',
           'Better separation of concerns',
@@ -622,12 +653,9 @@ export class ArchitectureAnalyzerService {
         priority: 'high',
         category: 'refactoring',
         title: 'Reduce Coupling with Event-Driven Architecture',
-        description: 'Components are tightly coupled. Consider using events or message queues to decouple them.',
-        benefits: [
-          'Reduced dependencies',
-          'Improved scalability',
-          'Better fault isolation',
-        ],
+        description:
+          'Components are tightly coupled. Consider using events or message queues to decouple them.',
+        benefits: ['Reduced dependencies', 'Improved scalability', 'Better fault isolation'],
         effort: 'medium',
         impact: 'high',
       });
@@ -640,11 +668,7 @@ export class ArchitectureAnalyzerService {
         category: 'pattern',
         title: 'Consider Microservices Architecture',
         description: 'Your system is large and may benefit from decomposition into microservices.',
-        benefits: [
-          'Independent deployment',
-          'Technology diversity',
-          'Team autonomy',
-        ],
+        benefits: ['Independent deployment', 'Technology diversity', 'Team autonomy'],
         effort: 'high',
         impact: 'high',
       });

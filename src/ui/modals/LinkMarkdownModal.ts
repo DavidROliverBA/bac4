@@ -96,8 +96,8 @@ export class LinkMarkdownModal extends Modal {
 
     // Create if missing checkbox
     new Setting(contentEl)
-      .setName('Create file if it doesn\'t exist')
-      .setDesc('Automatically create the markdown file with a template if it doesn\'t exist')
+      .setName("Create file if it doesn't exist")
+      .setDesc("Automatically create the markdown file with a template if it doesn't exist")
       .addToggle((toggle) => {
         toggle.setValue(this.createIfMissing).onChange((value) => {
           this.createIfMissing = value;

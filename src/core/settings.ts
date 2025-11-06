@@ -28,8 +28,8 @@ export interface GraphFilterSettings {
  * Note: Using "MCP" naming for user-facing features, but technically uses Anthropic API
  */
 export interface MCPSettings {
-  enabled: boolean;           // Enable AI features
-  apiKey: string;             // Anthropic API key
-  autoValidate: boolean;      // Real-time diagram validation
-  autoSuggest: boolean;       // AI suggestions while editing
+  enabled: boolean; // Enable AI features
+  apiKey: string; // Anthropic API key
+  autoValidate: boolean; // Real-time diagram validation
+  autoSuggest: boolean; // AI suggestions while editing
 }

@@ -165,15 +165,16 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
 
   // Determine target diagram type
   // For capability nodes, we'll load all diagram types (handled in the effect)
-  const targetDiagramType: 'container' | 'component' | 'capability' | 'context' | null = canHaveChildren
-    ? isSystemNode
-      ? 'container'
-      : isContainerNode
-      ? 'component'
-      : isCapabilityNode
-      ? 'capability' // Placeholder, we'll load all types
-      : null
-    : null;
+  const targetDiagramType: 'container' | 'component' | 'capability' | 'context' | null =
+    canHaveChildren
+      ? isSystemNode
+        ? 'container'
+        : isContainerNode
+          ? 'component'
+          : isCapabilityNode
+            ? 'capability' // Placeholder, we'll load all types
+            : null
+      : null;
 
   // Load available diagrams and existing link
   React.useEffect(() => {
@@ -192,14 +193,20 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
       try {
         // For capability nodes, load all diagram types (context, container, component, capability)
         if (isCapabilityNode) {
-          const [contextDiagrams, containerDiagrams, componentDiagrams, capabilityDiagrams] = await Promise.all([
-            navigationService.getDiagramsByType('context'),
-            navigationService.getDiagramsByType('container'),
-            navigationService.getDiagramsByType('component'),
-            navigationService.getDiagramsByType('capability'),
-          ]);
+          const [contextDiagrams, containerDiagrams, componentDiagrams, capabilityDiagrams] =
+            await Promise.all([
+              navigationService.getDiagramsByType('context'),
+              navigationService.getDiagramsByType('container'),
+              navigationService.getDiagramsByType('component'),
+              navigationService.getDiagramsByType('capability'),
+            ]);
           // Combine all diagrams (DiagramLinking component already sorts alphabetically)
-          const allDiagrams = [...contextDiagrams, ...containerDiagrams, ...componentDiagrams, ...capabilityDiagrams];
+          const allDiagrams = [
+            ...contextDiagrams,
+            ...containerDiagrams,
+            ...componentDiagrams,
+            ...capabilityDiagrams,
+          ];
           setAvailableDiagrams(allDiagrams);
         } else {
           // For other nodes (system, container), load only the target type
@@ -218,7 +225,14 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
     };
 
     loadData();
-  }, [canHaveChildren, node?.id, navigationService, currentDiagramPath, targetDiagramType, isCapabilityNode]);
+  }, [
+    canHaveChildren,
+    node?.id,
+    navigationService,
+    currentDiagramPath,
+    targetDiagramType,
+    isCapabilityNode,
+  ]);
 
   // Check if linked markdown file exists
   React.useEffect(() => {
@@ -355,11 +369,14 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
   };
 
   // Dragging handlers
-  const handleDragMouseDown = React.useCallback((e: React.MouseEvent) => {
-    setIsDragging(true);
-    setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y });
-    e.preventDefault();
-  }, [position]);
+  const handleDragMouseDown = React.useCallback(
+    (e: React.MouseEvent) => {
+      setIsDragging(true);
+      setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y });
+      e.preventDefault();
+    },
+    [position]
+  );
 
   // Global mouse move and up handlers
   React.useEffect(() => {
@@ -685,7 +702,9 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
                       color: UI_COLORS.textMuted,
                     }}
                   >
-                    {'componentType' in node.data ? (node.data.componentType || 'Not specified') : 'Not specified'}
+                    {'componentType' in node.data
+                      ? node.data.componentType || 'Not specified'
+                      : 'Not specified'}
                   </div>
                 </FormSection>
 
@@ -693,39 +712,44 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
                   node.data.properties &&
                   Object.keys(node.data.properties).length > 0 && (
                     <FormSection label="Properties">
-                      {Object.entries(node.data.properties as Record<string, unknown>).map(([key, value]) => (
-                        <div key={key} style={{ marginBottom: SPACING.large }}>
-                          <label
-                            style={{
-                              display: 'block',
-                              fontSize: FONT_SIZES.extraSmall,
-                              color: UI_COLORS.textMuted,
-                              marginBottom: SPACING.tiny,
-                            }}
-                          >
-                            {key}
-                          </label>
-                          <input
-                            type="text"
-                            value={String(value)}
-                            onChange={(e) => {
-                              if ('properties' in node.data && node.data.properties) {
-                                const newProps = { ...node.data.properties, [key]: e.target.value };
-                                handlePropertyChange('properties', newProps);
-                              }
-                            }}
-                            style={{
-                              width: '100%',
-                              padding: SPACING.padding.compact,
-                              background: UI_COLORS.backgroundSecondary,
-                              border: `1px solid ${UI_COLORS.backgroundModifierBorder}`,
-                              borderRadius: BORDER_RADIUS.small,
-                              color: UI_COLORS.textNormal,
-                              fontSize: FONT_SIZES.medium,
-                            }}
-                          />
-                        </div>
-                      ))}
+                      {Object.entries(node.data.properties as Record<string, unknown>).map(
+                        ([key, value]) => (
+                          <div key={key} style={{ marginBottom: SPACING.large }}>
+                            <label
+                              style={{
+                                display: 'block',
+                                fontSize: FONT_SIZES.extraSmall,
+                                color: UI_COLORS.textMuted,
+                                marginBottom: SPACING.tiny,
+                              }}
+                            >
+                              {key}
+                            </label>
+                            <input
+                              type="text"
+                              value={String(value)}
+                              onChange={(e) => {
+                                if ('properties' in node.data && node.data.properties) {
+                                  const newProps = {
+                                    ...node.data.properties,
+                                    [key]: e.target.value,
+                                  };
+                                  handlePropertyChange('properties', newProps);
+                                }
+                              }}
+                              style={{
+                                width: '100%',
+                                padding: SPACING.padding.compact,
+                                background: UI_COLORS.backgroundSecondary,
+                                border: `1px solid ${UI_COLORS.backgroundModifierBorder}`,
+                                borderRadius: BORDER_RADIUS.small,
+                                color: UI_COLORS.textNormal,
+                                fontSize: FONT_SIZES.medium,
+                              }}
+                            />
+                          </div>
+                        )
+                      )}
                     </FormSection>
                   )}
 
@@ -804,7 +828,7 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
                 {/* Icon Selector - Schema v0.4.0 */}
                 <IconSelector
                   label="Icon"
-                  value={'icon' in node.data ? (node.data.icon || 'box') : 'box'}
+                  value={'icon' in node.data ? node.data.icon || 'box' : 'box'}
                   onChange={(iconId) => handlePropertyChange('icon', iconId)}
                   placeholder="Search icons (cloud, database, server...)"
                 />
@@ -912,9 +936,16 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
 
                 <FormField
                   label="Competitors"
-                  value={'competitors' in node.data && node.data.competitors ? node.data.competitors.join(', ') : ''}
+                  value={
+                    'competitors' in node.data && node.data.competitors
+                      ? node.data.competitors.join(', ')
+                      : ''
+                  }
                   onChange={(value) => {
-                    const competitors = value.split(',').map(c => c.trim()).filter(c => c.length > 0);
+                    const competitors = value
+                      .split(',')
+                      .map((c) => c.trim())
+                      .filter((c) => c.length > 0);
                     handlePropertyChange('competitors', competitors);
                   }}
                   placeholder="Comma-separated list (e.g., Company A, Company B)"
@@ -922,9 +953,14 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
 
                 <FormField
                   label="Trends"
-                  value={'trends' in node.data && node.data.trends ? node.data.trends.join(', ') : ''}
+                  value={
+                    'trends' in node.data && node.data.trends ? node.data.trends.join(', ') : ''
+                  }
                   onChange={(value) => {
-                    const trends = value.split(',').map(t => t.trim()).filter(t => t.length > 0);
+                    const trends = value
+                      .split(',')
+                      .map((t) => t.trim())
+                      .filter((t) => t.length > 0);
                     handlePropertyChange('trends', trends);
                   }}
                   placeholder="Comma-separated list (e.g., AI adoption, Cloud migration)"
@@ -1053,9 +1089,14 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
 
                 <FormField
                   label="Authors"
-                  value={'authors' in node.data && node.data.authors ? node.data.authors.join(', ') : ''}
+                  value={
+                    'authors' in node.data && node.data.authors ? node.data.authors.join(', ') : ''
+                  }
                   onChange={(value) => {
-                    const authors = value.split(',').map(a => a.trim()).filter(a => a.length > 0);
+                    const authors = value
+                      .split(',')
+                      .map((a) => a.trim())
+                      .filter((a) => a.length > 0);
                     handlePropertyChange('authors', authors);
                   }}
                   placeholder="Comma-separated list (e.g., Alice Smith, Bob Jones)"

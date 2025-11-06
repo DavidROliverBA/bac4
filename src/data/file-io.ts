@@ -340,7 +340,10 @@ function migrateToV1(
   const now = new Date().toISOString();
 
   // Type guard: ensure data is an object
-  const dataObj = (typeof data === 'object' && data !== null ? data : {}) as Record<string, unknown>;
+  const dataObj = (typeof data === 'object' && data !== null ? data : {}) as Record<
+    string,
+    unknown
+  >;
 
   // Extract nodes and edges from old format
   const nodes = (Array.isArray(dataObj.nodes) ? dataObj.nodes : []) as Node[];
@@ -421,8 +424,7 @@ export async function readBAC4File(vault: Vault, filePath: string): Promise<BAC4
     const hasNodesEdges =
       typeof data === 'object' && data !== null && 'nodes' in data && 'edges' in data;
 
-    const hasNoTimeline =
-      typeof data === 'object' && data !== null && !('timeline' in data);
+    const hasNoTimeline = typeof data === 'object' && data !== null && !('timeline' in data);
 
     const isOldFormat = hasNodesEdges && hasNoTimeline;
 

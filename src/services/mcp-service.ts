@@ -84,9 +84,9 @@ export class MCPService {
 
     try {
       // Get all .bac4 files
-      const bac4Files = this.plugin.app.vault.getFiles().filter(
-        (file) => file.extension === 'bac4'
-      );
+      const bac4Files = this.plugin.app.vault
+        .getFiles()
+        .filter((file) => file.extension === 'bac4');
 
       // Build search prompt
       const prompt = this.buildSearchPrompt(query, bac4Files);
@@ -241,15 +241,17 @@ Return matching nodes and their relationships as a list.`;
   /**
    * Build prompt for documentation generation
    */
-  private buildDocumentationPrompt(
-    diagrams: Array<{ path: string; content: unknown }>
-  ): string {
+  private buildDocumentationPrompt(diagrams: Array<{ path: string; content: unknown }>): string {
     return `Generate comprehensive architecture documentation from these BAC4 diagrams:
 
-${diagrams.map((d) => `
+${diagrams
+  .map(
+    (d) => `
 File: ${d.path}
 ${JSON.stringify(d.content, null, 2)}
-`).join('\n---\n')}
+`
+  )
+  .join('\n---\n')}
 
 Create a markdown document with:
 1. System overview
@@ -264,80 +266,96 @@ Create a markdown document with:
   private getExampleDiagram(diagramType: string): string {
     switch (diagramType) {
       case 'context':
-        return JSON.stringify({
-          nodes: [
-            {
-              id: 'node-1',
-              type: 'person',
-              position: { x: 100, y: 100 },
-              data: { label: 'User', description: 'System user' }
-            },
-            {
-              id: 'node-2',
-              type: 'system',
-              position: { x: 300, y: 100 },
-              data: { label: 'System', external: false, description: 'Main system' }
-            }
-          ],
-          edges: [
-            {
-              id: 'edge-1',
-              source: 'node-1',
-              sourceHandle: null,
-              target: 'node-2',
-              targetHandle: null,
-              type: 'directional',
-              data: { label: 'uses', direction: 'right' }
-            }
-          ]
-        }, null, 2);
+        return JSON.stringify(
+          {
+            nodes: [
+              {
+                id: 'node-1',
+                type: 'person',
+                position: { x: 100, y: 100 },
+                data: { label: 'User', description: 'System user' },
+              },
+              {
+                id: 'node-2',
+                type: 'system',
+                position: { x: 300, y: 100 },
+                data: { label: 'System', external: false, description: 'Main system' },
+              },
+            ],
+            edges: [
+              {
+                id: 'edge-1',
+                source: 'node-1',
+                sourceHandle: null,
+                target: 'node-2',
+                targetHandle: null,
+                type: 'directional',
+                data: { label: 'uses', direction: 'right' },
+              },
+            ],
+          },
+          null,
+          2
+        );
 
       case 'container':
-        return JSON.stringify({
-          nodes: [
-            {
-              id: 'node-1',
-              type: 'container',
-              position: { x: 100, y: 100 },
-              data: { label: 'Web App', containerType: 'webapp', description: 'Frontend application' }
-            },
-            {
-              id: 'node-2',
-              type: 'container',
-              position: { x: 300, y: 100 },
-              data: { label: 'API', containerType: 'api', description: 'Backend API' }
-            }
-          ],
-          edges: [
-            {
-              id: 'edge-1',
-              source: 'node-1',
-              sourceHandle: null,
-              target: 'node-2',
-              targetHandle: null,
-              type: 'directional',
-              data: { label: 'calls', direction: 'right' }
-            }
-          ]
-        }, null, 2);
+        return JSON.stringify(
+          {
+            nodes: [
+              {
+                id: 'node-1',
+                type: 'container',
+                position: { x: 100, y: 100 },
+                data: {
+                  label: 'Web App',
+                  containerType: 'webapp',
+                  description: 'Frontend application',
+                },
+              },
+              {
+                id: 'node-2',
+                type: 'container',
+                position: { x: 300, y: 100 },
+                data: { label: 'API', containerType: 'api', description: 'Backend API' },
+              },
+            ],
+            edges: [
+              {
+                id: 'edge-1',
+                source: 'node-1',
+                sourceHandle: null,
+                target: 'node-2',
+                targetHandle: null,
+                type: 'directional',
+                data: { label: 'calls', direction: 'right' },
+              },
+            ],
+          },
+          null,
+          2
+        );
 
       case 'component':
-        return JSON.stringify({
-          nodes: [
-            {
-              id: 'node-1',
-              type: 'cloudComponent',
-              position: { x: 100, y: 100 },
-              data: {
-                label: 'Lambda Function',
-                componentId: 'aws-lambda',
-                provider: 'aws',
-                category: 'serverless'
-              }
-            }
-          ],
-          edges: []
-        }, null, 2);
+        return JSON.stringify(
+          {
+            nodes: [
+              {
+                id: 'node-1',
+                type: 'cloudComponent',
+                position: { x: 100, y: 100 },
+                data: {
+                  label: 'Lambda Function',
+                  componentId: 'aws-lambda',
+                  provider: 'aws',
+                  category: 'serverless',
+                },
+              },
+            ],
+            edges: [],
+          },
+          null,
+          2
+        );
 
       default:
         return '{}';
@@ -353,8 +371,8 @@ Create a markdown document with:
   ): { nodes: Node<CanvasNodeData>[]; edges: Edge<EdgeData>[] } {
     try {
       // Extract JSON from response (Claude might wrap it in markdown code blocks)
-      const jsonMatch = response.match(/```json\n([\s\S]*?)\n```/) ||
-                        response.match(/```\n([\s\S]*?)\n```/);
+      const jsonMatch =
+        response.match(/```json\n([\s\S]*?)\n```/) || response.match(/```\n([\s\S]*?)\n```/);
 
       const jsonStr = jsonMatch ? jsonMatch[1] : response;
       const parsed = JSON.parse(jsonStr);
@@ -374,7 +392,7 @@ Create a markdown document with:
 
       return {
         nodes: parsed.nodes || [],
-        edges: sanitizedEdges
+        edges: sanitizedEdges,
       };
     } catch (error) {
       console.error('BAC4 MCP: Error parsing diagram response:', error);

@@ -6,7 +6,6 @@
  * @version 3.0.0
  */
 
-import * as React from 'react';
 import { Modal, App } from 'obsidian';
 import { GlobalNode, GlobalEdge } from '../../types/graph-v3-types';
 
@@ -57,7 +56,7 @@ export class NameCollisionModal extends Modal {
     contentEl.createEl('h3', { text: 'Options:' });
 
     // Option 1: Cancel
-    const cancelBtn = contentEl.createEl('button', { text: 'Cancel (don\'t create node)' });
+    const cancelBtn = contentEl.createEl('button', { text: "Cancel (don't create node)" });
     cancelBtn.style.cssText = 'display:block; width:100%; margin:8px 0; padding:12px;';
     cancelBtn.onclick = () => {
       this.resolve({ action: 'cancel' });
@@ -234,13 +233,19 @@ export class DeleteNodeModal extends Modal {
     deleteBtn.onclick = () => {
       this.close();
       // Confirmation modal
-      new ConfirmGlobalDeleteModal(this.app, this.node, this.diagramCount, this.edgeCount, (confirmed) => {
-        if (confirmed) {
-          this.resolve({ action: 'delete-globally' });
-        } else {
-          this.resolve({ action: 'cancel' });
+      new ConfirmGlobalDeleteModal(
+        this.app,
+        this.node,
+        this.diagramCount,
+        this.edgeCount,
+        (confirmed) => {
+          if (confirmed) {
+            this.resolve({ action: 'delete-globally' });
+          } else {
+            this.resolve({ action: 'cancel' });
+          }
         }
-      }).open();
+      ).open();
     };
 
     // Option 3: Cancel

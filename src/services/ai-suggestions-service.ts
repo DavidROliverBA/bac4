@@ -176,26 +176,25 @@ export class AISuggestionsService {
   /**
    * Suggest context-level components
    */
-  private suggestContextComponents(
-    nodes: Node<CanvasNodeData>[],
-    edges: Edge[]
-  ): NodeSuggestion[] {
+  private suggestContextComponents(nodes: Node<CanvasNodeData>[], edges: Edge[]): NodeSuggestion[] {
     const suggestions: NodeSuggestion[] = [];
 
     // Check for missing typical context components
     const hasDatabase = nodes.some((n) => n.data.label.toLowerCase().includes('database'));
-    const hasAuth = nodes.some((n) =>
-      n.data.label.toLowerCase().includes('auth') ||
-      n.data.label.toLowerCase().includes('identity')
+    const hasAuth = nodes.some(
+      (n) =>
+        n.data.label.toLowerCase().includes('auth') ||
+        n.data.label.toLowerCase().includes('identity')
     );
-    const hasAPI = nodes.some((n) =>
-      n.data.label.toLowerCase().includes('api') ||
-      n.data.label.toLowerCase().includes('gateway')
+    const hasAPI = nodes.some(
+      (n) =>
+        n.data.label.toLowerCase().includes('api') || n.data.label.toLowerCase().includes('gateway')
     );
-    const hasMonitoring = nodes.some((n) =>
-      n.data.label.toLowerCase().includes('monitor') ||
-      n.data.label.toLowerCase().includes('logging') ||
-      n.data.label.toLowerCase().includes('observability')
+    const hasMonitoring = nodes.some(
+      (n) =>
+        n.data.label.toLowerCase().includes('monitor') ||
+        n.data.label.toLowerCase().includes('logging') ||
+        n.data.label.toLowerCase().includes('observability')
     );
 
     if (!hasDatabase && nodes.length > 2) {
@@ -290,25 +289,27 @@ export class AISuggestionsService {
   ): NodeSuggestion[] {
     const suggestions: NodeSuggestion[] = [];
 
-    const hasWebApp = nodes.some((n) =>
-      n.data.label.toLowerCase().includes('web') ||
-      n.data.label.toLowerCase().includes('frontend') ||
-      n.data.label.toLowerCase().includes('ui')
+    const hasWebApp = nodes.some(
+      (n) =>
+        n.data.label.toLowerCase().includes('web') ||
+        n.data.label.toLowerCase().includes('frontend') ||
+        n.data.label.toLowerCase().includes('ui')
     );
 
-    const hasAPI = nodes.some((n) =>
-      n.data.label.toLowerCase().includes('api') ||
-      n.data.label.toLowerCase().includes('service')
+    const hasAPI = nodes.some(
+      (n) =>
+        n.data.label.toLowerCase().includes('api') || n.data.label.toLowerCase().includes('service')
     );
 
-    const hasCache = nodes.some((n) =>
-      n.data.label.toLowerCase().includes('cache') ||
-      n.data.label.toLowerCase().includes('redis')
+    const hasCache = nodes.some(
+      (n) =>
+        n.data.label.toLowerCase().includes('cache') || n.data.label.toLowerCase().includes('redis')
     );
 
-    const hasQueue = nodes.some((n) =>
-      n.data.label.toLowerCase().includes('queue') ||
-      n.data.label.toLowerCase().includes('message')
+    const hasQueue = nodes.some(
+      (n) =>
+        n.data.label.toLowerCase().includes('queue') ||
+        n.data.label.toLowerCase().includes('message')
     );
 
     if (!hasWebApp && nodes.length > 0) {
@@ -405,9 +406,10 @@ export class AISuggestionsService {
 
     const hasController = nodes.some((n) => n.data.label.toLowerCase().includes('controller'));
     const hasService = nodes.some((n) => n.data.label.toLowerCase().includes('service'));
-    const hasRepository = nodes.some((n) =>
-      n.data.label.toLowerCase().includes('repository') ||
-      n.data.label.toLowerCase().includes('dao')
+    const hasRepository = nodes.some(
+      (n) =>
+        n.data.label.toLowerCase().includes('repository') ||
+        n.data.label.toLowerCase().includes('dao')
     );
     const hasValidator = nodes.some((n) => n.data.label.toLowerCase().includes('validat'));
 
@@ -507,9 +509,10 @@ export class AISuggestionsService {
     const hasOrderMgmt = nodes.some((n) => n.data.label.toLowerCase().includes('order'));
     const hasPayment = nodes.some((n) => n.data.label.toLowerCase().includes('payment'));
     const hasNotification = nodes.some((n) => n.data.label.toLowerCase().includes('notif'));
-    const hasReporting = nodes.some((n) =>
-      n.data.label.toLowerCase().includes('report') ||
-      n.data.label.toLowerCase().includes('analytics')
+    const hasReporting = nodes.some(
+      (n) =>
+        n.data.label.toLowerCase().includes('report') ||
+        n.data.label.toLowerCase().includes('analytics')
     );
 
     // Suggest common business capabilities based on what exists
@@ -529,7 +532,9 @@ export class AISuggestionsService {
           description: 'Manage customer information and relationships',
           layer: 'capability',
         },
-        relatedNodes: nodes.filter((n) => n.data.label.toLowerCase().includes('order')).map((n) => n.id),
+        relatedNodes: nodes
+          .filter((n) => n.data.label.toLowerCase().includes('order'))
+          .map((n) => n.id),
       });
     }
 
@@ -549,10 +554,13 @@ export class AISuggestionsService {
           description: 'Handle payment transactions and billing',
           layer: 'capability',
         },
-        relatedNodes: nodes.filter((n) =>
-          n.data.label.toLowerCase().includes('order') ||
-          n.data.label.toLowerCase().includes('customer')
-        ).map((n) => n.id),
+        relatedNodes: nodes
+          .filter(
+            (n) =>
+              n.data.label.toLowerCase().includes('order') ||
+              n.data.label.toLowerCase().includes('customer')
+          )
+          .map((n) => n.id),
       });
     }
 
@@ -786,8 +794,13 @@ export class AISuggestionsService {
     }
 
     // Suggest Event Sourcing if many state changes
-    if (nodes.some((n) => n.data.label.toLowerCase().includes('audit') ||
-                        n.data.label.toLowerCase().includes('history'))) {
+    if (
+      nodes.some(
+        (n) =>
+          n.data.label.toLowerCase().includes('audit') ||
+          n.data.label.toLowerCase().includes('history')
+      )
+    ) {
       suggestions.push({
         id: 'suggest-event-sourcing',
         type: 'pattern',
@@ -812,9 +825,7 @@ export class AISuggestionsService {
             role: 'publisher',
           },
         ],
-        relationships: [
-          { from: 'Event Publisher', to: 'Event Store', label: 'persists to' },
-        ],
+        relationships: [{ from: 'Event Publisher', to: 'Event Store', label: 'persists to' }],
       });
     }
 
@@ -848,7 +859,9 @@ export class AISuggestionsService {
         autoApplicable: false,
         confidence: 85,
         affectedNodes: [godObject.id],
-        affectedEdges: edges.filter((e) => e.source === godObject.id || e.target === godObject.id).map((e) => e.id),
+        affectedEdges: edges
+          .filter((e) => e.source === godObject.id || e.target === godObject.id)
+          .map((e) => e.id),
         steps: [
           'Identify distinct responsibilities within the component',
           'Create separate components for each responsibility',
@@ -873,7 +886,9 @@ export class AISuggestionsService {
     const suggestions: BestPracticeSuggestion[] = [];
 
     // Check for missing descriptions
-    const noDescription = nodes.filter((n) => !n.data.description || n.data.description.trim() === '');
+    const noDescription = nodes.filter(
+      (n) => !n.data.description || n.data.description.trim() === ''
+    );
     if (noDescription.length > 0) {
       suggestions.push({
         id: 'best-practice-descriptions',
@@ -895,7 +910,9 @@ export class AISuggestionsService {
     }
 
     // Check for poor naming
-    const poorNames = nodes.filter((n) => n.data.label.length < 3 || /^(test|temp|foo|bar)$/i.test(n.data.label));
+    const poorNames = nodes.filter(
+      (n) => n.data.label.length < 3 || /^(test|temp|foo|bar)$/i.test(n.data.label)
+    );
     if (poorNames.length > 0) {
       suggestions.push({
         id: 'best-practice-naming',

@@ -25,7 +25,7 @@ export const LAYOUT_TEMPLATES: Record<ViewType, LayoutTemplate> = {
     icon: '🏢',
     config: {
       layoutAlgorithm: 'hierarchical',
-      showGrid: true,
+      gridEnabled: true,
       showMinimap: true,
       gridSize: 20,
       snapToGrid: true,
@@ -41,7 +41,7 @@ export const LAYOUT_TEMPLATES: Record<ViewType, LayoutTemplate> = {
     icon: '📦',
     config: {
       layoutAlgorithm: 'hierarchical',
-      showGrid: true,
+      gridEnabled: true,
       showMinimap: true,
       gridSize: 15,
       snapToGrid: true,
@@ -57,7 +57,7 @@ export const LAYOUT_TEMPLATES: Record<ViewType, LayoutTemplate> = {
     icon: '🧩',
     config: {
       layoutAlgorithm: 'hierarchical',
-      showGrid: true,
+      gridEnabled: true,
       showMinimap: false,
       gridSize: 10,
       snapToGrid: true,
@@ -73,7 +73,7 @@ export const LAYOUT_TEMPLATES: Record<ViewType, LayoutTemplate> = {
     icon: '📈',
     config: {
       layoutAlgorithm: 'manual',
-      showGrid: false,
+      gridEnabled: false,
       showMinimap: false,
       gridSize: 20,
       snapToGrid: false,
@@ -100,7 +100,7 @@ export const LAYOUT_TEMPLATES: Record<ViewType, LayoutTemplate> = {
     icon: '✨',
     config: {
       layoutAlgorithm: 'manual',
-      showGrid: true,
+      gridEnabled: true,
       showMinimap: true,
       gridSize: 20,
       snapToGrid: false,
@@ -127,12 +127,8 @@ export function getAllLayoutTemplates(): LayoutTemplate[] {
 /**
  * Get template by display name
  */
-export function getLayoutTemplateByName(
-  displayName: string
-): LayoutTemplate | undefined {
-  return Object.values(LAYOUT_TEMPLATES).find(
-    (template) => template.displayName === displayName
-  );
+export function getLayoutTemplateByName(displayName: string): LayoutTemplate | undefined {
+  return Object.values(LAYOUT_TEMPLATES).find((template) => template.displayName === displayName);
 }
 
 /**

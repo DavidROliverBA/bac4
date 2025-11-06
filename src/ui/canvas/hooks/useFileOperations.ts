@@ -109,17 +109,15 @@ export function useFileOperations(props: UseFileOperationsProps): void {
       // Sync new snapshots from v1 timeline to v2.5 graphFileRef
       if (timeline && graphFileRef.current) {
         const existingSnapshotIds = new Set(
-          graphFileRef.current.timeline.snapshots.map(s => s.id)
+          graphFileRef.current.timeline.snapshots.map((s) => s.id)
         );
 
-        const newSnapshots = timeline.snapshots.filter(
-          s => !existingSnapshotIds.has(s.id)
-        );
+        const newSnapshots = timeline.snapshots.filter((s) => !existingSnapshotIds.has(s.id));
 
         if (newSnapshots.length > 0) {
           console.log('BAC4 v2.5.1: Converting', newSnapshots.length, 'new v1 snapshots to v2.5');
 
-          const newV2Snapshots = newSnapshots.map(v1Snapshot => {
+          const newV2Snapshots = newSnapshots.map((v1Snapshot) => {
             const layout: Record<string, any> = {};
             for (const node of v1Snapshot.nodes) {
               layout[node.id] = {
@@ -214,7 +212,9 @@ export function useFileOperations(props: UseFileOperationsProps): void {
       console.log('BAC4 v2.5.1: ✅ FORCE SAVE complete');
     } catch (error) {
       console.error('BAC4 v2.5.1: ❌ Force save failed:', error);
-      new Notice(`Failed to save diagram: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      new Notice(
+        `Failed to save diagram: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }, [filePath, nodes, edges, annotations, timeline, plugin.app.vault]);
 
@@ -252,16 +252,14 @@ export function useFileOperations(props: UseFileOperationsProps): void {
         // We need to convert any NEW v1 snapshots to v2.5 and add them
         if (timeline && graphFileRef.current) {
           const existingSnapshotIds = new Set(
-            graphFileRef.current.timeline.snapshots.map(s => s.id)
+            graphFileRef.current.timeline.snapshots.map((s) => s.id)
           );
 
           // Find new snapshots that don't exist in graphFileRef yet
-          const newSnapshots = timeline.snapshots.filter(
-            s => !existingSnapshotIds.has(s.id)
-          );
+          const newSnapshots = timeline.snapshots.filter((s) => !existingSnapshotIds.has(s.id));
 
           // Convert new v1 snapshots to v2.5 format
-          const newV2Snapshots = newSnapshots.map(v1Snapshot => {
+          const newV2Snapshots = newSnapshots.map((v1Snapshot) => {
             // Build layout from v1 nodes
             const layout: Record<string, any> = {};
             for (const node of v1Snapshot.nodes) {
@@ -469,7 +467,12 @@ export function useFileOperations(props: UseFileOperationsProps): void {
     }
 
     // Load both .bac4 and .bac4-graph files
-    console.log('BAC4 v2.5: Loading diagram from dual files:', filePath, 'graph:', currentGraphFilePath);
+    console.log(
+      'BAC4 v2.5: Loading diagram from dual files:',
+      filePath,
+      'graph:',
+      currentGraphFilePath
+    );
 
     readDiagram(plugin.app.vault, filePath, currentGraphFilePath || undefined)
       .then(async ({ nodeFile, graphFile, graphFilePath: actualGraphPath }) => {
@@ -557,10 +560,7 @@ export function useFileOperations(props: UseFileOperationsProps): void {
             10000
           );
         } else if (error.message.includes('Graph file not found')) {
-          new Notice(
-            'Graph file (.bac4-graph) not found. Please run migration.',
-            10000
-          );
+          new Notice('Graph file (.bac4-graph) not found. Please run migration.', 10000);
         } else {
           new Notice('Failed to load diagram. See console for details.');
         }
