@@ -3,22 +3,14 @@ import { BAC4Settings } from './core/settings';
 import { DEFAULT_SETTINGS, COMMAND_OPEN_DASHBOARD, VIEW_TYPE_CANVAS } from './core/constants';
 import { BAC4SettingsTab } from './ui/settings-tab';
 import { BAC4CanvasView } from './ui/canvas-view';
-import { BAC4CanvasViewV3, VIEW_TYPE_CANVAS_V3 } from './ui/canvas-view-v3';
-import { NodeExplorerView, VIEW_TYPE_NODE_EXPLORER } from './ui/views/NodeExplorerView';
 import { hasBac4Diagram } from './utils/frontmatter-parser';
 import { NodeRegistryService } from './services/node-registry-service';
 import { AIValidationService } from './services/ai-validation-service';
 import { ArchitectureAnalyzerService } from './services/architecture-analyzer-service';
 import { AISuggestionsService } from './services/ai-suggestions-service';
 import { KeyboardShortcutsService } from './services/keyboard-shortcuts-service';
-
-// v3.0.0 Services
-import { GraphServiceV3 } from './services/graph-service-v3';
-import { DiagramServiceV3 } from './services/diagram-service-v3';
 import type { DiagramType } from './types/bac4-v2-types';
 import './styles.css';
-import '../styles/navigation.css';
-import '../styles/accessibility.css';
 
 /**
  * BAC4 Plugin - Main entry point
@@ -84,22 +76,8 @@ export default class BAC4Plugin extends Plugin {
       'unique node names'
     );
 
-    // Register canvas view (legacy)
+    // Register canvas view
     this.registerView(VIEW_TYPE_CANVAS, (leaf: WorkspaceLeaf) => new BAC4CanvasView(leaf, this));
-
-    // Register v3.0.0 canvas view
-    this.registerView(
-      VIEW_TYPE_CANVAS_V3,
-      (leaf: WorkspaceLeaf) => new BAC4CanvasViewV3(leaf, this)
-    );
-    console.log('BAC4: Registered v3.0.0 canvas view');
-
-    // Register Node Explorer view
-    this.registerView(
-      VIEW_TYPE_NODE_EXPLORER,
-      (leaf: WorkspaceLeaf) => new NodeExplorerView(leaf, this)
-    );
-    console.log('BAC4: Registered Node Explorer view');
 
     // Register .bac4 file extension to open with canvas view
     this.registerExtensions(['bac4'], VIEW_TYPE_CANVAS);
@@ -139,28 +117,6 @@ export default class BAC4Plugin extends Plugin {
         // Handle .bac4 files - detect version and route to correct view
         if (file.extension === 'bac4') {
           console.log('BAC4: file-open event for', file.path);
-
-          try {
-            const content = await this.app.vault.read(file as TFile);
-            const data = JSON.parse(content);
-
-            // Check if v3.0.0 format
-            if (data.version === '3.0.0') {
-              console.log('BAC4: Detected v3.0.0 format, routing to v3 canvas view');
-
-              // Get active leaf
-              const activeLeaf = this.app.workspace.activeLeaf;
-              if (activeLeaf && activeLeaf.view.getViewType() !== VIEW_TYPE_CANVAS_V3) {
-                // Switch to v3.0.0 canvas view
-                await activeLeaf.setViewState({
-                  type: VIEW_TYPE_CANVAS_V3,
-                  state: { filePath: file.path },
-                });
-              }
-            }
-          } catch (error) {
-            console.error('BAC4: Error detecting file version:', error);
-          }
         }
 
         // Handle .md files - check for BAC4 diagram frontmatter
@@ -738,41 +694,6 @@ export default class BAC4Plugin extends Plugin {
       },
     });
 
-    // ========================================================================
-    // v3.0.0 Commands - Global Graph Architecture
-    // ========================================================================
-
-    this.addCommand({
-      id: 'bac4-create-context-diagram-v3',
-      name: 'Create New Context Diagram (v3.0.0)',
-      callback: async () => {
-        await this.createNewDiagramV3('context');
-      },
-    });
-
-    this.addCommand({
-      id: 'bac4-create-container-diagram-v3',
-      name: 'Create New Container Diagram (v3.0.0)',
-      callback: async () => {
-        await this.createNewDiagramV3('container');
-      },
-    });
-
-    this.addCommand({
-      id: 'bac4-create-component-diagram-v3',
-      name: 'Create New Component Diagram (v3.0.0)',
-      callback: async () => {
-        await this.createNewDiagramV3('component');
-      },
-    });
-
-    this.addCommand({
-      id: 'bac4-open-node-explorer',
-      name: 'Open Node Explorer (v3.0.0)',
-      callback: async () => {
-        await this.openNodeExplorer();
-      },
-    });
 
     // Graph View Command (Cmd+Shift+G)
     this.addCommand({
@@ -872,7 +793,6 @@ export default class BAC4Plugin extends Plugin {
    * Create a new diagram of a specific type (v2.5.0 dual-file format)
    *
    * Creates diagrams for any of the 7 layers using v2.5.0 format
-   * Note: For v3.0.0 global graph architecture, use createNewDiagramV3()
    *
    * @param diagramType - Type of diagram to create
    */
@@ -935,98 +855,6 @@ export default class BAC4Plugin extends Plugin {
     new Notice(`Created ${fileName}`);
   }
 
-  /**
-   * Create a new v3.0.0 diagram
-   *
-   * v3.0.0: Creates diagrams using global graph architecture
-   * - Initializes __graph__.json if needed
-   * - Creates .bac4 file as view into global nodes
-   * - Opens in v3.0.0 canvas view
-   *
-   * @param diagramType - Type of diagram to create
-   */
-  private async createNewDiagramV3(
-    diagramType: 'context' | 'container' | 'component'
-  ): Promise<void> {
-    console.log('BAC4 v3.0.0: Creating new diagram:', diagramType);
-
-    try {
-      // Initialize __graph__.json if needed
-      const graphService = new GraphServiceV3(this.app.vault);
-      await graphService.initialize();
-      console.log('BAC4 v3.0.0: Graph initialized');
-
-      // Ensure BAC4 directory exists
-      if (!(await this.app.vault.adapter.exists('BAC4'))) {
-        console.log('BAC4 v3.0.0: Creating BAC4 directory');
-        await this.app.vault.createFolder('BAC4');
-      }
-
-      // Generate unique file name
-      const typeLabel = diagramType.charAt(0).toUpperCase() + diagramType.slice(1);
-      let fileName = `New ${typeLabel}.bac4`;
-      let filePath = `BAC4/${fileName}`;
-      let counter = 1;
-
-      while (this.app.vault.getAbstractFileByPath(filePath)) {
-        counter++;
-        fileName = `New ${typeLabel} ${counter}.bac4`;
-        filePath = `BAC4/${fileName}`;
-      }
-
-      console.log('BAC4 v3.0.0: Creating diagram file:', filePath);
-
-      // Create diagram using v3.0.0 service
-      const diagramService = new DiagramServiceV3(this.app.vault);
-      await diagramService.createDiagram(filePath, `New ${typeLabel}`, diagramType);
-      console.log('BAC4 v3.0.0: Diagram created');
-
-      // Open in v3.0.0 canvas view
-      const file = this.app.vault.getAbstractFileByPath(filePath);
-      if (file) {
-        const leaf = this.app.workspace.getLeaf();
-        await leaf.setViewState({
-          type: VIEW_TYPE_CANVAS_V3,
-          state: { filePath: filePath },
-        });
-        this.app.workspace.setActiveLeaf(leaf, { focus: true });
-      }
-
-      new Notice(`Created ${fileName} (v3.0.0)`);
-    } catch (error) {
-      console.error('BAC4 v3.0.0: Error creating diagram:', error);
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      new Notice('Error creating diagram: ' + errorMessage);
-    }
-  }
-
-  /**
-   * Open Node Explorer view (v3.0.0)
-   *
-   * Opens a vault-wide view of all nodes from __graph__.json
-   * Shows relationships, usage stats, and allows bulk operations.
-   */
-  private async openNodeExplorer(): Promise<void> {
-    console.log('BAC4 v3.0.0: Opening Node Explorer...');
-
-    // Check if already open
-    const existingLeaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_NODE_EXPLORER);
-    if (existingLeaves.length > 0) {
-      console.log('BAC4 v3.0.0: Node Explorer already open, activating');
-      this.app.workspace.setActiveLeaf(existingLeaves[0], { focus: true });
-      return;
-    }
-
-    // Open in new leaf
-    const leaf = this.app.workspace.getLeaf('tab');
-    await leaf.setViewState({
-      type: VIEW_TYPE_NODE_EXPLORER,
-      active: true,
-    });
-
-    this.app.workspace.setActiveLeaf(leaf, { focus: true });
-    console.log('BAC4 v3.0.0: Node Explorer opened');
-  }
 
   /**
    * Export current diagram to JSONCanvas format

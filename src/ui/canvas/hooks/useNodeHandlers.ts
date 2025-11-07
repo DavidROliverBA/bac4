@@ -70,14 +70,68 @@ export function useNodeHandlers(props: UseNodeHandlersProps): NodeHandlers {
     onNodeSelect,
   } = props;
 
+  // Triple-click detection for parent navigation
+  const clickTrackerRef = React.useRef<{
+    nodeId: string | null;
+    count: number;
+    timestamp: number;
+  }>({ nodeId: null, count: 0, timestamp: 0 });
+
   /**
-   * Handle node click (selection)
+   * Handle node click (selection + triple-click detection)
    */
   const onNodeClick = React.useCallback(
-    (_event: React.MouseEvent, node: Node<CanvasNodeData>) => {
+    async (_event: React.MouseEvent, node: Node<CanvasNodeData>) => {
+      // Select the node
       onNodeSelect(node);
+
+      // Triple-click detection
+      const now = Date.now();
+      const tracker = clickTrackerRef.current;
+
+      // Reset if different node or timeout exceeded (600ms)
+      if (tracker.nodeId !== node.id || now - tracker.timestamp > 600) {
+        tracker.nodeId = node.id;
+        tracker.count = 1;
+        tracker.timestamp = now;
+      } else {
+        // Same node, increment count
+        tracker.count++;
+        tracker.timestamp = now;
+
+        // Triple-click detected!
+        if (tracker.count === 3) {
+          console.log('=== BAC4 TRIPLE-CLICK DETECTED ===');
+          console.log('Navigating to parent diagram...');
+
+          // Reset tracker
+          tracker.count = 0;
+
+          if (!filePath) {
+            console.error('BAC4: No filePath for parent navigation');
+            return;
+          }
+
+          try {
+            const parentPath = await navigationService.navigateToParent(filePath);
+            if (parentPath) {
+              console.log('BAC4: ✅ Found parent:', parentPath);
+              await plugin.openCanvasViewInNewTab(parentPath);
+              console.log('BAC4: ✅ Parent diagram opened');
+            } else {
+              console.log('BAC4: No parent diagram found');
+              ErrorHandler.showInfo('This diagram has no parent diagram.');
+            }
+          } catch (error) {
+            console.error('BAC4: Error navigating to parent:', error);
+            ErrorHandler.handleError(error, 'Failed to navigate to parent diagram');
+          }
+
+          console.log('=== BAC4 TRIPLE-CLICK END ===');
+        }
+      }
     },
-    [onNodeSelect]
+    [onNodeSelect, filePath, navigationService, plugin]
   );
 
   /**

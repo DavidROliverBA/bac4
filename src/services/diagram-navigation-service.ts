@@ -1,7 +1,6 @@
 import { TFile } from 'obsidian';
 import type BAC4Plugin from '../main';
 import type { DiagramNode } from '../types/canvas-types';
-import { TimelineService } from './TimelineService';
 
 /** Path to the central relationships file */
 const RELATIONSHIPS_FILE = 'diagram-relationships.json';
@@ -227,29 +226,33 @@ export class DiagramNavigationService {
       return childPath;
     }
 
-    // File doesn't exist, create it
+    // File doesn't exist, create it with v2.5.1 dual-file format
     console.log('BAC4: Creating new child diagram file with type:', childDiagramType);
 
-    // Create initial diagram data (v1.0.0 format with timeline)
-    const now = new Date().toISOString();
-    const initialTimeline = TimelineService.createInitialTimeline([], [], 'Current');
-    const initialData = {
-      version: '1.0.0',
-      metadata: {
-        diagramType: childDiagramType,
-        createdAt: now,
-        updatedAt: now,
-      },
-      timeline: initialTimeline,
-    };
+    // Import creation functions
+    const { createDefaultBAC4File, createDefaultGraphFile } = await import('../types/bac4-v2-types');
+    const { writeDiagram } = await import('./file-io-service');
 
-    // Write child file
-    await this.plugin.app.vault.create(childPath, JSON.stringify(initialData, null, 2));
-    console.log('BAC4: ✅ Created child diagram file:', childPath);
+    // Create node file and graph file
+    const nodeFile = createDefaultBAC4File(
+      parentNodeLabel,
+      childDiagramType as any,
+      childDiagramType as any
+    );
+
+    const graphFile = createDefaultGraphFile(
+      childFileName,
+      parentNodeLabel,
+      'c4-context'
+    );
+
+    // Write both files using the file I/O service
+    await writeDiagram(this.plugin.app.vault, childPath, nodeFile, graphFile);
+    console.log('BAC4: ✅ Created child diagram dual files (v2.5.1):', childPath);
 
     // Return child path - let the calling component update parent node's linkedDiagramPath
     // The component will update React state, and auto-save will persist to disk
-    console.log('BAC4: ✅ Child diagram created (v1.0.0)');
+    console.log('BAC4: ✅ Child diagram created (v2.5.1)');
     return childPath;
   }
 
@@ -368,8 +371,8 @@ export class DiagramNavigationService {
           // Extract nodes based on format
           let nodes: Array<{ data?: { linkedDiagramPath?: string } }> = [];
 
-          if (data.version === '2.5.0') {
-            // ✅ v2.5.0 dual-file format - nodes are stored as object
+          if (data.version === '2.5.0' || data.version === '2.5.1') {
+            // ✅ v2.5.0/v2.5.1 dual-file format - nodes are stored as object
             nodes = Object.values(data.nodes || {}) as any[];
           } else if (data.timeline) {
             // v1.0.0 format - get working snapshot (first in order)
